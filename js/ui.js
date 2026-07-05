@@ -34,9 +34,11 @@ VT.UI = (function () {
   // Aufruf gestiegen sind (visuelles Erfolgs-Feedback ohne Layout-Sprung).
   function updateHud() {
     var s = VT.Store.get();
+    var lvl = VT.Level.levelFromXp(s.xp);
     var xpEl = document.getElementById("hud-xp");
     var streakEl = document.getElementById("hud-streak");
-    xpEl.textContent = "⭐ " + s.xp + " XP";
+    xpEl.textContent = lvl.icon + " Lvl " + lvl.level;
+    xpEl.title = s.xp + " XP · " + lvl.name;
     streakEl.textContent = "🔥 " + s.streak.count;
 
     if (lastXp !== null && s.xp > lastXp) pulse(xpEl);
@@ -59,6 +61,7 @@ VT.UI = (function () {
     else if (name === "result") renderResult(params);
     stagger(root);
     updateTabbar(name);
+    updateHud(); // HUD immer mit dem aktuellen Stand synchron halten
     root.scrollTop = 0;
     window.scrollTo(0, 0);
   }
@@ -95,6 +98,8 @@ VT.UI = (function () {
       "<p class='home-sub'>" + masteredTotal + " von " + VT.DATA.words.length + " Wörtern gelernt</p>" +
       progressBar(masteredTotal, VT.DATA.words.length, "big");
     root.appendChild(head);
+
+    root.appendChild(renderLevelCard());
 
     var list = el("div", "pack-list");
     VT.DATA.packs.forEach(function (p) {
@@ -171,6 +176,34 @@ VT.UI = (function () {
     btn.addEventListener("contextmenu", function (ev) { ev.preventDefault(); }); // iOS-Langdruck-Menü unterdrücken
   }
 
+  // --- Level-Karte + Tagesziel (Home) -----------------------------------------
+  // Gibt XP einen sichtbaren Sinn: Rang-Aufstieg (langfristig) + Tagesziel, das
+  // die Streak füttert (täglich).
+  function renderLevelCard() {
+    var s = VT.Store.get();
+    var lvl = VT.Level.levelFromXp(s.xp);
+    var day = VT.Store.dailyProgress();
+
+    var card = el("div", "card level-card");
+    card.innerHTML =
+      "<div class='level-top'>" +
+        "<div class='rank-badge'>" + lvl.icon + "</div>" +
+        "<div class='level-meta'>" +
+          "<div class='level-title'>" + lvl.name + "</div>" +
+          "<div class='level-num'>Level " + lvl.level + " · " + s.xp + " XP</div>" +
+        "</div>" +
+      "</div>" +
+      "<div class='level-bar-label'>noch " + lvl.xpToNext + " XP bis Level " + (lvl.level + 1) + "</div>" +
+      progressBar(lvl.intoLevel, lvl.levelSpan) +
+      "<div class='daily-goal" + (day.reached ? " done" : "") + "'>" +
+        "<div class='daily-label'>🎯 Tagesziel " +
+          "<span>" + Math.min(day.xp, day.goal) + " / " + day.goal + " XP" +
+          (day.reached ? " ✓" : "") + "</span></div>" +
+        progressBar(day.xp, day.goal) +
+      "</div>";
+    return card;
+  }
+
   function startSession(packId) {
     VT.Quiz.buildSession(packId);
     show("session");
@@ -240,9 +273,20 @@ VT.UI = (function () {
 
     var bar = el("div", "card session-head");
     bar.innerHTML =
-      "<div class='session-progress'>Aufgabe " + (sess.index + 1) + " / " + sess.tasks.length + "</div>" +
+      "<div class='session-topline'>" +
+        "<button class='cancel-btn' type='button' aria-label='Übung beenden'>✕</button>" +
+        "<div class='session-progress'>Aufgabe " + (sess.index + 1) + " / " + sess.tasks.length + "</div>" +
+      "</div>" +
       progressBar(sess.index, sess.tasks.length);
     root.appendChild(bar);
+    bar.querySelector(".cancel-btn").addEventListener("click", function () {
+      confirmDialog(
+        "Übung beenden?",
+        "Du kehrst zur Übersicht zurück. Bereits beantwortete Aufgaben bleiben gespeichert.",
+        "Beenden", "Weiter üben",
+        function () { show("home"); }
+      );
+    });
 
     var q = el("div", "card question");
     q.appendChild(renderPrompt(task));
@@ -377,6 +421,17 @@ VT.UI = (function () {
       root.appendChild(streakCard);
     }
 
+    if (summary && summary.levelUpTo) {
+      var lvl = VT.Level.levelFromXp(VT.Store.get().xp);
+      var lvlCard = el("div", "card levelup-banner");
+      lvlCard.innerHTML =
+        "<span class='levelup-icon'>" + lvl.icon + "</span>" +
+        "<span class='levelup-text'><b>Level " + summary.levelUpTo + " erreicht!</b><br>" +
+        "Neuer Rang: " + lvl.name + "</span>";
+      root.appendChild(lvlCard);
+      setTimeout(function () { confettiBurst(window.innerWidth / 2, 180, 32); }, 500);
+    }
+
     if (summary && summary.newlyUnlockedPack) {
       var pack = VT.DATA.packs.filter(function (p) { return p.id === summary.newlyUnlockedPack; })[0];
       if (pack) {
@@ -436,6 +491,27 @@ VT.UI = (function () {
       fx.appendChild(p);
       (function (elm) { setTimeout(function () { elm.remove(); }, 1300); })(p);
     }
+  }
+
+  // Modaler Bestätigungs-Dialog (z.B. Übung abbrechen). Blockiert versehentliche
+  // Aktionen: man muss bewusst "Beenden" wählen; Tap daneben schließt harmlos.
+  function confirmDialog(title, msg, okLabel, cancelLabel, onOk) {
+    var overlay = el("div", "modal-overlay");
+    var box = el("div", "modal-box");
+    box.innerHTML =
+      "<div class='modal-title'>" + title + "</div>" +
+      "<div class='modal-msg'>" + msg + "</div>";
+    var ok = el("button", "modal-ok"); ok.type = "button"; ok.textContent = okLabel;
+    var cancelBtn = el("button", "modal-cancel"); cancelBtn.type = "button"; cancelBtn.textContent = cancelLabel;
+    box.appendChild(ok); box.appendChild(cancelBtn);
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+
+    function close() { overlay.classList.remove("show"); setTimeout(function () { overlay.remove(); }, 220); }
+    ok.addEventListener("click", function () { close(); onOk(); });
+    cancelBtn.addEventListener("click", close);
+    overlay.addEventListener("click", function (e) { if (e.target === overlay) close(); });
+    requestAnimationFrame(function () { overlay.classList.add("show"); });
   }
 
   // Kurze Bestätigungs-Einblendung am unteren Rand.

@@ -70,7 +70,8 @@ VT.Quiz = (function () {
       return makeTask(MODES[i % MODES.length], w, packId);
     });
     shuffle(tasks);
-    session = { packId: packId, tasks: tasks, index: 0, correctCount: 0 };
+    session = { packId: packId, tasks: tasks, index: 0, correctCount: 0,
+                levelUpTo: null, streakInfo: null };
     return session;
   }
 
@@ -88,8 +89,10 @@ VT.Quiz = (function () {
     VT.SRS.answer(task.word.id, correct); // Box +/-1, Statistik, save
     if (correct) {
       session.correctCount++;
-      VT.Store.get().xp += XP_PER_CORRECT;
-      VT.Store.save();
+      // Zentrale XP-Vergabe: verbucht Gesamt-/Tages-XP, Level, Streak-Ziel.
+      var res = VT.Store.addXp(XP_PER_CORRECT);
+      if (res.leveledUp) session.levelUpTo = res.level;
+      if (res.goalJustReached && res.streak) session.streakInfo = res.streak;
     }
     return correct;
   }
@@ -97,20 +100,22 @@ VT.Quiz = (function () {
   function next() { if (session) session.index++; return current(); }
   function isDone() { return !session || session.index >= session.tasks.length; }
 
-  // Session abschließen: Paket-Freischaltung + Tages-Streak, Zusammenfassung liefern.
+  // Session abschließen: Paket-Freischaltung prüfen, Zusammenfassung liefern.
+  // Streak & Level-up wurden bereits während der Antworten (VT.Store.addXp)
+  // erkannt und in der Session gesammelt.
   function finish() {
     if (!session) return null;
     var unlockedBefore = VT.Store.get().unlockedPacks;
     VT.SRS.checkUnlock();
     var unlockedAfter = VT.Store.get().unlockedPacks;
-    var streak = VT.Store.touchStreak();
     return {
       packId: session.packId,
       total: session.tasks.length,
       correct: session.correctCount,
       xpEarned: session.correctCount * XP_PER_CORRECT,
       newlyUnlockedPack: unlockedAfter > unlockedBefore ? unlockedAfter : null,
-      streak: streak
+      streak: session.streakInfo,        // nur gesetzt, wenn heute das Tagesziel fiel
+      levelUpTo: session.levelUpTo        // nur gesetzt, wenn ein Level-up passierte
     };
   }
 

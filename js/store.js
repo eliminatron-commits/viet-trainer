@@ -25,11 +25,14 @@ VT.Store = (function () {
   var KEY = "vietTrainer.v1";
   var state = null;
 
+  var DAILY_GOAL = 50; // XP-Tagesziel (= 5 richtige Antworten); füttert die Streak
+
   function defaults() {
     return {
       version: 1,
       xp: 0,
       streak: { count: 0, lastDay: null },
+      daily: { day: null, xp: 0, goalReached: false }, // Tages-XP für Ziel + Streak
       unlockedPacks: 1,
       words: {}
     };
@@ -48,6 +51,11 @@ VT.Store = (function () {
     if (d.streak && typeof d.streak === "object") {
       if (typeof d.streak.count === "number" && d.streak.count >= 0) state.streak.count = d.streak.count;
       if (typeof d.streak.lastDay === "string") state.streak.lastDay = d.streak.lastDay;
+    }
+    if (d.daily && typeof d.daily === "object") {
+      if (typeof d.daily.day === "string") state.daily.day = d.daily.day;
+      state.daily.xp = num(d.daily.xp);
+      state.daily.goalReached = !!d.daily.goalReached;
     }
     if (d.words && typeof d.words === "object") {
       for (var id in d.words) {
@@ -102,11 +110,47 @@ VT.Store = (function () {
     return { count: st.count, grew: true };
   }
 
+  // Heutigen Tages-Fortschritt lesen, ohne den State zu verändern (die UI ruft
+  // das beim Rendern; der eigentliche Reset auf 0 passiert erst in addXp).
+  function dailyProgress() {
+    var today = dayStr(new Date());
+    if (state.daily.day !== today) return { xp: 0, goal: DAILY_GOAL, reached: false };
+    return { xp: state.daily.xp, goal: DAILY_GOAL, reached: state.daily.goalReached };
+  }
+
+  // Zentrale XP-Vergabe: erhöht Gesamt- und Tages-XP, erkennt Level-up und
+  // füttert beim Erreichen des Tagesziels die Streak (einmal pro Tag).
+  // Rückgabe bündelt alles, was die UI für Feiern braucht.
+  function addXp(amount) {
+    var lvlBefore = VT.Level.levelFromXp(state.xp).level;
+    state.xp += amount;
+    var lvlAfter = VT.Level.levelFromXp(state.xp).level;
+
+    var today = dayStr(new Date());
+    if (state.daily.day !== today) state.daily = { day: today, xp: 0, goalReached: false };
+    state.daily.xp += amount;
+
+    var goalJustReached = false, streakInfo = null;
+    if (!state.daily.goalReached && state.daily.xp >= DAILY_GOAL) {
+      state.daily.goalReached = true;
+      goalJustReached = true;
+      streakInfo = touchStreak(); // Streak zählt genau dann, wenn das Tagesziel fällt
+    }
+    save();
+    return {
+      totalXp: state.xp,
+      leveledUp: lvlAfter > lvlBefore, level: lvlAfter,
+      dailyXp: state.daily.xp, dailyGoal: DAILY_GOAL,
+      goalJustReached: goalJustReached, streak: streakInfo
+    };
+  }
+
   function reset() { state = defaults(); save(); }
 
   load();
   return {
     get: function () { return state; }, save: save, wordState: wordState,
-    touchStreak: touchStreak, reset: reset, KEY: KEY
+    touchStreak: touchStreak, addXp: addXp, dailyProgress: dailyProgress,
+    DAILY_GOAL: DAILY_GOAL, reset: reset, KEY: KEY
   };
 })();

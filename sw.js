@@ -15,7 +15,7 @@
  * CACHE-Version bei jedem Release hochzählen: activate räumt alte Caches weg;
  * auf iOS ist das der zuverlässige Weg, Updates auszuliefern.
  * ============================================================================= */
-var CACHE = "viet-trainer-v5";
+var CACHE = "viet-trainer-v6";
 var WORD_COUNT = 100;
 
 var APP_SHELL = [
@@ -24,6 +24,7 @@ var APP_SHELL = [
   "./manifest.webmanifest",
   "./css/style.css",
   "./js/data.js",
+  "./js/level.js",
   "./js/store.js",
   "./js/srs.js",
   "./js/audio.js",
