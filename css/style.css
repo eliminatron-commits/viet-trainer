@@ -1,0 +1,258 @@
+/* =============================================================================
+ * Việt-Trainer – mobile-first für iPhone (Safari, Standalone-PWA).
+ * Designentscheidungen:
+ *  - CSS-Variablen als zentrale Palette (dunkles Grün-Thema, Phase 4 baut aus).
+ *  - env(safe-area-inset-*): Notch/Home-Indicator im Standalone-Modus.
+ *  - 100dvh statt 100vh (iOS-Safari-Adressleisten-Problem).
+ *  - Touch: min. 44px Zielhöhe, kein Tap-Highlight, kein Text-Select auf Controls.
+ * ============================================================================= */
+:root {
+  --bg: #10241a;
+  --card: #1a3628;
+  --card-hi: #235238;
+  --accent: #2ecc71;
+  --accent-dark: #1c8a5a;
+  --text: #eef7f1;
+  --text-dim: #9dbfae;
+  --danger: #e74c3c;
+  --radius: 14px;
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  min-height: 100dvh;
+  /* Kein Pull-to-Refresh/Overscroll-Gummi im Standalone-Modus */
+  overscroll-behavior: none;
+}
+
+/* Kopfzeile: fix oben, respektiert die Notch */
+#topbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: calc(8px + env(safe-area-inset-top)) 16px 8px;
+  background: var(--card);
+  font-weight: 600;
+  user-select: none;
+  -webkit-user-select: none;
+}
+#hud-title { color: var(--accent); }
+#hud-xp, #hud-streak {
+  font-size: 0.9rem; color: var(--text-dim);
+  display: inline-block; /* Transform-Basis für die Pulse-Animation */
+}
+
+/* Kurzer Zoom-Puls, wenn XP oder Streak seit dem letzten Render gestiegen sind. */
+@keyframes hud-pulse {
+  0%   { transform: scale(1);   color: var(--text-dim); }
+  35%  { transform: scale(1.35); color: var(--accent); }
+  100% { transform: scale(1);   color: var(--text-dim); }
+}
+.hud-pulse { animation: hud-pulse 0.5s ease; }
+
+#screen {
+  max-width: 480px;               /* auf iPhone volle Breite, am Desktop zentriert */
+  margin: 0 auto;
+  padding: 16px 16px calc(24px + env(safe-area-inset-bottom));
+}
+/* Platz für die fixe untere Tab-Bar schaffen, wenn sie sichtbar ist. */
+body.show-tabbar #screen { padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
+
+/* --- Untere Tab-Navigation ------------------------------------------------ */
+#tabbar {
+  display: none;
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
+  background: var(--card);
+  border-top: 1px solid rgba(255,255,255,0.08);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+body.show-tabbar #tabbar { display: flex; }
+.tab {
+  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px;
+  min-height: 52px; padding: 8px 0;
+  border: 0; background: transparent; color: var(--text-dim); cursor: pointer;
+}
+.tab.active { color: var(--accent); }
+.tab-icon { font-size: 1.3rem; line-height: 1; }
+.tab-label { font-size: 0.72rem; font-weight: 600; }
+
+.card {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 12px;
+}
+.card h1 { margin: 0 0 8px; font-size: 1.3rem; }
+.card p { margin: 4px 0; color: var(--text-dim); font-size: 0.95rem; }
+
+/* Wortzeile mit Abspiel-Button (Phase-1-Smoke-Test, wird in Phase 4 verfeinert) */
+.word-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 52px;               /* > 44px Touch-Ziel */
+  margin-bottom: 8px;
+  padding: 10px 14px;
+  border: 0;
+  border-radius: var(--radius);
+  background: var(--card-hi);
+  color: var(--text);
+  font-size: 1rem;
+  text-align: left;
+  cursor: pointer;
+}
+.word-row:active { background: var(--accent-dark); }
+.word-row .vn { font-weight: 700; }
+.word-row .de { flex: 1; color: var(--text-dim); font-size: 0.9rem; }
+.word-row .play { font-size: 1.2rem; }
+
+/* --- Fortschrittsbalken (überall wiederverwendet) ------------------------- */
+.pbar { height: 8px; border-radius: 4px; background: rgba(255,255,255,0.12); overflow: hidden; margin-top: 6px; }
+.pbar-fill { height: 100%; background: var(--accent); border-radius: 4px; transition: width 0.4s ease; }
+.pbar.big { height: 14px; margin-top: 10px; }
+
+/* --- Home: Kopf + Paketliste ----------------------------------------------- */
+.home-head { text-align: center; }
+.home-sub { font-size: 1rem !important; color: var(--text) !important; }
+.pack-list { display: flex; flex-direction: column; }
+
+.pack-row {
+  display: flex; align-items: center; gap: 12px; width: 100%;
+  min-height: 64px; margin-bottom: 10px; padding: 12px 14px;
+  border: 0; border-radius: var(--radius); background: var(--card-hi);
+  color: var(--text); text-align: left; cursor: pointer;
+}
+.pack-row:active { background: var(--accent-dark); }
+.pack-row.locked { opacity: 0.5; cursor: default; }
+.pack-row.complete { box-shadow: inset 0 0 0 2px var(--accent); }
+.pack-icon { font-size: 1.6rem; flex: 0 0 auto; }
+.pack-body { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.pack-name { font-weight: 600; }
+.pack-sub { font-size: 0.8rem; color: var(--text-dim); }
+.pack-arrow { font-size: 1.6rem; color: var(--text-dim); flex: 0 0 auto; }
+
+/* --- Statistik ------------------------------------------------------------ */
+.stats-head { text-align: center; }
+.stat-row {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--card-hi); border-radius: var(--radius);
+  padding: 12px 14px; margin-bottom: 10px;
+}
+.stat-main { flex: 1; min-width: 0; }
+.stat-word { font-size: 1rem; margin-bottom: 4px; }
+.stat-detail { font-size: 0.8rem; color: var(--text-dim); margin-bottom: 4px; }
+.stat-mastery-label { font-size: 0.75rem; color: var(--accent); font-weight: 600; margin-bottom: 4px; }
+.stat-row .audio-btn { margin-top: 0; flex: 0 0 auto; }
+
+/* --- Session -------------------------------------------------------------- */
+.session-head { padding: 12px 16px; }
+.session-progress { font-size: 0.85rem; color: var(--text-dim); margin-bottom: 4px; }
+
+.question { text-align: center; padding: 24px 16px; }
+.prompt-label { font-size: 0.9rem; color: var(--text-dim); margin-bottom: 10px; }
+.prompt-main { font-size: 2rem; font-weight: 700; margin-bottom: 8px; }
+
+.options { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.option {
+  min-height: 60px; padding: 12px; border: 2px solid transparent;
+  border-radius: var(--radius); background: var(--card-hi); color: var(--text);
+  font-size: 1.05rem; font-weight: 600; cursor: pointer;
+}
+.option:active { background: var(--accent-dark); }
+.option.correct { background: var(--accent-dark); border-color: var(--accent); animation: option-pop 0.3s ease; }
+.option.wrong { background: #5a2320; border-color: var(--danger); animation: option-shake 0.3s ease; }
+.option:disabled { cursor: default; }
+
+@keyframes option-pop {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.06); }
+  100% { transform: scale(1); }
+}
+@keyframes option-shake {
+  0%, 100% { transform: translateX(0); }
+  25%  { transform: translateX(-4px); }
+  75%  { transform: translateX(4px); }
+}
+
+/* --- Audio-Button --------------------------------------------------------- */
+.audio-btn {
+  margin-top: 10px; padding: 8px 16px; border: 0; border-radius: 999px;
+  background: var(--accent-dark); color: var(--text); font-size: 0.95rem; cursor: pointer;
+}
+.audio-btn.big { font-size: 1.3rem; padding: 16px 28px; }
+
+/* --- Feedback-Leiste ------------------------------------------------------ */
+.feedback {
+  position: sticky; bottom: 0; margin: 12px -16px 0; padding: 16px;
+  padding-bottom: calc(16px + env(safe-area-inset-bottom));
+  border-top-left-radius: var(--radius); border-top-right-radius: var(--radius);
+  animation: feedback-slide-up 0.25s ease;
+}
+.feedback.ok { background: #14402c; }
+.feedback.no { background: #4a1f1c; }
+
+@keyframes feedback-slide-up {
+  0%   { transform: translateY(24px); opacity: 0; }
+  100% { transform: translateY(0);    opacity: 1; }
+}
+.fb-title { font-weight: 700; font-size: 1.1rem; margin-bottom: 4px; }
+.fb-word { color: var(--text); }
+.fb-pron { color: var(--text-dim); }
+.solution { margin-bottom: 12px; }
+.next-btn, .primary-btn {
+  width: 100%; min-height: 52px; border: 0; border-radius: var(--radius);
+  background: var(--accent); color: #06180f; font-size: 1.1rem; font-weight: 700; cursor: pointer;
+}
+.next-btn:active, .primary-btn:active { background: var(--accent-dark); }
+
+/* --- Ergebnis ------------------------------------------------------------- */
+.result { text-align: center; }
+.result-stars { font-size: 2.2rem; letter-spacing: 4px; margin-bottom: 4px; }
+.star { color: rgba(255,255,255,0.15); }
+.star.filled { color: #ffd447; animation: star-pop 0.4s ease backwards; }
+.star.filled:nth-child(1) { animation-delay: 0s; }
+.star.filled:nth-child(2) { animation-delay: 0.1s; }
+.star.filled:nth-child(3) { animation-delay: 0.2s; }
+@keyframes star-pop {
+  0%   { transform: scale(0) rotate(-20deg); opacity: 0; }
+  70%  { transform: scale(1.2) rotate(0deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0deg); }
+}
+.result-score { font-size: 1.3rem; font-weight: 700; margin: 8px 0 4px; }
+.result-xp { font-size: 1.1rem; color: var(--accent); font-weight: 600; }
+
+.streak-banner, .unlock-banner {
+  display: flex; align-items: center; gap: 12px;
+  animation: feedback-slide-up 0.3s ease;
+}
+.streak-banner { background: #3a2a10; }
+.unlock-banner { background: #14402c; }
+.streak-flame { font-size: 1.8rem; animation: flame-flicker 0.6s ease infinite alternate; }
+@keyframes flame-flicker {
+  0%   { transform: scale(1) rotate(-3deg); }
+  100% { transform: scale(1.12) rotate(3deg); }
+}
+.unlock-icon { font-size: 2rem; flex: 0 0 auto; animation: option-pop 0.5s ease; }
+.unlock-text { line-height: 1.4; }
+
+.primary-btn { margin-bottom: 10px; }
+.secondary-btn {
+  width: 100%; min-height: 48px; border: 2px solid var(--card-hi);
+  border-radius: var(--radius); background: transparent; color: var(--text-dim);
+  font-size: 1rem; cursor: pointer;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; }
+}

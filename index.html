@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <!-- viewport-fit=cover: iPhone-Notch/Home-Indicator via env(safe-area-inset-*) in CSS behandeln -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <title>Việt-Trainer</title>
+
+  <!-- iOS-PWA: Standalone-Modus vom Homescreen, Statusbar in App-Farbe -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Việt-Trainer">
+  <meta name="theme-color" content="#1c8a5a">
+  <!-- iOS ignoriert Manifest-Icons; apple-touch-icon ist Pflicht fürs Homescreen-Icon -->
+  <link rel="apple-touch-icon" href="icons/icon-180.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- App-Shell: Kopfzeile (XP/Streak) + ein Container, in den VT.UI die Screens rendert.
+       DOM-basierte UI (kein Canvas): Listen, Buttons und Text sind mit nativem DOM
+       touch-freundlicher und barriereärmer als Canvas-Zeichnung. -->
+  <header id="topbar">
+    <span id="hud-streak" title="Tages-Streak">🔥 0</span>
+    <span id="hud-title">Việt-Trainer</span>
+    <span id="hud-xp" title="Erfahrungspunkte">⭐ 0 XP</span>
+  </header>
+  <main id="screen"><!-- aktiver Screen (VT.UI) --></main>
+
+  <!-- Untere Tab-Navigation (nur auf Haupt-Screens sichtbar, VT.UI steuert
+       Sichtbarkeit + aktiven Zustand). Während einer Session ausgeblendet. -->
+  <nav id="tabbar">
+    <button class="tab" type="button" data-tab="home">
+      <span class="tab-icon">🎯</span><span class="tab-label">Lernen</span>
+    </button>
+    <button class="tab" type="button" data-tab="stats">
+      <span class="tab-icon">📊</span><span class="tab-label">Statistik</span>
+    </button>
+  </nav>
+
+  <!-- Klassische Skripte in Abhängigkeitsreihenfolge (keine ES-Module, kein Build):
+       Daten -> Persistenz -> SRS -> Audio -> Quiz -> UI -> App.
+       Jede Datei beginnt mit "var VT = ..." (nie const: kollidiert über klassische
+       Skripte hinweg im globalen Scope). -->
+  <script src="js/data.js"></script>
+  <script src="js/store.js"></script>
+  <script src="js/srs.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/quiz.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
