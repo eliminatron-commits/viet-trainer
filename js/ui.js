@@ -57,9 +57,19 @@ VT.UI = (function () {
     else if (name === "stats") renderStats();
     else if (name === "session") renderSession();
     else if (name === "result") renderResult(params);
+    stagger(root);
     updateTabbar(name);
     root.scrollTop = 0;
     window.scrollTo(0, 0);
+  }
+
+  // Eintritts-Choreografie: die rise-in-Animation der Screen-Kinder (CSS)
+  // zeitlich staffeln, damit der Screen "aufgebaut" wirkt statt zu ploppen.
+  function stagger(container) {
+    var kids = container.children;
+    for (var i = 0; i < kids.length; i++) {
+      kids[i].style.animationDelay = Math.min(i * 45, 400) + "ms";
+    }
   }
 
   // Tab-Bar nur auf den Haupt-Screens zeigen (nicht während Session/Ergebnis)
@@ -108,6 +118,57 @@ VT.UI = (function () {
       list.appendChild(btn);
     });
     root.appendChild(list);
+
+    root.appendChild(renderSettings());
+  }
+
+  // --- Einstellungen: geschützter Reset (3 Sekunden halten) -------------------
+  // Bewusst unten auf dem Home-Screen statt prominent, und nur per
+  // Halten-zum-Bestätigen auslösbar – ein einzelner (versehentlicher)
+  // Tap kann nie etwas löschen.
+  function renderSettings() {
+    var card = el("div", "card settings-card");
+    card.innerHTML =
+      "<div class='settings-title'>⚙️ Einstellungen</div>" +
+      "<p class='settings-hint'>Setzt die App auf Anfang zurück: XP, Streak, " +
+      "Lernstand aller Wörter und freigeschaltete Pakete werden endgültig gelöscht.</p>";
+
+    var hold = el("button", "danger-hold");
+    hold.type = "button";
+    hold.innerHTML =
+      "<span class='dh-label'>🗑️ Fortschritt zurücksetzen</span>" +
+      "<span class='dh-sub'>zum Bestätigen 3 Sekunden gedrückt halten</span>";
+    wireHold(hold, 3000, function () {
+      VT.Store.reset();
+      lastXp = 0; lastStreak = 0;
+      updateHud();
+      toast("Fortschritt gelöscht – neuer Anfang! 🌱");
+      show("home");
+    });
+    card.appendChild(hold);
+    return card;
+  }
+
+  // Halten-zum-Bestätigen: Timer startet bei pointerdown, jede Unterbrechung
+  // (loslassen, Finger wegziehen, Scroll-Abbruch) bricht ab. Der CSS-Füllbalken
+  // (.holding) macht den Fortschritt sichtbar.
+  function wireHold(btn, ms, onConfirm) {
+    var timer = null;
+    function start(ev) {
+      ev.preventDefault();
+      if (timer) return;
+      btn.classList.add("holding");
+      timer = setTimeout(function () { cancel(); onConfirm(); }, ms);
+    }
+    function cancel() {
+      if (timer) { clearTimeout(timer); timer = null; }
+      btn.classList.remove("holding");
+    }
+    btn.addEventListener("pointerdown", start);
+    btn.addEventListener("pointerup", cancel);
+    btn.addEventListener("pointercancel", cancel);
+    btn.addEventListener("pointerleave", cancel);
+    btn.addEventListener("contextmenu", function (ev) { ev.preventDefault(); }); // iOS-Langdruck-Menü unterdrücken
   }
 
   function startSession(packId) {
@@ -188,14 +249,26 @@ VT.UI = (function () {
     root.appendChild(q);
 
     var opts = el("div", "options");
-    task.options.forEach(function (w) {
+    task.options.forEach(function (w, i) {
       var b = el("button", "option");
       b.type = "button";
       b.textContent = optionLabel(task.mode, w);
+      b.style.animationDelay = (160 + i * 60) + "ms"; // Optionen einzeln einsteigen lassen
       b.addEventListener("click", function () { onAnswer(task, w, opts); });
       opts.appendChild(b);
     });
     root.appendChild(opts);
+
+    // Bei Hör- und VN->DE-Aufgaben das Wort direkt automatisch vorsprechen.
+    // NICHT bei DE->VN: dort stehen die vietnamesischen Wörter als Optionen,
+    // die Aussprache würde die Lösung verraten. Kleiner Delay, damit das Audio
+    // nach der Eintritts-Animation kommt; das geteilte <audio>-Element wurde
+    // beim ersten Touch entsperrt, daher ist der Timeout iOS-sicher.
+    if (task.mode !== "de2vn") {
+      setTimeout(function () {
+        if (VT.Quiz.current() === task && !task.answered) VT.Audio.play(task.word);
+      }, 400);
+    }
   }
 
   // Frage-Bereich je Modus (mit Audio-Button, wo Vietnamesisch/Audio dran ist).
@@ -226,12 +299,19 @@ VT.UI = (function () {
     updateHud();
 
     var buttons = optsEl.querySelectorAll(".option");
+    var correctBtn = null;
     task.options.forEach(function (w, i) {
       var b = buttons[i];
       b.disabled = true;
-      if (w.id === task.word.id) b.classList.add("correct");
+      if (w.id === task.word.id) { b.classList.add("correct"); correctBtn = b; }
       else if (w.id === chosen.id) b.classList.add("wrong");
     });
+
+    // Kleiner Konfetti-Burst aus der richtigen Antwort heraus.
+    if (correct && correctBtn) {
+      var r = correctBtn.getBoundingClientRect();
+      confettiBurst(r.left + r.width / 2, r.top + r.height / 2, 16);
+    }
 
     renderFeedback(task, correct);
   }
@@ -280,6 +360,15 @@ VT.UI = (function () {
       "<div class='result-xp'>+" + (summary ? summary.xpEarned : 0) + " XP</div>";
     root.appendChild(card);
 
+    // Konfetti-Feier bei guter Session (100%: doppelte Salve).
+    if (pct >= 70) {
+      setTimeout(function () { confettiBurst(window.innerWidth / 2, 150, pct === 100 ? 42 : 24); }, 300);
+      if (pct === 100) {
+        setTimeout(function () { confettiBurst(window.innerWidth / 2 - 80, 220, 20); }, 650);
+        setTimeout(function () { confettiBurst(window.innerWidth / 2 + 80, 220, 20); }, 850);
+      }
+    }
+
     if (summary && summary.streak && summary.streak.grew) {
       var streakCard = el("div", "card streak-banner");
       streakCard.innerHTML =
@@ -326,6 +415,40 @@ VT.UI = (function () {
 
   // --- kleine DOM-Helfer ------------------------------------------------------
   function el(tag, cls) { var e = document.createElement(tag); if (cls) e.className = cls; return e; }
+
+  // Konfetti-Burst an Bildschirmposition (x, y): kurzlebige DOM-Partikel in der
+  // #fx-Ebene, Flugbahn per CSS-Variablen, räumen sich selbst wieder weg.
+  var CONFETTI_COLORS = ["#2ee87e", "#ffd447", "#7fe3ff", "#ff9ff3", "#a4ffcd"];
+  function confettiBurst(x, y, count) {
+    var fx = document.getElementById("fx");
+    if (!fx) return;
+    for (var i = 0; i < count; i++) {
+      var p = el("i", "confetti");
+      var ang = Math.random() * Math.PI * 2;
+      var dist = 60 + Math.random() * 100;
+      p.style.left = x + "px";
+      p.style.top = y + "px";
+      p.style.background = CONFETTI_COLORS[i % CONFETTI_COLORS.length];
+      p.style.setProperty("--dx", (Math.cos(ang) * dist) + "px");
+      p.style.setProperty("--dy", (Math.sin(ang) * dist - 50) + "px"); // leicht nach oben gewölbt
+      p.style.setProperty("--r", (Math.random() * 540 - 270) + "deg");
+      p.style.animationDuration = (600 + Math.random() * 500) + "ms";
+      fx.appendChild(p);
+      (function (elm) { setTimeout(function () { elm.remove(); }, 1300); })(p);
+    }
+  }
+
+  // Kurze Bestätigungs-Einblendung am unteren Rand.
+  function toast(msg) {
+    var t = el("div", "toast");
+    t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(function () { t.classList.add("show"); }, 20);
+    setTimeout(function () {
+      t.classList.remove("show");
+      setTimeout(function () { t.remove(); }, 350);
+    }, 2400);
+  }
 
   function audioButton(word, label, big) {
     var b = el("button", "audio-btn" + (big ? " big" : ""));
