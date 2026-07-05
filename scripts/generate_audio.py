@@ -22,7 +22,7 @@ import re
 import sys
 from pathlib import Path
 
-DEFAULT_VOICE = "vi-VN-HoaiMyNeural"  # vietnamesische Neural-Stimme (weiblich)
+DEFAULT_VOICE = "vi-VN-NamMinhNeural"  # vietnamesische Neural-Stimme (männlich)
 
 ROOT = Path(__file__).resolve().parent.parent
 DATA_JS = ROOT / "js" / "data.js"
