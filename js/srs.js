@@ -28,15 +28,21 @@ VT.SRS = (function () {
     return MASTERY_LABELS[i];
   }
 
-  // Antwort verbuchen: Box bewegen, Statistik zählen, speichern.
+  // Reine Box-Bewegung auf einem Lernstand-Objekt {box,seen,right,wrong,last}.
+  // Von Wort- UND Satz-Antworten genutzt (kein save hier – der Aufrufer speichert).
+  function moveBox(st, correct) {
+    st.seen++;
+    if (correct) { st.right++; st.box = Math.min(st.box + 1, BOX_MAX); }
+    else         { st.wrong++; st.box = Math.max(st.box - 1, 0); }
+    st.last = Date.now();
+    return st.box;
+  }
+
+  // Antwort für ein Wort verbuchen: Box bewegen, speichern.
   function answer(wordId, correct) {
-    var w = VT.Store.wordState(wordId);
-    w.seen++;
-    if (correct) { w.right++; w.box = Math.min(w.box + 1, BOX_MAX); }
-    else         { w.wrong++; w.box = Math.max(w.box - 1, 0); }
-    w.last = Date.now();
+    var box = moveBox(VT.Store.wordState(wordId), correct);
     VT.Store.save();
-    return w.box;
+    return box;
   }
 
   // Anzahl beherrschter Wörter (Box >= MASTERY_BOX) eines Pakets.
@@ -110,7 +116,8 @@ VT.SRS = (function () {
   return {
     BOX_MAX: BOX_MAX, BOX_WEIGHT: BOX_WEIGHT,
     MASTERY_BOX: MASTERY_BOX, MASTERY_COUNT: MASTERY_COUNT,
-    answer: answer, pickWords: pickWords, masteryLabel: masteryLabel,
+    answer: answer, moveBox: moveBox, weightedPick: weightedPick,
+    pickWords: pickWords, masteryLabel: masteryLabel,
     packMastery: packMastery, isPackUnlocked: isPackUnlocked, checkUnlock: checkUnlock
   };
 })();

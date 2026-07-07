@@ -15,8 +15,9 @@
  * CACHE-Version bei jedem Release hochzählen: activate räumt alte Caches weg;
  * auf iOS ist das der zuverlässige Weg, Updates auszuliefern.
  * ============================================================================= */
-var CACHE = "viet-trainer-v9";
+var CACHE = "viet-trainer-v10";
 var WORD_COUNT = 250;
+var SENTENCE_COUNT = 150; // Reiter „Sätze": bei Änderung von js/sentences.js mitziehen
 
 var APP_SHELL = [
   "./",
@@ -24,11 +25,13 @@ var APP_SHELL = [
   "./manifest.webmanifest",
   "./css/style.css",
   "./js/data.js",
+  "./js/sentences.js",
   "./js/level.js",
   "./js/store.js",
   "./js/srs.js",
   "./js/audio.js",
   "./js/quiz.js",
+  "./js/sentence-quiz.js",
   "./js/ui.js",
   "./js/app.js",
   "./icons/icon-180.png",
@@ -39,6 +42,9 @@ var APP_SHELL = [
 var AUDIO_FILES = [];
 for (var i = 1; i <= WORD_COUNT; i++) {
   AUDIO_FILES.push("./audio/w" + String(i).padStart(3, "0") + ".mp3");
+}
+for (var s = 1; s <= SENTENCE_COUNT; s++) {
+  AUDIO_FILES.push("./audio/s" + String(s).padStart(3, "0") + ".mp3");
 }
 
 var PRECACHE = APP_SHELL.concat(AUDIO_FILES);

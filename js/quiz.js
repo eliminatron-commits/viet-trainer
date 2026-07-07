@@ -6,8 +6,9 @@ var VT = (window.VT = window.VT || {});
  * Aufgaben-Datenmodell (von buildSession erzeugt):
  *   {
  *     mode: "de2vn" | "vn2de" | "listen",  // MC Deutsch->Viet., Viet.->Deutsch, Hörverständnis
- *     word: <Wort-Objekt>,                 // das abgefragte Wort (= korrekte Lösung)
- *     options: [<Wort-Objekt> x4],         // 4 Antwortoptionen, gemischt, enthält word
+ *     item: <Wort-Objekt>,                 // das abgefragte Item (= korrekte Lösung); {id,vn,de,pron?}
+ *                                          // (gleiche Form wie Satz-Aufgaben in VT.SentenceQuiz)
+ *     options: [<Wort-Objekt> x4],         // 4 Antwortoptionen, gemischt, enthält item
  *     answered: false, correct: null,      // wird durch answer() gesetzt
  *     chosenId: null                       // vom Nutzer gewählte Options-id
  *   }
@@ -57,7 +58,7 @@ VT.Quiz = (function () {
 
   function makeTask(mode, word, packId) {
     return {
-      mode: mode, word: word, options: buildOptions(word, packId),
+      mode: mode, item: word, options: buildOptions(word, packId),
       answered: false, correct: null, chosenId: null
     };
   }
@@ -82,11 +83,11 @@ VT.Quiz = (function () {
   function answer(optionWordId) {
     var task = current();
     if (!task || task.answered) return null;
-    var correct = optionWordId === task.word.id;
+    var correct = optionWordId === task.item.id;
     task.answered = true;
     task.correct = correct;
     task.chosenId = optionWordId;
-    VT.SRS.answer(task.word.id, correct); // Box +/-1, Statistik, save
+    VT.SRS.answer(task.item.id, correct); // Box +/-1, Statistik, save
     if (correct) {
       session.correctCount++;
       // Zentrale XP-Vergabe: verbucht Gesamt-/Tages-XP, Level, Streak-Ziel.

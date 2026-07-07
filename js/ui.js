@@ -14,6 +14,7 @@ var VT = (window.VT = window.VT || {});
 VT.UI = (function () {
   var root = null;
   var lastXp = null, lastStreak = null; // für Pulse-Animation bei Zuwachs
+  var engine = VT.Quiz, engineKind = "word"; // aktive Quiz-Engine: Wörter oder Sätze
 
   function init() {
     root = document.getElementById("screen");
@@ -57,6 +58,7 @@ VT.UI = (function () {
     root.innerHTML = "";
     if (name === "home") renderHome();
     else if (name === "stats") renderStats();
+    else if (name === "sentences") renderSentenceHome();
     else if (name === "session") renderSession();
     else if (name === "result") renderResult(params);
     stagger(root);
@@ -78,7 +80,7 @@ VT.UI = (function () {
   // Tab-Bar nur auf den Haupt-Screens zeigen (nicht während Session/Ergebnis)
   // und den aktiven Reiter markieren.
   function updateTabbar(name) {
-    var isMain = (name === "home" || name === "stats");
+    var isMain = (name === "home" || name === "stats" || name === "sentences");
     document.body.classList.toggle("show-tabbar", isMain);
     var tabs = document.querySelectorAll("#tabbar .tab");
     Array.prototype.forEach.call(tabs, function (t) {
@@ -205,7 +207,14 @@ VT.UI = (function () {
   }
 
   function startSession(packId) {
+    engine = VT.Quiz; engineKind = "word";
     VT.Quiz.buildSession(packId);
+    show("session");
+  }
+
+  function startSentenceSession() {
+    engine = VT.SentenceQuiz; engineKind = "sentence";
+    VT.SentenceQuiz.buildSession();
     show("session");
   }
 
@@ -265,11 +274,61 @@ VT.UI = (function () {
     });
   }
 
+  // --- Sätze-Home: Fortschritt + verfügbare Sätze ----------------------------
+  // Sätze schalten sich automatisch frei, sobald alle enthaltenen Vokabeln im
+  // Reiter „Lernen" schon gesehen wurden (VT.SentenceQuiz.available()).
+  function renderSentenceHome() {
+    var avail = VT.SentenceQuiz.available();
+    var total = VT.SENTENCES.sentences.length;
+    var mastered = VT.SentenceQuiz.masteredCount();
+    var MIN = 4; // genug Sätze für 4 Antwortoptionen
+
+    var head = el("div", "card sentence-head");
+    head.innerHTML =
+      "<h1>Sätze</h1>" +
+      "<p class='home-sub'>" + avail.length + " von " + total + " Sätzen verfügbar · " + mastered + " gemeistert</p>" +
+      progressBar(mastered, total, "big");
+    root.appendChild(head);
+
+    if (avail.length < MIN) {
+      var hint = el("div", "card");
+      hint.innerHTML =
+        "<p>Lerne zuerst mehr Wörter im Reiter <b>Lernen</b>. Sobald du alle Vokabeln " +
+        "eines Satzes kennengelernt hast, erscheint er hier automatisch.</p>" +
+        "<p class='pack-sub'>Aktuell verfügbar: " + avail.length + " – für eine Übung brauchst du mindestens " + MIN + ".</p>";
+      root.appendChild(hint);
+      return;
+    }
+
+    var startCard = el("div", "card");
+    var startBtn = el("button", "primary-btn");
+    startBtn.type = "button";
+    startBtn.textContent = "Sätze üben";
+    startBtn.addEventListener("click", startSentenceSession);
+    startCard.appendChild(startBtn);
+    root.appendChild(startCard);
+
+    avail.forEach(function (s) {
+      var st = VT.Store.get().sentences[s.id];
+      var row = el("div", "stat-row");
+      var main = el("div", "stat-main");
+      main.innerHTML =
+        "<div class='stat-word'><b>" + s.vn + "</b></div>" +
+        "<div class='stat-detail'>" + s.de + "</div>" +
+        (st ? "<div class='stat-mastery-label'>" + VT.SRS.masteryLabel(st.box) + "</div>" +
+              progressBar(st.box, VT.SRS.BOX_MAX) : "");
+      row.appendChild(main);
+      row.appendChild(audioButton(s, "🔊"));
+      root.appendChild(row);
+    });
+  }
+
   // --- Session: eine Aufgabe rendern ----------------------------------------
   function renderSession() {
-    var task = VT.Quiz.current();
+    var task = engine.current();
     if (!task) { show("home"); return; }
-    var sess = VT.Quiz.getSession();
+    var sess = engine.getSession();
+    var backTo = engineKind === "sentence" ? "sentences" : "home";
 
     var bar = el("div", "card session-head");
     bar.innerHTML =
@@ -284,7 +343,7 @@ VT.UI = (function () {
         "Übung beenden?",
         "Du kehrst zur Übersicht zurück. Bereits beantwortete Aufgaben bleiben gespeichert.",
         "Beenden", "Weiter üben",
-        function () { show("home"); }
+        function () { show(backTo); }
       );
     });
 
@@ -292,25 +351,25 @@ VT.UI = (function () {
     q.appendChild(renderPrompt(task));
     root.appendChild(q);
 
-    var opts = el("div", "options");
+    var opts = el("div", "options" + (engineKind === "sentence" ? " sentences" : ""));
     task.options.forEach(function (w, i) {
       var b = el("button", "option");
       b.type = "button";
-      b.textContent = optionLabel(task.mode, w);
+      b.textContent = optionLabel(task.mode, w, engineKind);
       b.style.animationDelay = (160 + i * 60) + "ms"; // Optionen einzeln einsteigen lassen
       b.addEventListener("click", function () { onAnswer(task, w, opts); });
       opts.appendChild(b);
     });
     root.appendChild(opts);
 
-    // Bei Hör- und VN->DE-Aufgaben das Wort direkt automatisch vorsprechen.
-    // NICHT bei DE->VN: dort stehen die vietnamesischen Wörter als Optionen,
+    // Bei Hör- und VN->DE-Aufgaben das Item direkt automatisch vorsprechen.
+    // NICHT bei DE->VN: dort stehen die vietnamesischen Optionen sichtbar,
     // die Aussprache würde die Lösung verraten. Kleiner Delay, damit das Audio
     // nach der Eintritts-Animation kommt; das geteilte <audio>-Element wurde
     // beim ersten Touch entsperrt, daher ist der Timeout iOS-sicher.
     if (task.mode !== "de2vn") {
       setTimeout(function () {
-        if (VT.Quiz.current() === task && !task.answered) VT.Audio.play(task.word);
+        if (engine.current() === task && !task.answered) VT.Audio.play(task.item);
       }, 400);
     }
   }
@@ -318,28 +377,40 @@ VT.UI = (function () {
   // Frage-Bereich je Modus (mit Audio-Button, wo Vietnamesisch/Audio dran ist).
   function renderPrompt(task) {
     var wrap = el("div", "prompt");
+    var item = task.item;
+    var isSentence = engineKind === "sentence";
+    var mainCls = "prompt-main" + (isSentence ? " sentence" : "");
     if (task.mode === "de2vn") {
-      wrap.innerHTML = "<div class='prompt-label'>Wie heißt das auf Vietnamesisch?</div>" +
-                       "<div class='prompt-main'>" + task.word.de + "</div>";
+      wrap.innerHTML =
+        "<div class='prompt-label'>" +
+          (isSentence ? "Wie heißt dieser Satz auf Vietnamesisch?" : "Wie heißt das auf Vietnamesisch?") +
+        "</div><div class='" + mainCls + "'>" + item.de + "</div>";
     } else if (task.mode === "vn2de") {
-      wrap.innerHTML = "<div class='prompt-label'>Was bedeutet das?</div>" +
-                       "<div class='prompt-main'>" + task.word.vn + "</div>";
-      wrap.appendChild(audioButton(task.word, "🔊 anhören"));
+      wrap.innerHTML =
+        "<div class='prompt-label'>" + (isSentence ? "Was bedeutet dieser Satz?" : "Was bedeutet das?") +
+        "</div><div class='" + mainCls + "'>" + item.vn + "</div>";
+      wrap.appendChild(audioButton(item, "🔊 anhören"));
     } else { // listen
-      wrap.innerHTML = "<div class='prompt-label'>Hör zu und wähle das richtige Wort</div>";
-      wrap.appendChild(audioButton(task.word, "🔊 abspielen", true));
+      wrap.innerHTML = "<div class='prompt-label'>" +
+        (isSentence ? "Hör zu und wähle die Bedeutung" : "Hör zu und wähle das richtige Wort") + "</div>";
+      wrap.appendChild(audioButton(item, "🔊 abspielen", true));
     }
     return wrap;
   }
 
-  function optionLabel(mode, w) {
-    return mode === "vn2de" ? w.de : w.vn;
+  // Optionsbeschriftung je Modus: vn2de -> deutsche Bedeutung, de2vn -> VN.
+  // "listen": bei Wörtern das VN-Wort (Hörschrift-Zuordnung), bei Sätzen die
+  // deutsche Bedeutung (hören -> Sinn wählen).
+  function optionLabel(mode, item, kind) {
+    if (mode === "vn2de") return item.de;
+    if (mode === "listen") return kind === "sentence" ? item.de : item.vn;
+    return item.vn; // de2vn
   }
 
   function onAnswer(task, chosen, optsEl) {
     if (task.answered) return;
-    var correct = VT.Quiz.answer(chosen.id);
-    VT.Audio.play(task.word); // beim Antworten automatisch die korrekte Aussprache abspielen
+    var correct = engine.answer(chosen.id);
+    VT.Audio.play(task.item); // beim Antworten automatisch die korrekte Aussprache abspielen
     updateHud();
 
     var buttons = optsEl.querySelectorAll(".option");
@@ -347,7 +418,7 @@ VT.UI = (function () {
     task.options.forEach(function (w, i) {
       var b = buttons[i];
       b.disabled = true;
-      if (w.id === task.word.id) { b.classList.add("correct"); correctBtn = b; }
+      if (w.id === task.item.id) { b.classList.add("correct"); correctBtn = b; }
       else if (w.id === chosen.id) b.classList.add("wrong");
     });
 
@@ -363,21 +434,22 @@ VT.UI = (function () {
   // Feedback-Leiste mit korrekter Lösung + Audio + Weiter-Button.
   function renderFeedback(task, correct) {
     var fb = el("div", "feedback " + (correct ? "ok" : "no"));
+    var item = task.item;
     var sol = el("div", "solution");
+    var pron = item.pron ? " <span class='fb-pron'>[" + item.pron + "]</span>" : ""; // Sätze haben keine
     sol.innerHTML =
       "<div class='fb-title'>" + (correct ? "Richtig! 🎉" : "Nicht ganz.") + "</div>" +
-      "<div class='fb-word'><b>" + task.word.vn + "</b> — " + task.word.de +
-      " <span class='fb-pron'>[" + task.word.pron + "]</span></div>";
-    sol.appendChild(audioButton(task.word, "🔊"));
+      "<div class='fb-word'><b>" + item.vn + "</b> — " + item.de + pron + "</div>";
+    sol.appendChild(audioButton(item, "🔊"));
     fb.appendChild(sol);
 
     var nextBtn = el("button", "next-btn");
     nextBtn.type = "button";
     nextBtn.textContent = "Weiter";
     nextBtn.addEventListener("click", function () {
-      VT.Quiz.next();
-      if (VT.Quiz.isDone()) {
-        var summary = VT.Quiz.finish();
+      engine.next();
+      if (engine.isDone()) {
+        var summary = engine.finish();
         updateHud();
         show("result", summary);
       } else {
@@ -443,16 +515,19 @@ VT.UI = (function () {
       }
     }
 
+    var isSentence = summary && summary.kind === "sentence";
     var again = el("button", "primary-btn");
     again.type = "button";
     again.textContent = "Nochmal üben";
-    again.addEventListener("click", function () { startSession(summary.packId); });
+    again.addEventListener("click", function () {
+      if (isSentence) startSentenceSession(); else startSession(summary.packId);
+    });
     root.appendChild(again);
 
     var homeBtn = el("button", "secondary-btn");
     homeBtn.type = "button";
     homeBtn.textContent = "Zur Übersicht";
-    homeBtn.addEventListener("click", function () { show("home"); });
+    homeBtn.addEventListener("click", function () { show(isSentence ? "sentences" : "home"); });
     root.appendChild(homeBtn);
   }
 

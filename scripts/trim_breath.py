@@ -27,6 +27,9 @@ MIN_SIL = 0.12          # nur Stillen >= 0.12 s zaehlen (Silbenluecken ignoriere
 TAIL = 0.06             # so viel natuerlichen Ausklang nach Sprachende behalten
 FADE = 0.04             # Fade-out-Dauer gegen Knackser
 LEAD_MAX = 0.03         # fuehrende Stille bis hierhin wird abgeschnitten
+BREATH_MAX = 0.20       # nur schneiden, wenn NACH der letzten Luecke <= so viel Audio
+                        # kommt (= kurzer Atem/Trailing-Stille). Mehr = echtes
+                        # Schlusswort (mehrsilbige Saetze) -> NICHT kappen.
 
 
 def probe_silences(path):
@@ -62,9 +65,15 @@ def cut_points(path):
         sil = sil[1:]
     if not sil:
         return (start_ss, dur) if start_ss > 0 else None
-    # letzte (spaeteste) Stille = Luecke vor Atem  ODER  Trailing-Stille
-    last_start = max(s for s, _ in sil)
-    cut_to = last_start + TAIL
+    # Letzte (spaeteste) Stille betrachten: (ls, le). Was folgt danach bis Dateiende?
+    ls, le = max(sil, key=lambda iv: iv[0])
+    trailing = dur - le  # Audio nach der letzten Luecke
+    if trailing <= BREATH_MAX:
+        # kurzer Atemstoss ODER reine Trailing-Stille -> am Luecken-Anfang kappen
+        cut_to = ls + TAIL
+    else:
+        # echtes Schlusswort nach der Luecke (mehrsilbiger Satz) -> nicht kappen
+        cut_to = dur
     if cut_to >= dur - 0.01 and start_ss <= 0:
         return None  # nichts Nennenswertes zu schneiden
     return (start_ss, min(cut_to, dur))

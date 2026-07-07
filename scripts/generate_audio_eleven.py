@@ -31,18 +31,19 @@ DEFAULT_MODEL = "eleven_v3"              # bestes Modell bei VN-Tönen (Nutzer-T
 DEFAULT_LANG = "vi"                      # Sprache ERZWINGEN (sonst falsche Lautung)
 
 ROOT = Path(__file__).resolve().parent.parent
-DATA_JS = ROOT / "js" / "data.js"
+DEFAULT_SOURCE = ROOT / "js" / "data.js"
 AUDIO_DIR = ROOT / "audio"
 TTS_URL = "https://api.elevenlabs.io/v1/text-to-speech/{vid}"
 
-ENTRY_RE = re.compile(r'id:\s*"(?P<id>w\d{3})"\s*,\s*vn:\s*"(?P<vn>[^"]+)"')
+# id kann "wNNN" (Wörter) oder "sNNN" (Sätze) sein -> selbe Pipeline für beide.
+ENTRY_RE = re.compile(r'id:\s*"(?P<id>[ws]\d{3})"\s*,\s*vn:\s*"(?P<vn>[^"]+)"')
 
 
-def load_words():
-    text = DATA_JS.read_text(encoding="utf-8")
+def load_words(source):
+    text = Path(source).read_text(encoding="utf-8")
     words = [(m.group("id"), m.group("vn")) for m in ENTRY_RE.finditer(text)]
     if not words:
-        sys.exit(f"Keine Wörter in {DATA_JS} gefunden -- Regex/Datei prüfen.")
+        sys.exit(f"Keine Einträge in {source} gefunden -- Regex/Datei prüfen.")
     return words
 
 
@@ -68,6 +69,8 @@ def main():
     p.add_argument("--voice", default=DEFAULT_VOICE)
     p.add_argument("--model", default=DEFAULT_MODEL)
     p.add_argument("--lang", default=DEFAULT_LANG)
+    p.add_argument("--source", default=str(DEFAULT_SOURCE),
+                   help="Quelldatei (js/data.js = Wörter, js/sentences.js = Sätze)")
     p.add_argument("--force", action="store_true")
     p.add_argument("--only", default="")
     args = p.parse_args()
@@ -77,7 +80,7 @@ def main():
         sys.exit("ELEVEN_API_KEY nicht gesetzt.")
 
     only = set(x.strip() for x in args.only.split(",") if x.strip()) or None
-    words = load_words()
+    words = load_words(args.source)
     if only:
         words = [w for w in words if w[0] in only]
 

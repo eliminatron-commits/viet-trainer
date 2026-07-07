@@ -34,7 +34,8 @@ VT.Store = (function () {
       streak: { count: 0, lastDay: null },
       daily: { day: null, xp: 0, goalReached: false }, // Tages-XP für Ziel + Streak
       unlockedPacks: 1,
-      words: {}
+      words: {},
+      sentences: {} // Leitner-Stand je Satz (Reiter „Sätze"), gleiche Struktur wie words
     };
   }
 
@@ -68,6 +69,17 @@ VT.Store = (function () {
         };
       }
     }
+    if (d.sentences && typeof d.sentences === "object") {
+      for (var sid in d.sentences) {
+        var s = d.sentences[sid];
+        if (!s || typeof s !== "object") continue;
+        state.sentences[sid] = {
+          box: clampBox(s.box),
+          seen: num(s.seen), right: num(s.right), wrong: num(s.wrong),
+          last: num(s.last)
+        };
+      }
+    }
   }
 
   function clampBox(b) {
@@ -84,6 +96,12 @@ VT.Store = (function () {
   function wordState(id) {
     if (!state.words[id]) state.words[id] = { box: 0, seen: 0, right: 0, wrong: 0, last: 0 };
     return state.words[id];
+  }
+
+  // Lernstand eines Satzes holen (Reiter „Sätze"), gleiche Struktur wie wordState.
+  function sentenceState(id) {
+    if (!state.sentences[id]) state.sentences[id] = { box: 0, seen: 0, right: 0, wrong: 0, last: 0 };
+    return state.sentences[id];
   }
 
   // "YYYY-MM-DD" im lokalen Zeitzonen-Kalender (kein UTC-Shift, sonst zählt
@@ -150,6 +168,7 @@ VT.Store = (function () {
   load();
   return {
     get: function () { return state; }, save: save, wordState: wordState,
+    sentenceState: sentenceState,
     touchStreak: touchStreak, addXp: addXp, dailyProgress: dailyProgress,
     DAILY_GOAL: DAILY_GOAL, reset: reset, KEY: KEY
   };

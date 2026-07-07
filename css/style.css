@@ -233,6 +233,14 @@ body.show-tabbar #screen { padding-bottom: calc(92px + env(safe-area-inset-botto
 }
 .option:disabled { cursor: default; }
 
+/* Satz-Modus: längere Texte -> kleinere Frage + einspaltige, umbrechende Optionen. */
+.prompt-main.sentence { font-size: 1.5rem; line-height: 1.35; }
+.options.sentences { grid-template-columns: 1fr; }
+.options.sentences .option {
+  min-height: 54px; text-align: left; white-space: normal;
+  font-size: 1.02rem; font-weight: 600; line-height: 1.3; padding: 13px 16px;
+}
+
 @keyframes option-pop {
   0%   { transform: scale(1); }
   55%  { transform: scale(1.08); }
