@@ -1,7 +1,7 @@
 # Việt-Trainer — Projektstand (Handoff)
 
 PWA zum Vietnamesisch-Lernen (Duolingo-Stil), iOS-Homescreen, vollständig offline.
-Vanilla HTML/CSS/JS, kein Build. Deutsche UI. Stand: **v7 live**.
+Vanilla HTML/CSS/JS, kein Build. Deutsche UI. Stand: **v9** (Rot/Gold-Theme + ElevenLabs-Aussprache).
 
 ## Live & Deployment
 - **Live:** https://eliminatron-commits.github.io/viet-trainer/
@@ -11,15 +11,25 @@ Vanilla HTML/CSS/JS, kein Build. Deutsche UI. Stand: **v7 live**.
 
 ### Deploy-Ablauf (WICHTIG — GitHub Pages zickt)
 1. Änderungen committen + `git push origin main`.
-2. **Bei jeder Datei-Änderung `CACHE`-Variable in `sw.js` hochzählen** (aktuell `viet-trainer-v7`), sonst bekommen installierte iPhones das Update nicht (Service Worker cache-first).
+2. **Bei jeder Datei-Änderung `CACHE`-Variable in `sw.js` hochzählen** (aktuell `viet-trainer-v9`), sonst bekommen installierte iPhones das Update nicht (Service Worker cache-first).
 3. GitHub Pages baut automatisch. Verifizieren: `curl -s .../sw.js | grep viet-trainer-v` und Stichprobe `curl -sI .../audio/wXXX.mp3`.
 4. **Transienter Fehler „Deployment failed, try again later.":** rein serverseitig, nicht unser Code. Fix = **einen** frischen (ggf. leeren) Commit pushen und **geduldig einen** Build abwarten. NICHT mehrere Pushes schnell hintereinander (kollidieren → beide failen). `gh run rerun` MEIDEN — erzeugt hängende „queued"-Zombie-Runs, die die Pipeline blockieren.
 
-## Audio-Generierung
-- **Stimme:** `vi-VN-NamMinhNeural` (männlich, nördlich). Vom Nutzer nach A/B-Vergleich gewählt (gegen HoaiMy und Google-Süd-gTTS). Süd/Da-Nang-Aussprache (`gi`→„j") gibt es in keiner TTS; NamMinh gefiel im Klang am besten.
-- **Script:** `scripts/generate_audio.py` (liest Wortliste per Regex aus `js/data.js` → keine doppelte Datenhaltung). Python: `/c/Users/alexr/AppData/Local/Programs/Python/Python312` (edge-tts + gTTS installiert).
-- Aufrufe: `python scripts/generate_audio.py --force` (alle neu), `--only w001,w042` (einzelne), `--voice X`.
-- Namenskonvention: `audio/<id>.mp3`. Aktuell 250 Dateien (w001–w250).
+## Audio-Generierung (ElevenLabs — aktuell)
+- **Stimme:** **Thanh Ngọc** (Süd ♀), ElevenLabs-Voice-ID `Na15FlRRkMEDtEW4nVVP`. Von der muttersprachlichen
+  Frau (Da Nang) im Audition-Vergleich gewählt.
+- **Modell:** `eleven_v3` **mit `language_code:"vi"`** (Sprache ERZWINGEN — sonst rät ElevenLabs bei Einzelwörtern
+  falsch, z. B. „em"→„ennng"). `eleven_multilingual_v2` NICHT nutzen (kann Sprache nicht erzwingen).
+- **Atem-Trim:** v3 hängt ans Wortende einen kurzen Atemstoß nach ~0,4 s Lücke. `scripts/trim_breath.py`
+  erkennt die Lücke (silencedetect −30 dB) und schneidet + Fade-out; mehrsilbige Wörter bleiben heil.
+  Braucht portables ffmpeg → `pip install imageio-ffmpeg` (kein System-Install).
+- **Script:** `scripts/generate_audio_eleven.py` (liest Wortliste per Regex aus `js/data.js`). Key aus ENV
+  `ELEVEN_API_KEY` (nie in Datei). ⚠️ **Bezahlter ElevenLabs-Plan nötig** (Free-Tier sperrt Library-Stimmen per API).
+- **Voller Lauf:** `ELEVEN_API_KEY=… python scripts/generate_audio_eleven.py --force`
+  → danach `python scripts/trim_breath.py audio audio`.
+- **Einzelkorrektur:** `… --only wXXX` → `python scripts/trim_breath.py audio audio` → `CACHE` in sw.js +1 → deploy.
+- Alt/ungenutzt: `scripts/generate_audio.py` (edge-tts), `scripts/generate_compare.py` (Stimmen-Audition, FPT/Piper/gTTS).
+- Namenskonvention: `audio/<id>.mp3`, 250 Dateien (w001–w250).
 
 ## Architektur (Module in Ladereihenfolge, `index.html`)
 `data.js → level.js → store.js → srs.js → audio.js → quiz.js → ui.js → app.js`
@@ -40,7 +50,10 @@ Jede Datei `var VT = window.VT || {}` (nie `const` — klassische Skripte teilen
 - **Gamification:** XP→Level/Ränge (Level-up-Feier), Tagesziel 50 XP füttert Streak, Fortschrittsbalken.
 - **Abbrechen-Button** (✕) in Session mit Bestätigungsdialog.
 - **Geschützter Reset** (⚙️ unten auf Home, 3 s halten).
-- **Visuelles Design „Jade-Nacht":** Aurora-Hintergrund, Glas-Karten, Gold-Akzente, Konfetti, Eintritts-Choreografie, `prefers-reduced-motion`. Icons: `icons/icon-{180,192,512}.png` (Platzhalter „VIỆT", könnten später ersetzt werden).
+- **Visuelles Design „Sơn Mài" (Lackrot & Gold, an Vietnam orientiert):** tiefes Lackrot `#1c0707` + roter/goldener
+  Aurora-Hintergrund, Glas-Karten mit Goldrändern, Gold als Primär-Akzent (Balken/Buttons/Tab/Level). Grün nur noch
+  als „richtig"-Signal. `theme_color`/Manifest = #1c0707. Konfetti, Eintritts-Choreografie, `prefers-reduced-motion`.
+  Icons: `icons/icon-{180,192,512}.png` (Platzhalter „VIỆT").
 
 ## Testen (Preview-MCP)
 - launch.json-Config **`viet` Port 8150** (`preview_start`).
@@ -49,7 +62,10 @@ Jede Datei `var VT = window.VT || {}` (nie `const` — klassische Skripte teilen
 - **`preview_screenshot` hängt in dieser Umgebung zuverlässig** (Tool-Bug) → stattdessen `preview_snapshot`, `preview_inspect`, `preview_eval` nutzen.
 
 ## Offene Punkte / nächste Schritte
-- **Frau des Nutzers (Muttersprachlerin) prüft die 250 Wörter** in der fertigen App. Korrekturen: Eintrag in `data.js` ändern → `python scripts/generate_audio.py --only wXXX` → `CACHE` in `sw.js` +1 → commit/push. Besonders prüfen: `dạ`/`ừ` (natürliches „ja"), Verben-Aufteilung, Zahlen-/Körper-Paket.
+- **Frau des Nutzers (Muttersprachlerin) prüft die 250 Wörter** in der fertigen App. Aussprache-Korrekturen laufen
+  jetzt über ElevenLabs: `ELEVEN_API_KEY=… python scripts/generate_audio_eleven.py --only wXXX` →
+  `python scripts/trim_breath.py audio audio` → `CACHE` in `sw.js` +1 → commit/push.
+- **ElevenLabs-Abo** kann nach dem v9-Deploy gekündigt werden (MP3s liegen dauerhaft in der App).
 - Aussprachehilfen (`pron`) sind nördliche Vereinfachungen; ein paar Homonym-Hilfen kollidieren (z.B. mắt/mặt/mất → „mat") — VN-Schrift ist korrekt, nur die Hilfe grob.
 - `rất`/`lắm` waren beide „sehr" → `lắm` auf „total / ganz schön" geändert (Quiz-Ambiguität vermieden). Auf ähnliche Fälle bei Wortänderungen achten.
 

@@ -1,0 +1,12 @@
+# Piper-TTS-Modelle (je ~63 MB) – nur lokal zum Erzeugen der Vergleichs-Samples,
+# nicht Teil der App. Nach Bedarf neu laden:
+#   python -m piper.download_voices vi_VN-vais1000-medium vi_VN-25hours_single-low --download-dir scripts/piper_models
+scripts/piper_models/
+
+# Stimmen-Vergleich/Audition & deren Audios – reine Entwicklungs-/Testartefakte,
+# gehören nicht in die öffentliche App.
+compare/
+voice-compare.html
+voice-preview-eleven.html
+voice-fix-test.html
+voice-breath-test.html
