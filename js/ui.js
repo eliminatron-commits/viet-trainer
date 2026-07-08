@@ -277,6 +277,15 @@ VT.UI = (function () {
   // --- Sätze-Home: Fortschritt + verfügbare Sätze ----------------------------
   // Sätze schalten sich automatisch frei, sobald alle enthaltenen Vokabeln im
   // Reiter „Lernen" schon gesehen wurden (VT.SentenceQuiz.available()).
+  // Kontext-Chip (👨 zu älterem Mann …) – zeigt die soziale Beziehung, die die
+  // Pronomen (ich/du) im Satz bestimmt. Leer, wenn der Satz keinen Kontext hat.
+  function ctxChipHtml(item) {
+    if (!item || !item.ctx || !VT.SENTENCES.contexts) return "";
+    var c = VT.SENTENCES.contexts[item.ctx];
+    if (!c) return "";
+    return "<span class='ctx-chip'>" + c.icon + " " + c.label + "</span>";
+  }
+
   function renderSentenceHome() {
     var avail = VT.SentenceQuiz.available();
     var total = VT.SENTENCES.sentences.length;
@@ -315,6 +324,7 @@ VT.UI = (function () {
       main.innerHTML =
         "<div class='stat-word'><b>" + s.vn + "</b></div>" +
         "<div class='stat-detail'>" + s.de + "</div>" +
+        ctxChipHtml(s) +
         (st ? "<div class='stat-mastery-label'>" + VT.SRS.masteryLabel(st.box) + "</div>" +
               progressBar(st.box, VT.SRS.BOX_MAX) : "");
       row.appendChild(main);
@@ -380,19 +390,22 @@ VT.UI = (function () {
     var item = task.item;
     var isSentence = engineKind === "sentence";
     var mainCls = "prompt-main" + (isSentence ? " sentence" : "");
+    // Kontext-Chip nur bei Sätzen; er verrät die Pronomen-Beziehung (wichtig
+    // vor allem bei DE->VN, wo der Lerner „ich/du" korrekt wählen muss).
+    var chip = isSentence ? ctxChipHtml(item) : "";
     if (task.mode === "de2vn") {
       wrap.innerHTML =
         "<div class='prompt-label'>" +
           (isSentence ? "Wie heißt dieser Satz auf Vietnamesisch?" : "Wie heißt das auf Vietnamesisch?") +
-        "</div><div class='" + mainCls + "'>" + item.de + "</div>";
+        "</div>" + chip + "<div class='" + mainCls + "'>" + item.de + "</div>";
     } else if (task.mode === "vn2de") {
       wrap.innerHTML =
         "<div class='prompt-label'>" + (isSentence ? "Was bedeutet dieser Satz?" : "Was bedeutet das?") +
-        "</div><div class='" + mainCls + "'>" + item.vn + "</div>";
+        "</div>" + chip + "<div class='" + mainCls + "'>" + item.vn + "</div>";
       wrap.appendChild(audioButton(item, "🔊 anhören"));
     } else { // listen
       wrap.innerHTML = "<div class='prompt-label'>" +
-        (isSentence ? "Hör zu und wähle die Bedeutung" : "Hör zu und wähle das richtige Wort") + "</div>";
+        (isSentence ? "Hör zu und wähle die Bedeutung" : "Hör zu und wähle das richtige Wort") + "</div>" + chip;
       wrap.appendChild(audioButton(item, "🔊 abspielen", true));
     }
     return wrap;

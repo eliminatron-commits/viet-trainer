@@ -235,6 +235,21 @@ body.show-tabbar #screen { padding-bottom: calc(92px + env(safe-area-inset-botto
 
 /* Satz-Modus: längere Texte -> kleinere Frage + einspaltige, umbrechende Optionen. */
 .prompt-main.sentence { font-size: 1.5rem; line-height: 1.35; }
+/* Kontext-Chip: zeigt die soziale Beziehung, die ich/du im Satz festlegt. */
+.ctx-chip {
+  display: inline-block;
+  margin: 2px 0 10px;
+  padding: 3px 11px;
+  border: 1px solid rgba(255, 207, 63, 0.5);
+  border-radius: 999px;
+  background: rgba(255, 207, 63, 0.1);
+  color: var(--gold);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+}
+.stat-main .ctx-chip { margin: 4px 0 2px; font-size: 0.72rem; }
 .options.sentences { grid-template-columns: 1fr; }
 .options.sentences .option {
   min-height: 54px; text-align: left; white-space: normal;
