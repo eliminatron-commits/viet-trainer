@@ -1,7 +1,7 @@
 # Việt-Trainer — Projektstand (Handoff)
 
 PWA zum Vietnamesisch-Lernen (Duolingo-Stil), iOS-Homescreen, vollständig offline.
-Vanilla HTML/CSS/JS, kein Build. Deutsche UI. Stand: **v11** (Rot/Gold-Theme, ElevenLabs-Aussprache, Reiter „Sätze" mit kontextabhängigen Beziehungspronomen).
+Vanilla HTML/CSS/JS, kein Build. Deutsche UI. Stand: **v12** (Rot/Gold-Theme, ElevenLabs-Aussprache, Reiter „Sätze" mit breit gestreuten Beziehungspronomen, Übungsblock „Anreden & Pronomen").
 
 ## Live & Deployment
 - **Live:** https://eliminatron-commits.github.io/viet-trainer/
@@ -11,7 +11,7 @@ Vanilla HTML/CSS/JS, kein Build. Deutsche UI. Stand: **v11** (Rot/Gold-Theme, El
 
 ### Deploy-Ablauf (WICHTIG — GitHub Pages zickt)
 1. Änderungen committen + `git push origin main`.
-2. **Bei jeder Datei-Änderung `CACHE`-Variable in `sw.js` hochzählen** (aktuell `viet-trainer-v11`), sonst bekommen installierte iPhones das Update nicht (Service Worker cache-first). Bei neuen Sätzen auch `SENTENCE_COUNT` in sw.js anpassen.
+2. **Bei jeder Datei-Änderung `CACHE`-Variable in `sw.js` hochzählen** (aktuell `viet-trainer-v12`), sonst bekommen installierte iPhones das Update nicht (Service Worker cache-first). Bei neuen Sätzen auch `SENTENCE_COUNT` in sw.js anpassen.
 3. GitHub Pages baut automatisch. Verifizieren: `curl -s .../sw.js | grep viet-trainer-v` und Stichprobe `curl -sI .../audio/wXXX.mp3`.
 4. **Transienter Fehler „Deployment failed, try again later.":** rein serverseitig, nicht unser Code. Fix = **einen** frischen (ggf. leeren) Commit pushen und **geduldig einen** Build abwarten. NICHT mehrere Pushes schnell hintereinander (kollidieren → beide failen). `gh run rerun` MEIDEN — erzeugt hängende „queued"-Zombie-Runs, die die Pipeline blockieren.
 
@@ -34,7 +34,7 @@ Vanilla HTML/CSS/JS, kein Build. Deutsche UI. Stand: **v11** (Rot/Gold-Theme, El
 - Namenskonvention: `audio/<id>.mp3`, 250 Dateien (w001–w250).
 
 ## Architektur (Module in Ladereihenfolge, `index.html`)
-`data.js → sentences.js → level.js → store.js → srs.js → audio.js → quiz.js → sentence-quiz.js → ui.js → app.js`
+`data.js → sentences.js → pronouns.js → level.js → store.js → srs.js → audio.js → quiz.js → sentence-quiz.js → pronoun-quiz.js → ui.js → app.js`
 Jede Datei `var VT = window.VT || {}` (nie `const` — klassische Skripte teilen globalen Scope).
 - **data.js** — Wortschatz (250 Wörter, 25 Pakete) + `wordById`/`wordsOfPack`. Reine Daten.
 - **level.js** — `VT.Level.levelFromXp(xp)` → Rang/Level/Fortschritt. 10 Rang-Titel (🌱 Neuling → 👑 Sprachkönig), Schwellen `[0,100,250,450,700,1000,1350,1750,2200,2700]` dann +600.
@@ -42,14 +42,17 @@ Jede Datei `var VT = window.VT || {}` (nie `const` — klassische Skripte teilen
 - **srs.js** — Leitner (5 Boxen 0–4). Richtig +1, falsch −1. Gewichtete Auswahl `BOX_WEIGHT=[8,5,3,2,1]`. Mastery = Box≥2 (`MASTERY_BOX`), Freischaltung nächstes Paket ab 8/10 (`MASTERY_COUNT`). `masteryLabel(box)`.
 - **audio.js** — MP3 zuerst, Web-Speech-Fallback (vi-VN) bei Fehlen. `unlock()` für iOS (erster Touch). Guard gegen Doppel-Fallback.
 - **quiz.js** — Session (10 Aufgaben), 3 Modi `de2vn|vn2de|listen`, 4 Optionen. `finish()` liefert `{correct,total,xpEarned,newlyUnlockedPack,streak,levelUpTo}`.
-- **sentences.js** — statische Satz-Sammlung (`VT.SENTENCES`, 150 Sätze `{id:"sNNN",vn,de,words:[wIds],ctx?}`). `words` = enthaltene Vokabeln, steuern die Freigabe. `ctx` (optional) = sozialer Kontext aus `VT.SENTENCES.contexts` (emAnh/emChi/anhEm/conParent/formal), legt die Pronomen ich/du fest → Kontext-Chip. Reine Daten.
+- **sentences.js** — statische Satz-Sammlung (`VT.SENTENCES`, 150 Sätze `{id:"sNNN",vn,de,words:[wIds],ctx?}`). `words` = enthaltene Vokabeln, steuern die Freigabe. `ctx` (optional) = sozialer Kontext aus `VT.SENTENCES.contexts` (emAnh/emChi/anhEm/conParent/chauOng/chauBa/chauChu/chauCo/formal), legt die Pronomen ich/du fest → Kontext-Chip. Reine Daten.
+- **pronouns.js** — `VT.PRONOUNS.roles`: Anrede-Rollen `{id,icon,label,self,addr}`; self/addr = Vokabel-IDs (Gloss+Audio wiederverwendet). Reine Daten.
 - **sentence-quiz.js** — `VT.SentenceQuiz`, spiegelt `VT.Quiz` für Sätze. `available()` = Sätze, deren `words` alle `seen>0`. Nutzt `VT.Store.sentenceState` + `VT.SRS.moveBox`/`weightedPick`/`BOX_WEIGHT`. Aufgabe hat `item` (wie Quiz). Satz-`listen` zeigt DE-Optionen.
-- **ui.js** — EINZIGES Modul mit DOM. Screens `home|stats|sentences|session|result`, Tab-Bar (Lernen/Sätze/Statistik). `engine`-Var wählt aktive Quiz-Engine (Wort/Satz); Session-/Feedback-/Result-Rendering geteilt über `task.item`. Level-Karte, Tagesziel, Abbrechen-Dialog, Konfetti, Toast, geschützter Reset.
+- **pronoun-quiz.js** — `VT.PronounQuiz`, spiegelt SentenceQuiz für den Anrede-Block. Modi `self`/`addr`; `item` = korrektes Pronomen-Wort; Optionen = Pronomen-Pool. Stand in `store.pronounState("rolleId:mode")`. 19 Lerneinheiten (10 self + 9 addr).
+- **ui.js** — EINZIGES Modul mit DOM. Screens `home|stats|sentences|session|result`, Tab-Bar (Lernen/Sätze/Statistik). `engine`+`engineKind` (word/sentence/pronoun) wählt Engine; Session-/Feedback-/Result-Rendering geteilt über `task.item`. Anrede-Block als `renderPronounCard()` oben auf Home; Szenario-Prompt für `engineKind==="pronoun"`. Level-Karte, Tagesziel, Abbrechen-Dialog, Konfetti, Toast, geschützter Reset.
 - **app.js** — Bootstrap (SW-Registrierung nur über http(s), iOS-Audio-Unlock).
 
 ## Features (alle live)
 - **Reiter „Sätze"** (ab v10): 150 kurze Sätze, gleiche 3 Quiz-Modi wie Wörter (Hören → dt. Bedeutung wählen). Ein Satz erscheint, sobald ALLE seine `words` schon gesehen wurden (seen>0). Eigener Leitner-Stand (`store.sentences`), geteilte XP/Level/Streak. **Sätze KI-getextet → Muttersprachlerin-Prüfung offen.**
-- **Kontext-Pronomen in Sätzen** (ab v11): statt generischem „Tôi" nutzen Sätze Beziehungspronomen je `ctx` (👨 emAnh em→anh, 👩 emChi em→chị, 🧑 anhEm anh→em, 👪 conParent con→bố/mẹ, 🤝 formal tôi). Sichtbares Kontext-Chip in Satzliste + Quiz-Prompt (`ctxChipHtml` in ui.js, `.ctx-chip` in style.css). „tôi" nur noch im `formal`-Register (Fremde/Vorstellen/Bestellen). Verteilung: 90 emAnh, 6 emChi, 4 anhEm, 6 conParent, 6 formal, 38 neutral.
+- **Kontext-Pronomen in Sätzen** (ab v11, breit gestreut ab v12): statt generischem „Tôi" nutzen Sätze Beziehungspronomen je `ctx`, bewusst über viele Rollen verteilt (👨 emAnh em→anh, 👩 emChi em→chị, 🧒 anhEm anh→em, 👪 conParent con→bố/mẹ, 👴 chauOng cháu→ông, 👵 chauBa cháu→bà, 🧔 chauChu cháu→chú, 👩‍🦰 chauCo cháu→cô, 🤝 formal tôi). Sichtbares Kontext-Chip in Satzliste + Quiz-Prompt (`ctxChipHtml` in ui.js, `.ctx-chip` in style.css). „tôi" nur im `formal`-Register. Verteilung (v12): 23 emAnh, 17 emChi, 18 chauOng, 14 chauBa, 15 conParent, 10 chauChu, 6 anhEm, 4 chauCo, 6 formal, 37 neutral.
+- **Übungsblock „Anreden & Pronomen"** (ab v12, oben im Reiter Lernen): lehrt, WELCHES Wort für ich/du je Gegenüber gilt. Szenario („Du sprichst mit …") → Selbstbezeichnung (self) bzw. Anrede (addr) wählen. 10 Rollen (`pronouns.js`), 19 Lerneinheiten, eigener Leitner-Stand (`store.pronouns`), geteilte XP. Nutzt bestehende Wort-Audios (keine neuen mp3).
 - **250 Wörter, 25 Pakete à 10, ~90 Verben.** Frequenzbasiert (OpenSubtitles-Korpus), Grammatikpartikel bewusst raus. Gestaffelte Freischaltung.
 - **3 Quiz-Modi** + Leitner-SRS + Paket-Progression.
 - **Auto-Aussprache** bei `vn2de` und `listen` beim Aufgaben-Erscheinen; NICHT bei `de2vn` (würde Lösung verraten).
