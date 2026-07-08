@@ -250,6 +250,29 @@ body.show-tabbar #screen { padding-bottom: calc(92px + env(safe-area-inset-botto
   white-space: nowrap;
 }
 .stat-main .ctx-chip { margin: 4px 0 2px; font-size: 0.72rem; }
+
+/* Home-Block „Anreden & Pronomen" */
+.pronoun-card-head { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+.pronoun-card-icon { font-size: 2rem; line-height: 1; }
+.pronoun-card-title { font-size: 1.15rem; font-weight: 800; color: var(--accent); }
+.pronoun-card-sub { font-size: 0.9rem; color: var(--text-dim); margin-top: 2px; }
+.pronoun-card-sub b { color: var(--text); font-weight: 700; }
+.pronoun-card-progress { font-size: 0.82rem; color: var(--text-dim); margin-bottom: 6px; }
+.pronoun-card .primary-btn { margin-top: 12px; }
+
+/* Anrede-Quiz: Szenario-Prompt */
+.pronoun-scene {
+  display: flex; align-items: center; gap: 14px;
+  margin: 6px 0 4px; padding: 14px 16px;
+  border: 1px solid rgba(255, 207, 63, 0.35);
+  border-radius: 16px;
+  background: rgba(255, 207, 63, 0.08);
+}
+.pronoun-role-icon { font-size: 2.4rem; line-height: 1; }
+.pronoun-role-label { font-size: 1.25rem; font-weight: 700; line-height: 1.3; }
+.pronoun-question { margin-top: 12px; font-size: 1.1rem; font-weight: 600; }
+.pronoun-question b { color: var(--accent); }
+
 .options.sentences { grid-template-columns: 1fr; }
 .options.sentences .option {
   min-height: 54px; text-align: left; white-space: normal;

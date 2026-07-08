@@ -35,7 +35,8 @@ VT.Store = (function () {
       daily: { day: null, xp: 0, goalReached: false }, // Tages-XP für Ziel + Streak
       unlockedPacks: 1,
       words: {},
-      sentences: {} // Leitner-Stand je Satz (Reiter „Sätze"), gleiche Struktur wie words
+      sentences: {}, // Leitner-Stand je Satz (Reiter „Sätze"), gleiche Struktur wie words
+      pronouns: {}   // Leitner-Stand je Anrede-Aufgabe ("rolleId:self|addr"), gleiche Struktur
     };
   }
 
@@ -80,6 +81,17 @@ VT.Store = (function () {
         };
       }
     }
+    if (d.pronouns && typeof d.pronouns === "object") {
+      for (var pid in d.pronouns) {
+        var p = d.pronouns[pid];
+        if (!p || typeof p !== "object") continue;
+        state.pronouns[pid] = {
+          box: clampBox(p.box),
+          seen: num(p.seen), right: num(p.right), wrong: num(p.wrong),
+          last: num(p.last)
+        };
+      }
+    }
   }
 
   function clampBox(b) {
@@ -102,6 +114,12 @@ VT.Store = (function () {
   function sentenceState(id) {
     if (!state.sentences[id]) state.sentences[id] = { box: 0, seen: 0, right: 0, wrong: 0, last: 0 };
     return state.sentences[id];
+  }
+
+  // Lernstand einer Anrede-Aufgabe holen (Block „Anreden"), Key = "rolleId:self|addr".
+  function pronounState(key) {
+    if (!state.pronouns[key]) state.pronouns[key] = { box: 0, seen: 0, right: 0, wrong: 0, last: 0 };
+    return state.pronouns[key];
   }
 
   // "YYYY-MM-DD" im lokalen Zeitzonen-Kalender (kein UTC-Shift, sonst zählt
@@ -168,7 +186,7 @@ VT.Store = (function () {
   load();
   return {
     get: function () { return state; }, save: save, wordState: wordState,
-    sentenceState: sentenceState,
+    sentenceState: sentenceState, pronounState: pronounState,
     touchStreak: touchStreak, addXp: addXp, dailyProgress: dailyProgress,
     DAILY_GOAL: DAILY_GOAL, reset: reset, KEY: KEY
   };

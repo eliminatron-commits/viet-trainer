@@ -102,6 +102,7 @@ VT.UI = (function () {
     root.appendChild(head);
 
     root.appendChild(renderLevelCard());
+    root.appendChild(renderPronounCard());
 
     var list = el("div", "pack-list");
     VT.DATA.packs.forEach(function (p) {
@@ -206,6 +207,30 @@ VT.UI = (function () {
     return card;
   }
 
+  // Eigener Block „Anreden & Pronomen": lehrt, WELCHES Wort für ich/du je nach
+  // Gegenüber gilt (em/anh/con/cháu/ông/bà …). Immer verfügbar, kein Gating.
+  function renderPronounCard() {
+    var mastered = VT.PronounQuiz.masteredCount();
+    var total = VT.PronounQuiz.totalUnits();
+    var card = el("div", "card pronoun-card");
+    card.innerHTML =
+      "<div class='pronoun-card-head'>" +
+        "<span class='pronoun-card-icon'>👥</span>" +
+        "<div>" +
+          "<div class='pronoun-card-title'>Anreden &amp; Pronomen</div>" +
+          "<div class='pronoun-card-sub'>Wann sage ich <b>em, anh, con, cháu, ông …</b>?</div>" +
+        "</div>" +
+      "</div>" +
+      "<div class='pronoun-card-progress'>" + mastered + " / " + total + " sicher</div>" +
+      progressBar(mastered, total);
+    var btn = el("button", "primary-btn");
+    btn.type = "button";
+    btn.textContent = "Anreden üben";
+    btn.addEventListener("click", startPronounSession);
+    card.appendChild(btn);
+    return card;
+  }
+
   function startSession(packId) {
     engine = VT.Quiz; engineKind = "word";
     VT.Quiz.buildSession(packId);
@@ -215,6 +240,12 @@ VT.UI = (function () {
   function startSentenceSession() {
     engine = VT.SentenceQuiz; engineKind = "sentence";
     VT.SentenceQuiz.buildSession();
+    show("session");
+  }
+
+  function startPronounSession() {
+    engine = VT.PronounQuiz; engineKind = "pronoun";
+    VT.PronounQuiz.buildSession();
     show("session");
   }
 
@@ -377,7 +408,7 @@ VT.UI = (function () {
     // die Aussprache würde die Lösung verraten. Kleiner Delay, damit das Audio
     // nach der Eintritts-Animation kommt; das geteilte <audio>-Element wurde
     // beim ersten Touch entsperrt, daher ist der Timeout iOS-sicher.
-    if (task.mode !== "de2vn") {
+    if (engineKind !== "pronoun" && task.mode !== "de2vn") {
       setTimeout(function () {
         if (engine.current() === task && !task.answered) VT.Audio.play(task.item);
       }, 400);
@@ -388,6 +419,21 @@ VT.UI = (function () {
   function renderPrompt(task) {
     var wrap = el("div", "prompt");
     var item = task.item;
+    // Anrede-Block: Szenario („Du sprichst mit …") statt Wort/Satz-Prompt.
+    if (engineKind === "pronoun") {
+      var role = task.role;
+      var q = task.mode === "self"
+        ? "Wie nennst du <b>dich selbst</b>?"
+        : "Wie <b>sprichst du die Person an</b>?";
+      wrap.innerHTML =
+        "<div class='prompt-label'>Du sprichst mit …</div>" +
+        "<div class='pronoun-scene'>" +
+          "<span class='pronoun-role-icon'>" + role.icon + "</span>" +
+          "<span class='pronoun-role-label'>" + role.label + "</span>" +
+        "</div>" +
+        "<div class='pronoun-question'>" + q + "</div>";
+      return wrap;
+    }
     var isSentence = engineKind === "sentence";
     var mainCls = "prompt-main" + (isSentence ? " sentence" : "");
     // Kontext-Chip nur bei Sätzen; er verrät die Pronomen-Beziehung (wichtig
@@ -450,9 +496,19 @@ VT.UI = (function () {
     var item = task.item;
     var sol = el("div", "solution");
     var pron = item.pron ? " <span class='fb-pron'>[" + item.pron + "]</span>" : ""; // Sätze haben keine
+    var fbWord;
+    if (engineKind === "pronoun") {
+      // Beziehungs-gerechte Erklärung statt des (hier irreführenden) Wörterbuch-Glosses.
+      var expl = task.mode === "self"
+        ? "so nennst du dich selbst"
+        : "so sprichst du die Person an";
+      fbWord = "<b>" + item.vn + "</b>" + pron + " — " + expl + ".";
+    } else {
+      fbWord = "<b>" + item.vn + "</b> — " + item.de + pron;
+    }
     sol.innerHTML =
       "<div class='fb-title'>" + (correct ? "Richtig! 🎉" : "Nicht ganz.") + "</div>" +
-      "<div class='fb-word'><b>" + item.vn + "</b> — " + item.de + pron + "</div>";
+      "<div class='fb-word'>" + fbWord + "</div>";
     sol.appendChild(audioButton(item, "🔊"));
     fb.appendChild(sol);
 
@@ -528,19 +584,21 @@ VT.UI = (function () {
       }
     }
 
-    var isSentence = summary && summary.kind === "sentence";
+    var kind = summary && summary.kind; // "sentence" | "pronoun" | undefined (Wörter)
     var again = el("button", "primary-btn");
     again.type = "button";
     again.textContent = "Nochmal üben";
     again.addEventListener("click", function () {
-      if (isSentence) startSentenceSession(); else startSession(summary.packId);
+      if (kind === "sentence") startSentenceSession();
+      else if (kind === "pronoun") startPronounSession();
+      else startSession(summary.packId);
     });
     root.appendChild(again);
 
     var homeBtn = el("button", "secondary-btn");
     homeBtn.type = "button";
     homeBtn.textContent = "Zur Übersicht";
-    homeBtn.addEventListener("click", function () { show(isSentence ? "sentences" : "home"); });
+    homeBtn.addEventListener("click", function () { show(kind === "sentence" ? "sentences" : "home"); });
     root.appendChild(homeBtn);
   }
 
