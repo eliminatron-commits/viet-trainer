@@ -102,6 +102,7 @@ VT.UI = (function () {
     root.appendChild(head);
 
     root.appendChild(renderLevelCard());
+    root.appendChild(renderReviewCard());
     root.appendChild(renderPronounCard());
 
     var list = el("div", "pack-list");
@@ -207,6 +208,51 @@ VT.UI = (function () {
     return card;
   }
 
+  // Endlos-Wiederholung über ALLE gelernten Wörter (ohne Paketwahl), optional
+  // nur Verben. Läuft bis „Abbrechen"; verbessert den echten Wort-Lernstand.
+  function renderReviewCard() {
+    var learned = VT.ReviewQuiz.learnedCount(false);
+    var verbs = VT.ReviewQuiz.learnedCount(true);
+    var card = el("div", "card review-card");
+    card.innerHTML =
+      "<div class='pronoun-card-head'>" +
+        "<span class='pronoun-card-icon'>🔁</span>" +
+        "<div>" +
+          "<div class='pronoun-card-title'>Wiederholung</div>" +
+          "<div class='pronoun-card-sub'>Endlos alle gelernten Wörter – ohne Paketwahl.</div>" +
+        "</div>" +
+      "</div>";
+
+    var toggle = el("label", "review-toggle");
+    toggle.innerHTML = "<input type='checkbox'> <span>nur Verben</span>";
+    var chk = toggle.querySelector("input");
+    card.appendChild(toggle);
+
+    var count = el("div", "pronoun-card-progress");
+    card.appendChild(count);
+
+    var btn = el("button", "primary-btn");
+    btn.type = "button";
+    btn.textContent = "Wiederholung starten";
+
+    function refresh() {
+      var vo = chk.checked;
+      var n = vo ? verbs : learned;
+      count.textContent = vo
+        ? (verbs + " gelernte Verben")
+        : (learned + " gelernte Wörter · " + verbs + " Verben");
+      btn.disabled = n === 0;
+      btn.textContent = n === 0
+        ? "Erst Wörter lernen"
+        : "Wiederholung starten" + (vo ? " (Verben)" : "");
+    }
+    chk.addEventListener("change", refresh);
+    btn.addEventListener("click", function () { if (!btn.disabled) startReviewSession(chk.checked); });
+    refresh();
+    card.appendChild(btn);
+    return card;
+  }
+
   // Eigener Block „Anreden & Pronomen": lehrt, WELCHES Wort für ich/du je nach
   // Gegenüber gilt (em/anh/con/cháu/ông/bà …). Immer verfügbar, kein Gating.
   function renderPronounCard() {
@@ -246,6 +292,12 @@ VT.UI = (function () {
   function startPronounSession() {
     engine = VT.PronounQuiz; engineKind = "pronoun";
     VT.PronounQuiz.buildSession();
+    show("session");
+  }
+
+  function startReviewSession(verbsOnly) {
+    engine = VT.ReviewQuiz; engineKind = "review";
+    VT.ReviewQuiz.buildSession({ verbsOnly: verbsOnly });
     show("session");
   }
 
@@ -372,12 +424,22 @@ VT.UI = (function () {
     var backTo = engineKind === "sentence" ? "sentences" : "home";
 
     var bar = el("div", "card session-head");
-    bar.innerHTML =
-      "<div class='session-topline'>" +
-        "<button class='cancel-btn' type='button' aria-label='Übung beenden'>✕</button>" +
-        "<div class='session-progress'>Aufgabe " + (sess.index + 1) + " / " + sess.tasks.length + "</div>" +
-      "</div>" +
-      progressBar(sess.index, sess.tasks.length);
+    if (engineKind === "review") {
+      // Endlos: keine feste Länge → Zähler „geübt/richtig" statt Fortschrittsbalken.
+      bar.innerHTML =
+        "<div class='session-topline'>" +
+          "<button class='cancel-btn' type='button' aria-label='Übung beenden'>✕</button>" +
+          "<div class='session-progress'>🔁 Wiederholung" + (sess.verbsOnly ? " · nur Verben" : "") + "</div>" +
+        "</div>" +
+        "<div class='review-count'>" + sess.answered + " geübt · " + sess.correctCount + " richtig</div>";
+    } else {
+      bar.innerHTML =
+        "<div class='session-topline'>" +
+          "<button class='cancel-btn' type='button' aria-label='Übung beenden'>✕</button>" +
+          "<div class='session-progress'>Aufgabe " + (sess.index + 1) + " / " + sess.tasks.length + "</div>" +
+        "</div>" +
+        progressBar(sess.index, sess.tasks.length);
+    }
     root.appendChild(bar);
     bar.querySelector(".cancel-btn").addEventListener("click", function () {
       confirmDialog(
@@ -591,6 +653,7 @@ VT.UI = (function () {
     again.addEventListener("click", function () {
       if (kind === "sentence") startSentenceSession();
       else if (kind === "pronoun") startPronounSession();
+      else if (kind === "review") startReviewSession(summary.verbsOnly);
       else startSession(summary.packId);
     });
     root.appendChild(again);

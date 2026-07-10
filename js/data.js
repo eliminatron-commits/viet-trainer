@@ -358,5 +358,33 @@ VT.DATA = {
   },
   wordsOfPack: function (packId) {
     return this.words.filter(function (w) { return w.pack === packId; });
+  },
+
+  // Verben (für den Verb-Filter im Wiederholungsmodus). Vietnamesische Adjektive
+  // („Eigenschaften": schön, groß, müde …) zählen hier bewusst NICHT als Verben,
+  // obwohl sie grammatisch stativ sind – der Nutzer trennt Verben von Eigenschaften.
+  // Klassifizierung KI-erstellt → von Muttersprachlerin prüfbar; IDs unten anpassen.
+  _verbNums: [
+    11, 12, 13, 14, 15, 16, 17, 18, 19, 20,             // Paket 2 – Kernverben
+    40,                                                  // phải (müssen)
+    41, 42, 43, 44, 45, 46, 47, 48, 49, 50,             // Paket 5 – Bewegung
+    51, 52, 55, 56, 57, 58, 59, 60,                     // Paket 6 – Essen & Tun (ohne cơm/nước)
+    61, 64, 68, 69,                                      // chào / xin / giúp / cần
+    81, 82, 83, 84, 85, 86, 87, 88, 89, 90,             // Paket 9 – Denken & Fühlen
+    91, 92, 93, 94, 95, 96, 97, 98, 99, 100,            // Paket 10 – Kommunikation
+    131, 132, 133, 134, 135, 136, 137, 138, 139, 140,   // Paket 14 – Nehmen & Geben
+    161, 162, 163, 164, 165, 166, 167, 168, 169, 170,   // Paket 17 – Handeln II
+    197, 198, 199, 200,                                  // hát / cười / khóc / kêu
+    211, 212, 213, 214, 215, 216, 217, 218, 219, 220    // Paket 22 – Zustände
+  ],
+  isVerb: function (id) {
+    if (!this._verbSet) {
+      this._verbSet = {};
+      var set = this._verbSet;
+      this._verbNums.forEach(function (n) {
+        set["w" + (n < 10 ? "00" + n : n < 100 ? "0" + n : n)] = true;
+      });
+    }
+    return this._verbSet[id] === true;
   }
 };

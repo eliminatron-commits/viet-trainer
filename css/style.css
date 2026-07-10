@@ -260,6 +260,16 @@ body.show-tabbar #screen { padding-bottom: calc(92px + env(safe-area-inset-botto
 .pronoun-card-progress { font-size: 0.82rem; color: var(--text-dim); margin-bottom: 6px; }
 .pronoun-card .primary-btn { margin-top: 12px; }
 
+/* Wiederholungs-Karte: „nur Verben"-Schalter + Endlos-Zähler */
+.review-toggle {
+  display: inline-flex; align-items: center; gap: 8px;
+  margin: 4px 0 8px; font-size: 0.95rem; font-weight: 600;
+  color: var(--text); cursor: pointer; user-select: none;
+}
+.review-toggle input { width: 18px; height: 18px; accent-color: var(--accent); cursor: pointer; }
+.review-count { font-size: 0.85rem; color: var(--text-dim); font-weight: 600; }
+.session-head .review-count { margin-top: 6px; }
+
 /* Anrede-Quiz: Szenario-Prompt */
 .pronoun-scene {
   display: flex; align-items: center; gap: 14px;
