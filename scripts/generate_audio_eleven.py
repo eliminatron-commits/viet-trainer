@@ -73,20 +73,25 @@ def main():
                    help="Quelldatei (js/data.js = Wörter, js/sentences.js = Sätze)")
     p.add_argument("--force", action="store_true")
     p.add_argument("--only", default="")
+    p.add_argument("--outdir", default="",
+                   help="Ziel-Ordner für die MP3s (Default: audio/). Für vorbereitete "
+                        "Assets z.B. prepared/audio, um die Live-App nicht zu berühren.")
     args = p.parse_args()
 
     key = os.environ.get("ELEVEN_API_KEY", "").strip()
     if not key:
         sys.exit("ELEVEN_API_KEY nicht gesetzt.")
 
+    outdir = Path(args.outdir) if args.outdir else AUDIO_DIR
+
     only = set(x.strip() for x in args.only.split(",") if x.strip()) or None
     words = load_words(args.source)
     if only:
         words = [w for w in words if w[0] in only]
 
-    AUDIO_DIR.mkdir(parents=True, exist_ok=True)
+    outdir.mkdir(parents=True, exist_ok=True)
     todo = [(wid, vn) for wid, vn in words
-            if args.force or not (AUDIO_DIR / f"{wid}.mp3").exists()]
+            if args.force or not (outdir / f"{wid}.mp3").exists()]
 
     print(f"Stimme: {args.voice} · Modell: {args.model} · Sprache: {args.lang or '(auto)'}")
     print(f"Wörter: {len(words)} · zu generieren: {len(todo)}")
@@ -100,7 +105,7 @@ def main():
             data = synth(args.voice, vn, key, args.model, args.lang)
             if len(data) < 500:
                 raise RuntimeError(f"zu wenig Daten: {data[:160]!r}")
-            (AUDIO_DIR / f"{wid}.mp3").write_bytes(data)
+            (outdir / f"{wid}.mp3").write_bytes(data)
             done += 1
             print(f"  [{done}/{len(todo)}] {wid}  {vn}")
         except urllib.error.HTTPError as e:
