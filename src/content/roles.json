@@ -1,0 +1,12 @@
+[
+  {"id":"anh","label":"ein etwas älterer Mann","self":"w005","addr":"w003","stage":"e01"},
+  {"id":"chi","label":"eine etwas ältere Frau","self":"w005","addr":"w004","stage":"e01"},
+  {"id":"em","label":"eine jüngere Person","self":"w003","addr":"w005","stage":"e01"},
+  {"id":"bo","label":"dein Vater","self":"w023","addr":"w022","stage":"e07"},
+  {"id":"me","label":"deine Mutter","self":"w023","addr":"w021","stage":"e07"},
+  {"id":"ong","label":"ein alter Mann (Opa)","self":"w026","addr":"w006","stage":"e07"},
+  {"id":"ba","label":"eine alte Frau (Oma)","self":"w026","addr":"w007","stage":"e07"},
+  {"id":"chu","label":"ein Mann im Alter deiner Eltern","self":"w026","addr":"w009","stage":"e07"},
+  {"id":"co","label":"eine Frau im Alter deiner Eltern","self":"w026","addr":"w008","stage":"e07"},
+  {"id":"la","label":"eine fremde Person (förmlich)","self":"w001","addr":null,"stage":"e01"}
+]

@@ -10,3 +10,14 @@ voice-compare.html
 voice-preview-eleven.html
 voice-fix-test.html
 voice-breath-test.html
+
+# v2 (Vite/Svelte)
+node_modules/
+dist/
+dev-dist/
+*.local
+.env*
+.dev.vars
+.wrangler/
+test-results/
+playwright-report/

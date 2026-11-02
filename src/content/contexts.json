@@ -1,0 +1,11 @@
+[
+  {"id":"emAnh","label":"zu älterem Mann","self":"w005","addr":["w003"]},
+  {"id":"emChi","label":"zu älterer Frau","self":"w005","addr":["w004"]},
+  {"id":"anhEm","label":"zu jüngerer Person","self":"w003","addr":["w005"]},
+  {"id":"conParent","label":"zu Mama/Papa","self":"w023","addr":["w022","w021"]},
+  {"id":"chauOng","label":"zu altem Mann (Opa)","self":"w026","addr":["w006"]},
+  {"id":"chauBa","label":"zu alter Frau (Oma)","self":"w026","addr":["w007"]},
+  {"id":"chauChu","label":"zu Mann im Elternalter","self":"w026","addr":["w009"]},
+  {"id":"chauCo","label":"zu Frau im Elternalter","self":"w026","addr":["w008"]},
+  {"id":"formal","label":"förmlich · fremd","self":"w001","addr":[]}
+]
