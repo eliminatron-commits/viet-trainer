@@ -2,8 +2,8 @@
 
 ## Stand
 
-- **Phase 1/4 – Fundament, Inhalte und Design-System:** technisch fertig (Typecheck, 18 Vitest-Tests, Build grün). **Wartet auf Alex:** Prototyp auf dem iPhone ansehen, Richtung freigeben, Maskottchen wählen (Gecko oder Wasserbüffel) → Wahl in `CLAUDE.md` eintragen, dann Commit „Phase 1: …“ abschließen.
-- Nächste Phase: 2/4 – Kernlogik und Erinnerungen (Opus 5.5, hoch). Vorher Sitzung neu starten, damit die Subagenten geladen werden.
+- **Phase 1/4 – Fundament, Inhalte und Design-System: abgeschlossen** (2026-11-02). Typecheck, 18 Vitest-Tests, Build grün. Alex hat den **Wasserbüffel (Trâu)** als Maskottchen gewählt, Richtung damit abgenommen (in `CLAUDE.md` festgehalten). P1-06 (Prototyp im LAN auf dem iPhone) nicht von Alex bestätigt – beim ersten iPhone-Test in Phase 2 nachholen.
+- **Nächste Phase: 2/4 – Kernlogik und Erinnerungen** (Opus 5.5, hoch). Neue Sitzung, damit die Subagenten geladen werden; zu Beginn prüfen, ob alle fünf registriert sind.
 
 ## Phase 1 – Ergebnis
 

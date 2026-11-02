@@ -11,7 +11,7 @@
         { "id": "P1-04", "desc": "Speichern und Laden übersteht einen Reload; Export/Import", "check": "npm test -- tests/storage.test.ts", "status": "pass" },
         { "id": "P1-05", "desc": "Typecheck, Vitest und Build sind grün", "check": "npm run check && npm test && npm run build", "status": "pass" },
         { "id": "P1-06", "desc": "Prototyp läuft lokal und im LAN auf dem iPhone", "check": "npm run dev → http://<PC-IP>:5173/viet-trainer/", "status": "pending-alex" },
-        { "id": "P1-07", "desc": "Alex hat Richtung und Maskottchen gewählt, Wahl in CLAUDE.md festgehalten", "check": "manuell", "status": "pending-alex" }
+        { "id": "P1-07", "desc": "Alex hat Richtung und Maskottchen gewählt, Wahl in CLAUDE.md festgehalten", "check": "manuell (Wasserbüffel, 2026-11-02)", "status": "pass" }
       ]
     },
     {

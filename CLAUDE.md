@@ -73,8 +73,8 @@ prepared/         vorbereitete Inhalte (w251–w538, s151–s270) – nur Migrat
 - Karten-Radius 24–32 px, Tap-Ziele ≥ 44 px, schwebende Pill-Navigation unten (Lernpfad, Training, Sprachführer, Profil), Safe-Area über `--safe-top/--safe-bottom`, nur Hochformat.
 - Übergänge: `transitionTo()` aus `motion.ts` (View Transitions API, Shared Elements per `view-transition-name`); Fallback Svelte-`crossfade` (`send/receive`), der bei vorhandener View Transition 0 ms dauert. `prefers-reduced-motion` schaltet alles ab.
 - **Illustrationen:** eigene flache SVGs, keine Konturen (nur Flächen), ≤ 14 Farben pro Szene als Konstanten-Objekt `C`, Licht von rechts oben (Schattenseite links dunkler), Ferne blasser/kühler, Vordergrund unten groß. Referenz: `MarbleMountains.svelte`.
-- Maskottchen: **Entscheidung offen** (Gecko „Thạch sùng“ vs. Wasserbüffel „Trâu“, Entwürfe in `src/lib/mascot/`). Gleiche Regeln wie Illustrationen, rotes Halstuch mit gelbem Stern.
-- Richtungsabnahme durch Alex: **offen** (Stil-Prototyp Phase 1).
+- Maskottchen: **Wasserbüffel „Trâu“** (Alex, 2026-11-02) – `src/lib/mascot/Buffalo.svelte`: schieferblau, cremefarbene Hörner, Lotus auf dem Kopf, rotes Halstuch mit gelbem Stern. Wächst mit dem Level, Accessoires ab Phase 3. Gleiche Regeln wie Illustrationen. Der Gecko-Entwurf ist verworfen.
+- Richtung: mit der Maskottchen-Wahl am Stil-Prototyp aus Phase 1 abgenommen (2026-11-02).
 
 ## Technische Entscheidungen
 

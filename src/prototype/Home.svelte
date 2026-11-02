@@ -4,7 +4,7 @@
   import Card from '../lib/components/Card.svelte';
   import ProgressRing from '../lib/components/ProgressRing.svelte';
   import MarbleMountains from '../lib/illustrations/MarbleMountains.svelte';
-  import Gecko from '../lib/mascot/Gecko.svelte';
+  import Buffalo from '../lib/mascot/Buffalo.svelte';
   import { receive, send } from '../lib/motion';
 
   let { onopen, hidden }: { onopen: (stage: Stage) => void; hidden: boolean } = $props();
@@ -25,7 +25,7 @@
       <h1>Weiter geht's<br />in {region.name}.</h1>
     </div>
     <ProgressRing value={0.6} size={84} stroke={9} label="Tagesziel 30 von 50 XP">
-      <Gecko size={58} />
+      <Buffalo size={58} />
     </ProgressRing>
   </header>
 
