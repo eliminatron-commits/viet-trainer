@@ -4,7 +4,8 @@
 
 - **Phase 1/4 – Fundament, Inhalte und Design-System: abgeschlossen** (2026-11-02). Typecheck, 18 Vitest-Tests, Build grün. Alex hat den **Wasserbüffel (Trâu)** als Maskottchen gewählt, Richtung damit abgenommen (in `CLAUDE.md` festgehalten). P1-06 (Prototyp im LAN auf dem iPhone) nicht von Alex bestätigt – beim ersten iPhone-Test in Phase 2 nachholen.
 - **Phase 2/4 – Kernlogik und Erinnerungen: abgeschlossen** (2026-11-03, Opus 5.5 hoch). Check, 100 Vitest-Tests, Playwright WebKit (Etappe 1 bis Boss), Build und Worker-Typecheck grün; Test-Push auf Alex' iPhone angekommen; P2-07 live geprüft (Abendzeit im KV kurz auf 20:50, Ziel erfüllt → kein Push; Gegenprobe Ziel offen → Push 21:00 angekommen; Zustand danach zurückgesetzt). Layout-Fix (Weiter-Karte oben, Statusleisten-Fläche) in iPhone-Maßen geprüft, Alex' Bestätigung auf dem Gerät steht noch aus.
-- **Nächste Schritte:** Auf Alex' Wunsch (2026-11-03) **vor Phase 3** ein Design-Block, vorgezogen aus Phase 4: neues App-Icon mit dem Büffel, niedliche Büffel-Animationen (Leerlauf: blinzeln, Ohren, Atmen; Freude bei richtigen Antworten), kreative Übergänge im Stil der Vorbilder (Karten wachsen zum Vollbild, Seiten gleiten weich statt nur überzublenden). Danach Phase 3 (Sonnet 5.5, hoch).
+- **Design-Block (vorgezogen aus Phase 4, Alex 2026-11-03): umgesetzt, Alex' Abnahme auf dem iPhone steht aus.** Neues App-Icon (Büffelkopf vor Sonne auf Flaggenrot, `scripts/icons.ts`), Büffel lebt und reagiert (Leerlauf, happy/sad/cheer, im Antwortbalken und auf dem Ergebnis), Bewegungsvokabular für alle Ansichtswechsel (Karte wächst, Tabs gleiten, Pille fließt, Einstellungen schieben, Session als Blatt), Aufgabenwechsel und Etappen-Inhalte animiert. Alle Wechsel in Pro-Max-Maßen Bild für Bild und in Echtzeit geprüft.
+- **Nächste Schritte:** Alex' Rückmeldung zum Design-Block einarbeiten; danach Phase 3 (Sonnet 5.5, hoch). Hinweis Phase 4: Icon und Übergänge sind damit vorgezogen – dort nur noch Splash, Regionsszenen und Feinschliff.
 
 ## Phase 2 – Ergebnis
 
@@ -26,7 +27,7 @@
 
 - Partikel-Etappe: `de` der Partikel ist noch der Text aus `prepared/words-ext.js` (teils Übersetzung, teils Erklärung) – bei Bedarf in Phase 3 mit dem Prüfmodus nachschärfen.
 - Satz-Verteilung je Etappe ungleich (1–22), weil Sätze automatisch in die Etappe ihres letzten Wortes fallen. Für Sessions unkritisch (Wiederholungen mischen ein).
-- App-Icon: vorerst die alten PNGs (`public/icons/`) – Alex findet sie schlecht; neues Icon im Design-Block vor Phase 3.
+- Altes Homescreen-Icon: iOS übernimmt ein neues Icon erst, wenn die App neu zum Home-Bildschirm hinzugefügt wird.
 - Playwright-WebKit unter Windows (WinCairo) stürzt bei View Transitions auf Quiz-Aufgaben ab → E2E läuft ohne View Transitions; Übergänge per Edge-Playwright in iPhone-Maßen prüfen (CLAUDE.md) und auf dem iPhone bestätigen lassen.
 - P1-06 (LAN-Dev-Server auf dem iPhone) nie separat bestätigt; die installierte Testkopie läuft auf Alex' iPhone (Push, Audio, Vollbild) – der LAN-Weg selbst ist ungeprüft.
 - Push-Token und VAPID-Keys existieren nur als wrangler-Secrets; für spätere Builds liegt das Token außerhalb des Repos in der Sitzungs-Scratchpad-Datei `push.env`. Geht es verloren: neues Token erzeugen, per `wrangler secret put PUSH_TOKEN` setzen, App neu bauen.

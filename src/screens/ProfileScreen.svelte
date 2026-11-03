@@ -15,7 +15,7 @@
 
 <main class="profile">
   <div class="hero">
-    <Buffalo size={150} />
+    <Buffalo size={150} tappable />
     <h1>Level {info.level}</h1>
     <div class="meter" role="progressbar" aria-label="Fortschritt bis Level {info.level + 1}" aria-valuemin="0" aria-valuemax={info.span} aria-valuenow={info.into}>
       <div class="fill" style:width="{info.progress * 100}%"></div>

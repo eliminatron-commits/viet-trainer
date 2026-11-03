@@ -8,25 +8,27 @@ export const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)'
 export const supportsViewTransitions = () => typeof document !== 'undefined' && 'startViewTransition' in document;
 
 /**
- * Führt einen Ansichtswechsel aus – mit View Transition (Shared-Element-Morph über
- * `view-transition-name`), wenn verfügbar und Bewegung erwünscht ist.
+ * Art des Ansichtswechsels – die Choreografie steht in base.css unter `:root[data-vt=…]`.
+ * - morph-open / morph-close: dieselbe Karte wächst zum Vollbild bzw. schrumpft zurück (Lernpfad ↔ Etappe)
+ * - tab-next / tab-prev: Seiten gleiten in Richtung des gewählten Tabs
+ * - push / pop: Unterseite schiebt sich von rechts herein bzw. zurück (Einstellungen)
+ * - sheet-up / sheet-down: Session fährt wie ein Blatt von unten hoch bzw. wieder hinunter
+ * Außer bei morph-* sind alle Inline-`view-transition-name`s abgeschaltet (base.css), sonst
+ * ploppt z. B. die Etappenkarte deckend über die alte Ansicht.
  */
+export type Motion = 'morph-open' | 'morph-close' | 'tab-next' | 'tab-prev' | 'push' | 'pop' | 'sheet-up' | 'sheet-down';
+
 let seq = 0;
 
-/**
- * `morph` nur für Wechsel, bei denen dasselbe Element auf beiden Seiten steht (Lernpfad ↔ Etappe).
- * Sonst schaltet `data-vt="plain"` alle Inline-`view-transition-name`s ab (base.css) – sonst
- * ploppt z. B. die Etappenkarte beim Tab-Wechsel deckend über die ausblendende alte Ansicht.
- */
-export function transitionTo(update: () => void, { morph = false } = {}): void {
+/** Führt einen Ansichtswechsel aus – mit View Transition, wenn verfügbar und Bewegung erwünscht ist. */
+export function transitionTo(update: () => void, motion: Motion): void {
   if (!supportsViewTransitions() || reducedMotion()) {
     update();
     return;
   }
   const root = document.documentElement;
   const id = ++seq;
-  if (morph) delete root.dataset.vt;
-  else root.dataset.vt = 'plain';
+  root.dataset.vt = motion;
   const vt = document.startViewTransition(async () => {
     update();
     await tick();

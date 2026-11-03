@@ -4,7 +4,7 @@
   import Card from './lib/components/Card.svelte';
   import PillNav, { type Tab } from './lib/components/PillNav.svelte';
   import { game, initGame } from './lib/game.svelte';
-  import { transitionTo } from './lib/motion';
+  import { transitionTo, type Motion } from './lib/motion';
   import { applyUpdate, pwa } from './lib/pwa.svelte';
   import PathScreen from './screens/PathScreen.svelte';
   import Play, { type PlayMode } from './screens/play/Play.svelte';
@@ -20,19 +20,27 @@
   /** Erhöht sich bei jedem Spielstart, damit „Boss“ nach „Session“ eine frische Play-Instanz bekommt. */
   let playRun = $state(0);
 
-  // Jeder Ansichtswechsel beginnt oben (der Lernpfad scrollt beim Einhängen selbst zur aktuellen Etappe).
-  // Gescrollt wird im Update, also vor dem neuen View-Transition-Schnappschuss – sonst springt die Seite danach.
-  const go = (next: Screen, morph = false) =>
-    transitionTo(
-      () => {
-        scrollTo(0, 0);
-        screen = next;
-      },
-      { morph },
-    );
+  // Jeder Ansichtswechsel beginnt oben. Gescrollt wird im Update, also vor dem neuen
+  // View-Transition-Schnappschuss – sonst springt die Seite danach.
+  const go = (next: Screen, motion: Motion) =>
+    transitionTo(() => {
+      scrollTo(0, 0);
+      screen = next;
+    }, motion);
   const start = (mode: PlayMode) => {
     playRun++;
-    go({ name: 'play', mode });
+    go({ name: 'play', mode }, 'sheet-up');
+  };
+
+  // Tabs gleiten in Richtung des gewählten Tabs (Reihenfolge wie in der Pill-Navigation).
+  const TAB_ORDER: Tab[] = ['path', 'training', 'phrasebook', 'profile'];
+  const selectTab = (t: Tab) => {
+    if (t === tab) return;
+    const motion = TAB_ORDER.indexOf(t) > TAB_ORDER.indexOf(tab) ? 'tab-next' : 'tab-prev';
+    transitionTo(() => {
+      scrollTo(0, 0);
+      tab = t;
+    }, motion);
   };
 
   onMount(() => {
@@ -44,11 +52,11 @@
   <div class="loading" aria-busy="true"></div>
 {:else if screen.name === 'tabs'}
   {#if tab === 'path'}
-    <PathScreen onopen={(stage) => go({ name: 'stage', stage }, true)} />
+    <PathScreen onopen={(stage) => go({ name: 'stage', stage }, 'morph-open')} />
   {:else if tab === 'training'}
     <TrainingScreen onstart={(verbsOnly) => start({ kind: 'training', verbsOnly })} />
   {:else if tab === 'profile'}
-    <ProfileScreen onsettings={() => go({ name: 'settings' })} />
+    <ProfileScreen onsettings={() => go({ name: 'settings' }, 'push')} />
   {:else}
     <main class="placeholder">
       <Card tone="lotus">
@@ -57,19 +65,12 @@
       </Card>
     </main>
   {/if}
-  <PillNav
-    active={tab}
-    onselect={(t) =>
-      transitionTo(() => {
-        scrollTo(0, 0);
-        tab = t;
-      })}
-  />
+  <PillNav active={tab} onselect={selectTab} />
 {:else if screen.name === 'stage'}
   {@const stage = screen.stage}
   <StageScreen
     {stage}
-    onback={() => go({ name: 'tabs' }, true)}
+    onback={() => go({ name: 'tabs' }, 'morph-close')}
     onlearn={() => start({ kind: 'stage', stage })}
     onboss={() => start({ kind: 'boss', stage })}
   />
@@ -77,12 +78,12 @@
   {#key playRun}
     <Play
       mode={screen.mode}
-      onexit={() => go({ name: 'tabs' })}
+      onexit={() => go({ name: 'tabs' }, 'sheet-down')}
       onboss={(stage) => start({ kind: 'boss', stage })}
     />
   {/key}
 {:else}
-  <SettingsScreen onback={() => go({ name: 'tabs' })} />
+  <SettingsScreen onback={() => go({ name: 'tabs' }, 'pop')} />
 {/if}
 
 <!-- Fläche unter Uhr/Dynamic Island: gescrollter Inhalt verschwindet darunter statt die Statusleiste zu überlagern.

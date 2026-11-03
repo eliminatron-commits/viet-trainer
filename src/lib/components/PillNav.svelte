@@ -46,11 +46,13 @@
 </nav>
 
 <style>
+  /* Feste Breite; die Tabs teilen sie per flex-grow. Der aktive wächst, die gelbe Pille fließt mit. */
   .pill {
     position: fixed;
     left: 50%;
     bottom: calc(var(--safe-bottom) + 12px);
     transform: translateX(-50%);
+    width: min(384px, calc(100vw - 2 * var(--gutter)));
     display: flex;
     gap: 4px;
     padding: 6px;
@@ -61,37 +63,59 @@
     view-transition-name: pill-nav;
   }
   .item {
+    flex: 1 1 0;
+    min-width: 52px;
     display: flex;
     align-items: center;
-    gap: 8px;
+    justify-content: center;
     min-height: 52px;
-    min-width: 52px;
-    padding: 0 14px;
+    padding: 0 12px;
     border: 0;
     border-radius: var(--radius-pill);
     background: transparent;
     color: var(--paper);
     opacity: 0.7;
+    overflow: hidden;
     cursor: pointer;
     transition:
+      flex-grow var(--dur-slow) var(--ease-out),
       background-color var(--dur) var(--ease-out),
       color var(--dur) var(--ease-out),
-      opacity var(--dur) var(--ease-out),
-      padding var(--dur) var(--ease-out);
+      opacity var(--dur) var(--ease-out);
   }
   .item.active {
+    flex-grow: 3;
     background: var(--yellow);
     color: var(--ink);
     opacity: 1;
-    padding: 0 18px;
+  }
+  .item svg {
+    flex: none;
+  }
+  .active svg {
+    animation: icon-hop 520ms var(--ease-spring);
   }
   .label {
-    display: none;
+    max-width: 0;
+    margin-left: 0;
+    opacity: 0;
     font-weight: 600;
     font-size: 15px;
     white-space: nowrap;
+    transition:
+      max-width var(--dur-slow) var(--ease-out),
+      margin-left var(--dur-slow) var(--ease-out),
+      opacity var(--dur-fast) var(--ease-out);
   }
   .active .label {
-    display: inline;
+    max-width: 9em;
+    margin-left: 8px;
+    opacity: 1;
+    transition-delay: 0ms, 0ms, 120ms;
+  }
+  @keyframes icon-hop {
+    40% {
+      transform: translateY(-5px) scale(1.12);
+    }
   }
 </style>

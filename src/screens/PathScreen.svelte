@@ -36,7 +36,7 @@
       <h1>Weiter geht's<br />in {regionOf.name}.</h1>
     </div>
     <ProgressRing value={xpToday / save.dailyGoal} size={84} stroke={9} label="Tagesziel {xpToday} von {save.dailyGoal} XP">
-      <Buffalo size={58} />
+      <Buffalo size={58} mood={xpToday >= save.dailyGoal ? 'happy' : 'idle'} />
     </ProgressRing>
   </header>
 

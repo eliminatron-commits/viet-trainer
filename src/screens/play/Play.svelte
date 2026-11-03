@@ -7,6 +7,7 @@
 <script lang="ts">
   import Button from '../../lib/components/Button.svelte';
   import Card from '../../lib/components/Card.svelte';
+  import Buffalo from '../../lib/mascot/Buffalo.svelte';
   import { play } from '../../lib/audio/player';
   import { game, recordAnswer, recordBossWin, recordSeen, today } from '../../lib/game.svelte';
   import { bossReady } from '../../lib/logic/path';
@@ -118,6 +119,7 @@
 <main class="play" data-task-kind={task?.kind} data-answer={answer} data-outcome={outcome}>
   {#if outcome}
     <section class="result">
+      <div class="mascot"><Buffalo size={150} mood={outcome === 'lost' ? 'sad' : 'cheer'} /></div>
       {#if outcome === 'won'}
         <Card tone="yellow">
           <p class="kicker">Boss besiegt</p>
@@ -181,6 +183,7 @@
     {/if}
 
     {#key index}
+      <div class="task">
       {#if task.kind === 'intro'}
         <IntroCard word={task.word} onnext={next} />
       {:else if task.kind === 'role'}
@@ -223,12 +226,18 @@
           onpick={pick}
         />
       {/if}
+      </div>
     {/key}
 
     {#if picked}
       <footer class="feedback" class:ok={correct} role="status">
-        <p class="verdict">{correct ? 'Richtig!' : 'Nicht ganz.'}</p>
-        <p class="solution" lang="vi">{solution(task)}</p>
+        <div class="verdict-row">
+          <Buffalo size={64} mood={correct ? 'happy' : 'sad'} />
+          <div>
+            <p class="verdict">{correct ? 'Richtig!' : 'Nicht ganz.'}</p>
+            <p class="solution" lang="vi">{solution(task)}</p>
+          </div>
+        </div>
         <Button variant={correct ? 'secondary' : 'primary'} onclick={next}>Weiter</Button>
       </footer>
     {/if}
@@ -311,18 +320,61 @@
   .feedback.ok {
     background: var(--ok-soft);
   }
+  /* Neue Aufgabe gleitet von rechts herein, die Antworten folgen einen Takt später. */
+  .task {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    animation: task-in 420ms var(--ease-out) both;
+  }
+  .task :global(.answers),
+  .task :global(.next) {
+    animation: answers-in 460ms var(--ease-out) 90ms both;
+  }
+  @keyframes task-in {
+    from {
+      transform: translateX(48px);
+      opacity: 0;
+    }
+  }
+  @keyframes answers-in {
+    from {
+      transform: translateY(28px);
+      opacity: 0;
+    }
+  }
+  .verdict-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: -6px 0 6px -6px;
+  }
   .verdict {
     font-weight: 800;
     font-size: 20px;
   }
   .solution {
     font-weight: 600;
-    margin-bottom: 6px;
   }
   .result {
     display: grid;
     gap: 16px;
-    padding-top: 30px;
+    padding-top: 10px;
+  }
+  .mascot {
+    justify-self: center;
+    margin-bottom: -28px;
+    position: relative;
+    z-index: 1;
+  }
+  .result > :global(.card) {
+    animation: pop-in 520ms var(--ease-spring) both;
+  }
+  @keyframes pop-in {
+    from {
+      transform: scale(0.85) translateY(24px);
+      opacity: 0;
+    }
   }
   .result h1 {
     font-size: var(--fs-h1);

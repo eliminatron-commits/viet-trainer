@@ -34,8 +34,8 @@
   <p class="hint">{Math.round(learned * 100)} % gelernt</p>
 
   <ul class="chips">
-    {#each words as w (w.id)}
-      <li class:known={(game.save.items[w.id]?.right ?? 0) > 0} lang="vi">{game.save.items[w.id] ? w.vn : '···'}</li>
+    {#each words as w, i (w.id)}
+      <li style:--i={i} class:known={(game.save.items[w.id]?.right ?? 0) > 0} lang="vi">{game.save.items[w.id] ? w.vn : '···'}</li>
     {/each}
   </ul>
 
@@ -114,6 +114,34 @@
     margin-top: auto;
     display: grid;
     gap: 12px;
+  }
+  /* Während die Karte aufwächst, ploppen die Wörter nacheinander auf, die Knöpfe steigen nach. */
+  .chips li {
+    animation: chip-in 460ms var(--ease-spring) both;
+    animation-delay: calc(220ms + var(--i) * 40ms);
+  }
+  .meter .fill {
+    animation: fill-in 700ms var(--ease-out) 260ms both;
+  }
+  .actions {
+    animation: rise-in 520ms var(--ease-out) 300ms both;
+  }
+  @keyframes chip-in {
+    from {
+      transform: scale(0.6);
+      opacity: 0;
+    }
+  }
+  @keyframes fill-in {
+    from {
+      width: 0;
+    }
+  }
+  @keyframes rise-in {
+    from {
+      transform: translateY(32px);
+      opacity: 0;
+    }
   }
   .hint {
     text-align: center;
