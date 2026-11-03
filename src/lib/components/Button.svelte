@@ -5,19 +5,22 @@
     variant = 'primary',
     state = 'idle',
     disabled = false,
+    dataId,
     onclick,
     children,
   }: {
-    variant?: 'primary' | 'secondary' | 'ghost' | 'answer' | 'glow';
+    variant?: 'primary' | 'secondary' | 'ghost' | 'answer';
     /** Nur für Antwort-Knöpfe: Rückmeldung nach dem Tippen. */
     state?: 'idle' | 'right' | 'wrong' | 'dim';
     disabled?: boolean;
+    /** Kennung der Antwort (data-id), u. a. für E2E-Tests. */
+    dataId?: string;
     onclick?: () => void;
     children: Snippet;
   } = $props();
 </script>
 
-<button class="btn {variant} {state}" {disabled} {onclick}>
+<button class="btn {variant} {state}" data-id={dataId} {disabled} {onclick}>
   {@render children()}
 </button>
 
@@ -43,6 +46,11 @@
   }
   .btn:disabled {
     cursor: default;
+  }
+  .primary:disabled,
+  .secondary:disabled {
+    opacity: 0.45;
+    box-shadow: none;
   }
 
   .primary {
@@ -86,28 +94,6 @@
   }
   .answer.dim {
     opacity: 0.45;
-  }
-
-  /* Antworten in der dunklen Hörwelt */
-  .glow {
-    background: var(--night-2);
-    color: var(--night-ink);
-    text-align: left;
-    box-shadow: inset 0 0 0 1.5px rgb(255 106 43 / 0.25);
-  }
-  .glow.right {
-    background: #12382a;
-    color: #8ff0bf;
-    box-shadow: inset 0 0 0 2px #3fd18b;
-  }
-  .glow.wrong {
-    background: #3a120e;
-    color: #ffb4a8;
-    box-shadow: inset 0 0 0 2px var(--glow-edge);
-    animation: shake var(--dur-slow) var(--ease-out);
-  }
-  .glow.dim {
-    opacity: 0.35;
   }
 
   @keyframes pop {

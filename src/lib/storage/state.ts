@@ -3,6 +3,11 @@ import type { ItemId, StageId } from '../../content/types';
 /** Lokales Datum im Format YYYY-MM-DD (Europe/Berlin = Gerätezeit). */
 export type DateKey = string;
 
+/** Lerneinheit einer Anrede-Rolle: „wie nenne ich mich?“ (self) bzw. „wie rede ich an?“ (addr). */
+export type RoleKey = `${string}:self` | `${string}:addr`;
+/** Schlüssel im SRS: Wort, Satz oder Rollen-Einheit. */
+export type ProgressKey = ItemId | RoleKey;
+
 /** Leitner-Fortschritt eines Wortes/Satzes. Box 1–5 ↔ Intervalle 1/2/4/8/16 Tage. */
 export interface ItemProgress {
   box: 1 | 2 | 3 | 4 | 5;
@@ -35,7 +40,7 @@ export interface Settings {
 export interface SaveState {
   version: 1;
   createdAt: string;
-  items: Partial<Record<ItemId, ItemProgress>>;
+  items: Partial<Record<ProgressKey, ItemProgress>>;
   stages: Partial<Record<StageId, StageProgress>>;
   xp: number;
   /** XP des heutigen Tages; Tagesziel erreicht ⇒ Streak +1. */

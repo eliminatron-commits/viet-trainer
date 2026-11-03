@@ -1,61 +1,102 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import type { Stage } from './content/types';
-  import PillNav, { type Tab } from './lib/components/PillNav.svelte';
   import Card from './lib/components/Card.svelte';
-  import { transitionTo } from './lib/motion';
+  import PillNav, { type Tab } from './lib/components/PillNav.svelte';
+  import { game, initGame } from './lib/game.svelte';
+  import { afterTransition, transitionTo } from './lib/motion';
   import { applyUpdate, pwa } from './lib/pwa.svelte';
-  import Home from './prototype/Home.svelte';
-  import StageDetail from './prototype/StageDetail.svelte';
-  import QuizLight from './prototype/QuizLight.svelte';
-  import ListenDark from './prototype/ListenDark.svelte';
-  import MascotPick from './prototype/MascotPick.svelte';
+  import PathScreen from './screens/PathScreen.svelte';
+  import Play, { type PlayMode } from './screens/play/Play.svelte';
+  import ProfileScreen from './screens/ProfileScreen.svelte';
+  import SettingsScreen from './screens/SettingsScreen.svelte';
+  import StageScreen from './screens/StageScreen.svelte';
+  import TrainingScreen from './screens/TrainingScreen.svelte';
 
-  type Screen = { name: 'tabs' } | { name: 'stage' | 'quiz' | 'listen'; stage: Stage };
+  type Screen = { name: 'tabs' } | { name: 'stage'; stage: Stage } | { name: 'play'; mode: PlayMode } | { name: 'settings' };
 
   let tab = $state<Tab>('path');
   let screen = $state<Screen>({ name: 'tabs' });
+  /** Erhöht sich bei jedem Spielstart, damit „Boss“ nach „Session“ eine frische Play-Instanz bekommt. */
+  let playRun = $state(0);
 
-  const go = (next: Screen) => transitionTo(() => (screen = next));
+  // Jeder Ansichtswechsel beginnt oben (der Lernpfad scrollt danach selbst zur aktuellen Etappe).
+  const go = (next: Screen) =>
+    transitionTo(() => {
+      screen = next;
+      afterTransition(() => scrollTo(0, 0));
+    });
+  const start = (mode: PlayMode) => {
+    playRun++;
+    go({ name: 'play', mode });
+  };
+
+  onMount(() => {
+    void initGame();
+  });
 </script>
 
-{#if screen.name === 'tabs'}
+{#if !game.ready}
+  <div class="loading" aria-busy="true"></div>
+{:else if screen.name === 'tabs'}
   {#if tab === 'path'}
-    <Home hidden={false} onopen={(stage) => go({ name: 'stage', stage })} />
+    <PathScreen onopen={(stage) => go({ name: 'stage', stage })} />
+  {:else if tab === 'training'}
+    <TrainingScreen onstart={(verbsOnly) => start({ kind: 'training', verbsOnly })} />
   {:else if tab === 'profile'}
-    <MascotPick />
+    <ProfileScreen onsettings={() => go({ name: 'settings' })} />
   {:else}
     <main class="placeholder">
-      <Card tone={tab === 'training' ? 'sea' : 'lotus'}>
-        <h1>{tab === 'training' ? 'Training' : 'Sprachführer'}</h1>
-        <p>Kommt in Phase {tab === 'training' ? 2 : 3}.</p>
+      <Card tone="lotus">
+        <h1>Sprachführer</h1>
+        <p>Kommt mit dem nächsten Update.</p>
       </Card>
     </main>
   {/if}
-  <PillNav active={tab} onselect={(t) => transitionTo(() => (tab = t))} />
+  <PillNav
+    active={tab}
+    onselect={(t) =>
+      transitionTo(() => {
+        tab = t;
+        afterTransition(() => scrollTo(0, 0));
+      })}
+  />
 {:else if screen.name === 'stage'}
-  <StageDetail
-    stage={screen.stage}
+  {@const stage = screen.stage}
+  <StageScreen
+    {stage}
     onback={() => go({ name: 'tabs' })}
-    onstart={() => go({ name: 'quiz', stage: (screen as { stage: Stage }).stage })}
+    onlearn={() => start({ kind: 'stage', stage })}
+    onboss={() => start({ kind: 'boss', stage })}
   />
-{:else if screen.name === 'quiz'}
-  <QuizLight
-    stage={screen.stage}
-    onclose={() => go({ name: 'tabs' })}
-    onnext={() => go({ name: 'listen', stage: (screen as { stage: Stage }).stage })}
-  />
+{:else if screen.name === 'play'}
+  {#key playRun}
+    <Play
+      mode={screen.mode}
+      onexit={() => go({ name: 'tabs' })}
+      onboss={(stage) => start({ kind: 'boss', stage })}
+    />
+  {/key}
 {:else}
-  <ListenDark stage={screen.stage} onfinish={() => go({ name: 'tabs' })} />
+  <SettingsScreen onback={() => go({ name: 'tabs' })} />
+{/if}
+
+{#if game.error}
+  <div class="toast error" role="alert">{game.error}</div>
 {/if}
 
 {#if pwa.needRefresh}
-  <div class="update" role="status">
+  <div class="toast" role="status">
     <span>Neue Version verfügbar</span>
     <button onclick={applyUpdate}>Aktualisieren</button>
   </div>
 {/if}
 
 <style>
+  .loading {
+    min-height: 100dvh;
+    background: var(--paper);
+  }
   .placeholder {
     padding: calc(var(--safe-top) + 20px) var(--gutter);
   }
@@ -63,7 +104,7 @@
     font-size: var(--fs-h1);
     font-weight: 800;
   }
-  .update {
+  .toast {
     position: fixed;
     top: calc(var(--safe-top) + 10px);
     left: var(--gutter);
@@ -79,7 +120,13 @@
     box-shadow: var(--shadow-float);
     z-index: 20;
   }
-  .update button {
+  .toast.error {
+    padding: 14px 18px;
+    border-radius: 20px;
+    background: var(--red-deep);
+    color: var(--on-red);
+  }
+  .toast button {
     min-height: var(--tap);
     padding: 0 18px;
     border: 0;

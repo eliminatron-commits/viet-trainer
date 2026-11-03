@@ -10,8 +10,10 @@ let analyser: AnalyserNode | null = null;
 let current: AudioBufferSourceNode | null = null;
 const buffers = new Map<string, Promise<AudioBuffer>>();
 
-function context(): AudioContext {
+/** null, wenn der Browser kein WebAudio kann (dann bleibt die App stumm, aber bedienbar). */
+function context(): AudioContext | null {
   if (!ctx) {
+    if (typeof AudioContext === 'undefined') return null;
     ctx = new AudioContext();
     analyser = ctx.createAnalyser();
     analyser.fftSize = 512;
@@ -24,13 +26,14 @@ function context(): AudioContext {
 /** Einmal bei der ersten Nutzergeste aufrufen; spielt einen stillen Puffer, damit iOS den Kontext freigibt. */
 export function installAudioUnlock(): void {
   const unlock = () => {
+    removeEventListener('pointerdown', unlock, true);
     const c = context();
+    if (!c) return;
     void c.resume();
     const src = c.createBufferSource();
     src.buffer = c.createBuffer(1, 1, 22050);
     src.connect(c.destination);
     src.start(0);
-    removeEventListener('pointerdown', unlock, true);
   };
   addEventListener('pointerdown', unlock, true);
 }
@@ -43,7 +46,7 @@ function load(id: string): Promise<AudioBuffer> {
         if (!r.ok) throw new Error(`Audio ${id}: HTTP ${r.status}`);
         return r.arrayBuffer();
       })
-      .then((data) => context().decodeAudioData(data));
+      .then((data) => context()!.decodeAudioData(data));
     p.catch(() => buffers.delete(id));
     buffers.set(id, p);
   }
@@ -53,6 +56,7 @@ function load(id: string): Promise<AudioBuffer> {
 /** Spielt die MP3 zu einer Wort-/Satz-ID; ein laufendes Audio wird abgebrochen. Resolved am Ende. */
 export async function play(id: string): Promise<void> {
   const c = context();
+  if (!c) throw new Error('Kein WebAudio verfügbar');
   if (c.state === 'suspended') await c.resume();
   const buffer = await load(id);
   stop();

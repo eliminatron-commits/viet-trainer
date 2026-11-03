@@ -1,0 +1,14 @@
+// Push-Worker des Việt-Trainers. Secrets nur per `wrangler secret put` (PUSH_TOKEN, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY).
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "viet-trainer-push",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-01",
+  "workers_dev": true,
+  "kv_namespaces": [{ "binding": "STATE", "id": "KV_ID_NACH_WRANGLER_LOGIN" }],
+  "triggers": { "crons": ["*/5 * * * *"] },
+  "vars": {
+    "VAPID_SUBJECT": "https://eliminatron-commits.github.io/viet-trainer/",
+    "ALLOWED_ORIGINS": "https://eliminatron-commits.github.io,https://viet-trainer-v2.pages.dev,http://localhost:5173,http://localhost:4173"
+  }
+}

@@ -11,15 +11,26 @@ export const supportsViewTransitions = () => typeof document !== 'undefined' && 
  * Führt einen Ansichtswechsel aus – mit View Transition (Shared-Element-Morph über
  * `view-transition-name`), wenn verfügbar und Bewegung erwünscht ist.
  */
+let running: Promise<void> = Promise.resolve();
+
 export function transitionTo(update: () => void): void {
   if (!supportsViewTransitions() || reducedMotion()) {
     update();
     return;
   }
-  document.startViewTransition(async () => {
+  const vt = document.startViewTransition(async () => {
     update();
     await tick();
   });
+  running = vt.finished.catch(() => {});
+}
+
+/**
+ * Scrollen erst nach dem laufenden Übergang: Scrollen während einer View Transition
+ * bringt WebKit zum Absturz (im Playwright-WebKit reproduziert).
+ */
+export function afterTransition(fn: () => void): void {
+  void running.then(fn);
 }
 
 /**

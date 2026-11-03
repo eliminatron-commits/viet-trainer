@@ -18,11 +18,11 @@
       "phase": 2,
       "name": "Kernlogik und Erinnerungen",
       "tests": [
-        { "id": "P2-01", "desc": "Vitest: SRS-Intervalle 1/2/4/8/16 Tage", "check": "npm test", "status": "open" },
-        { "id": "P2-02", "desc": "Vitest: Freischaltung der Etappen und Satzfreigabe", "check": "npm test", "status": "open" },
-        { "id": "P2-03", "desc": "Vitest: Session-Mix (~12 Aufgaben, fällige Wiederholungen eingemischt, Weiterspielen)", "check": "npm test", "status": "open" },
-        { "id": "P2-04", "desc": "Vitest: Erinnerungszeit Europe/Berlin inkl. Sommerzeitwechsel", "check": "npm test", "status": "open" },
-        { "id": "P2-05", "desc": "Playwright WebKit (iPhone-Viewport): eine Etappe von Start bis Boss spielbar", "check": "npx playwright test", "status": "open" },
+        { "id": "P2-01", "desc": "Vitest: SRS-Intervalle 1/2/4/8/16 Tage", "check": "npm test", "status": "pass" },
+        { "id": "P2-02", "desc": "Vitest: Freischaltung der Etappen und Satzfreigabe", "check": "npm test", "status": "pass" },
+        { "id": "P2-03", "desc": "Vitest: Session-Mix (~12 Aufgaben, fällige Wiederholungen eingemischt, Weiterspielen)", "check": "npm test", "status": "pass" },
+        { "id": "P2-04", "desc": "Vitest: Erinnerungszeit Europe/Berlin inkl. Sommerzeitwechsel", "check": "npm test", "status": "pass" },
+        { "id": "P2-05", "desc": "Playwright WebKit (iPhone-Viewport): eine Etappe von Start bis Boss spielbar", "check": "npx playwright test", "status": "pass" },
         { "id": "P2-06", "desc": "Worker nach Alex' Freigabe deployt; Test-Push kommt auf dem iPhone aus der installierten App an", "check": "manuell (iPhone)", "status": "open" },
         { "id": "P2-07", "desc": "Abenderinnerung entfällt, wenn das Tagesziel erfüllt ist", "check": "Worker-Test (Vitest) + manuell", "status": "open" }
       ]

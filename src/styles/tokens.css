@@ -31,14 +31,8 @@
   --bad: var(--red);
   --bad-soft: #fbd3cf;
 
-  /* Dunkle Hörwelt */
-  --night: #120b0a;
-  --night-2: #23140f;
-  --glow-core: #ffd27a;
-  --glow-mid: #ff6a2b;
-  --glow-edge: #da251d;
-  --night-ink: #fff3e8;
-  --night-ink-2: #c9a99a;
+  /* Klangscheibe (Hör-Aufgaben): Sonnenhof wie in den Illustrationen */
+  --sun-halo: #ffe58a;
 
   /* Typografie */
   --font: 'Be Vietnam Pro', 'Lexend', system-ui, sans-serif;

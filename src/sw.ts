@@ -29,3 +29,30 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('message', (event) => {
   if ((event.data as { type?: string } | null)?.type === 'SKIP_WAITING') void self.skipWaiting();
 });
+
+// Erinnerungen vom Push-Worker. iOS verlangt zu jedem Push eine sichtbare Benachrichtigung.
+self.addEventListener('push', (event) => {
+  let msg = { title: 'Việt-Trainer', body: '' };
+  try {
+    msg = { ...msg, ...(event.data?.json() as Partial<typeof msg>) };
+  } catch {
+    msg.body = event.data?.text() ?? '';
+  }
+  event.waitUntil(
+    self.registration.showNotification(msg.title, {
+      body: msg.body,
+      icon: `${self.registration.scope}icons/icon-192.png`,
+      tag: 'reminder',
+    }),
+  );
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
+      const open = list[0];
+      return open ? open.focus() : self.clients.openWindow(self.registration.scope);
+    }),
+  );
+});

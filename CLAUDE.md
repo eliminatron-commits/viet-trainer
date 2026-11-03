@@ -28,8 +28,8 @@ Stack: Svelte 5 (nur Runes) + Vite 8 + TypeScript **6** (svelte-check unterstüt
 src/
   content/        types.ts (Inhaltsmodell), *.json (Quelle der Wahrheit), index.ts (typisierter Zugriff, audioUrl)
   lib/
-    components/   Card, Button, PillNav, ProgressRing, GlowOrb – Kernkomponenten
-    audio/        player.ts – WebAudio-Wiedergabe, iOS-Unlock, Pegel für die Kugel
+    components/   Card, Button, PillNav, ProgressRing, SoundDisc – Kernkomponenten
+    audio/        player.ts – WebAudio-Wiedergabe, iOS-Unlock, Pegel für die Klangscheibe
     storage/      state.ts (Spielstand-Typen, Defaults, normalizeSave), persist.ts (IndexedDB, persist(), Export/Import)
     illustrations/ Szenen als Svelte-SVG
     mascot/       Maskottchen-Entwürfe
@@ -67,7 +67,7 @@ prepared/         vorbereitete Inhalte (w251–w538, s151–s270) – nur Migrat
 
 ## Design-Entscheidungen
 
-- **Richtung hybrid, durchgehend vietnamesisch:** Home, Lernpfad, Karten und Quiz hell und illustriert (flache, kräftige, einfarbige Kartenflächen); Hör-Aufgaben und Hör-Diktat dunkel mit rot-orange glühender Kugel (`GlowOrb`, pulsiert per AnalyserNode mit dem Audiopegel), Statusleiste per `theme-color` mitgeschaltet.
+- **Ein Stil, durchgehend hell und vietnamesisch** (Alex, 2026-11-03: die drei Vorbilder sind nur Inspiration, der Stil muss in sich konsistent sein): warmes Off-White, flache, kräftige, einfarbige Flächen im Formvokabular der Illustrationen – auch in Hör-Aufgaben. Dort statt Glühkugel die flache Klangscheibe (`SoundDisc`: Sonne mit Hof wie in den Szenen, der Hof wächst per AnalyserNode mit dem Audiopegel). Kein Dunkelmodus, keine Verläufe, kein Glühen, keine Unschärfe.
 - Tokens nur aus `src/styles/tokens.css`: Flaggenrot `#DA251D`, Sternengelb `#FFCD00`, Flächen Lotus/Laterne/Meer, Grund warmes Off-White `#FBF5EC`, Text `--ink`. Kontrast WCAG AA (Text `--ink` auf allen Flächen, Weiß nur auf Rot).
 - Schrift Be Vietnam Pro, selbst gehostet über `@fontsource` (400/600/800), Headlines ≥ 32 px.
 - Karten-Radius 24–32 px, Tap-Ziele ≥ 44 px, schwebende Pill-Navigation unten (Lernpfad, Training, Sprachführer, Profil), Safe-Area über `--safe-top/--safe-bottom`, nur Hochformat.
@@ -78,7 +78,7 @@ prepared/         vorbereitete Inhalte (w251–w538, s151–s270) – nur Migrat
 
 ## Technische Entscheidungen
 
-- Audio ausschließlich über WebAudio (`lib/audio/player.ts`): iOS-Unlock beim ersten `pointerdown`, AnalyserNode für die Kugel, keine Range-Requests gegen den SW-Cache (Safari-`<audio>` damit unzuverlässig). Hör-Aufgaben starten Audio automatisch.
+- Audio ausschließlich über WebAudio (`lib/audio/player.ts`): iOS-Unlock beim ersten `pointerdown`, AnalyserNode für die Klangscheibe, keine Range-Requests gegen den SW-Cache (Safari-`<audio>` damit unzuverlässig). Hör-Aufgaben starten Audio automatisch.
 - Spielstand = ein Datensatz in IndexedDB (`viet-trainer`/`state`, Schlüssel `save`), bei **jeder** Aktion sofort komplett geschrieben. Neue Felder: nur in `newSave()` ergänzen – `normalizeSave` füllt alte Stände auf. Inkompatible Änderung: `SAVE_VERSION` erhöhen und migrieren.
 - Svelte-`$state` liefert Proxies: Inhaltsobjekte nie per Identität (`indexOf`, `===`) vergleichen, sondern per `id`.
 - Service Worker liegt unter `/viet-trainer/sw.js` (gleicher Pfad wie v13), löscht alle Caches `viet-trainer-v*` und übernimmt sofort, wenn solche Caches existieren. Sonst: „Neue Version“-Hinweis, Update erst auf Tippen.

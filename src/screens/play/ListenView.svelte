@@ -1,0 +1,108 @@
+<script lang="ts">
+  import { onMount } from 'svelte';
+  import Button from '../../lib/components/Button.svelte';
+  import SoundDisc from '../../lib/components/SoundDisc.svelte';
+  import { play, stop } from '../../lib/audio/player';
+  import type { Opt } from './ChoiceView.svelte';
+
+  let {
+    audioId,
+    reveal,
+    options,
+    answerId,
+    picked,
+    onpick,
+  }: {
+    audioId: string;
+    /** Vietnamesischer Text, der nach der Antwort erscheint. */
+    reveal: string;
+    options: Opt[];
+    answerId: string;
+    picked: string | null;
+    onpick: (id: string) => void;
+  } = $props();
+
+  let playing = $state(false);
+
+  async function listen() {
+    playing = true;
+    try {
+      await play(audioId);
+    } catch {
+      /* Audio nicht ladbar – Aufgabe bleibt lösbar über erneutes Tippen */
+    } finally {
+      playing = false;
+    }
+  }
+
+  function answerState(id: string) {
+    if (!picked) return 'idle';
+    if (id === answerId) return 'right';
+    return id === picked ? 'wrong' : 'dim';
+  }
+
+  // Hör-Aufgaben starten automatisch.
+  onMount(() => {
+    void listen();
+    return stop;
+  });
+</script>
+
+<p class="kicker">Was hörst du?</p>
+<div class="prompt">
+  <button class="disc" onclick={listen} aria-label="Noch einmal anhören">
+    <SoundDisc size={170} />
+  </button>
+  {#if picked}
+    <p class="reveal" lang="vi">{reveal}</p>
+  {:else}
+    <p class="status" aria-live="polite">{playing ? 'spielt …' : 'Tippe die Sonne zum Wiederholen'}</p>
+  {/if}
+</div>
+
+<div class="answers">
+  {#each options as o (o.id)}
+    <Button variant="answer" state={answerState(o.id)} dataId={o.id} disabled={picked !== null} onclick={() => onpick(o.id)}>
+      <span lang={o.vi ? 'vi' : 'de'}>{o.text}</span>
+    </Button>
+  {/each}
+</div>
+
+<style>
+  .kicker {
+    font-weight: 600;
+    color: var(--ink-2);
+  }
+  .prompt {
+    background: var(--sea);
+    border-radius: var(--radius-lg);
+    padding: 18px 22px 22px;
+    display: grid;
+    justify-items: center;
+    gap: 6px;
+    text-align: center;
+    box-shadow: var(--shadow-card);
+  }
+  .disc {
+    border: 0;
+    padding: 0;
+    background: transparent;
+    border-radius: 50%;
+    cursor: pointer;
+  }
+  .status {
+    font-size: var(--fs-small);
+    font-weight: 600;
+    color: rgb(35 26 21 / 0.75);
+    min-height: 1.4em;
+  }
+  .reveal {
+    font-size: var(--fs-h2);
+    font-weight: 800;
+    line-height: 1.2;
+  }
+  .answers {
+    display: grid;
+    gap: 12px;
+  }
+</style>

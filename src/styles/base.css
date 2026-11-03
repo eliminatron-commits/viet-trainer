@@ -30,11 +30,6 @@ body {
   touch-action: manipulation;
 }
 
-body[data-theme='dark'] {
-  background: var(--night);
-  color: var(--night-ink);
-}
-
 h1,
 h2,
 h3,
