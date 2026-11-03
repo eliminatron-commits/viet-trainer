@@ -11,26 +11,29 @@ export const supportsViewTransitions = () => typeof document !== 'undefined' && 
  * Führt einen Ansichtswechsel aus – mit View Transition (Shared-Element-Morph über
  * `view-transition-name`), wenn verfügbar und Bewegung erwünscht ist.
  */
-let running: Promise<void> = Promise.resolve();
+let seq = 0;
 
-export function transitionTo(update: () => void): void {
+/**
+ * `morph` nur für Wechsel, bei denen dasselbe Element auf beiden Seiten steht (Lernpfad ↔ Etappe).
+ * Sonst schaltet `data-vt="plain"` alle Inline-`view-transition-name`s ab (base.css) – sonst
+ * ploppt z. B. die Etappenkarte beim Tab-Wechsel deckend über die ausblendende alte Ansicht.
+ */
+export function transitionTo(update: () => void, { morph = false } = {}): void {
   if (!supportsViewTransitions() || reducedMotion()) {
     update();
     return;
   }
+  const root = document.documentElement;
+  const id = ++seq;
+  if (morph) delete root.dataset.vt;
+  else root.dataset.vt = 'plain';
   const vt = document.startViewTransition(async () => {
     update();
     await tick();
   });
-  running = vt.finished.catch(() => {});
-}
-
-/**
- * Scrollen erst nach dem laufenden Übergang: Scrollen während einer View Transition
- * bringt WebKit zum Absturz (im Playwright-WebKit reproduziert).
- */
-export function afterTransition(fn: () => void): void {
-  void running.then(fn);
+  void vt.finished.finally(() => {
+    if (id === seq) delete root.dataset.vt;
+  });
 }
 
 /**

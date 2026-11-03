@@ -2,18 +2,24 @@ import { audioUrl } from '../../content';
 
 /**
  * Audio-Wiedergabe komplett über WebAudio: fetch → decodeAudioData → BufferSource.
- * Gründe: iOS-Unlock über AudioContext.resume() beim ersten Tippen, AnalyserNode
- * für die Glüh-Kugel und keine Range-Requests (Safari-<audio> aus dem SW-Cache ist heikel).
+ * Gründe: iOS-Unlock über AudioContext.resume() bei einer Nutzergeste, AnalyserNode
+ * für die Klangscheibe und keine Range-Requests (Safari-<audio> aus dem SW-Cache ist heikel).
  */
 let ctx: AudioContext | null = null;
 let analyser: AnalyserNode | null = null;
 let current: AudioBufferSourceNode | null = null;
 const buffers = new Map<string, Promise<AudioBuffer>>();
 
+/** Audio Session API (Safari ≥ 16.4), noch nicht in lib.dom. */
+type AudioSessionNavigator = Navigator & { audioSession?: { type: string } };
+
 /** null, wenn der Browser kein WebAudio kann (dann bleibt die App stumm, aber bedienbar). */
 function context(): AudioContext | null {
   if (!ctx) {
     if (typeof AudioContext === 'undefined') return null;
+    // iOS behandelt WebAudio sonst als „ambient“: der Stummschalter schaltet die Lerninhalte ab.
+    const session = (navigator as AudioSessionNavigator).audioSession;
+    if (session) session.type = 'playback';
     ctx = new AudioContext();
     analyser = ctx.createAnalyser();
     analyser.fftSize = 512;
@@ -23,19 +29,22 @@ function context(): AudioContext | null {
   return ctx;
 }
 
-/** Einmal bei der ersten Nutzergeste aufrufen; spielt einen stillen Puffer, damit iOS den Kontext freigibt. */
+/**
+ * Einmal beim Start aufrufen. iOS gibt den Kontext nur bei touchend/click frei (nicht bei
+ * pointerdown) und unterbricht ihn nach App-Wechseln wieder – deshalb bleibt der Listener
+ * dauerhaft und weckt den Kontext bei jeder Geste, solange er nicht läuft.
+ */
 export function installAudioUnlock(): void {
   const unlock = () => {
-    removeEventListener('pointerdown', unlock, true);
     const c = context();
-    if (!c) return;
+    if (!c || c.state === 'running') return;
     void c.resume();
-    const src = c.createBufferSource();
+    const src = c.createBufferSource(); // stiller Puffer, damit iOS die Ausgabe freigibt
     src.buffer = c.createBuffer(1, 1, 22050);
     src.connect(c.destination);
     src.start(0);
   };
-  addEventListener('pointerdown', unlock, true);
+  for (const type of ['pointerdown', 'touchend', 'click', 'keydown']) addEventListener(type, unlock, true);
 }
 
 function load(id: string): Promise<AudioBuffer> {
@@ -57,7 +66,7 @@ function load(id: string): Promise<AudioBuffer> {
 export async function play(id: string): Promise<void> {
   const c = context();
   if (!c) throw new Error('Kein WebAudio verfügbar');
-  if (c.state === 'suspended') await c.resume();
+  if (c.state !== 'running') await c.resume(); // auch iOS-Zustand „interrupted“
   const buffer = await load(id);
   stop();
   const src = c.createBufferSource();
@@ -83,7 +92,7 @@ export function stop(): void {
   }
 }
 
-/** Aktueller Pegel 0..1 (RMS) für die Glüh-Kugel; 0, solange nichts spielt. */
+/** Aktueller Pegel 0..1 (RMS) für die Klangscheibe; 0, solange nichts spielt. */
 const samples = new Uint8Array(512);
 export function level(): number {
   if (!analyser || !current) return 0;

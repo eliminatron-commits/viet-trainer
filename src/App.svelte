@@ -4,7 +4,7 @@
   import Card from './lib/components/Card.svelte';
   import PillNav, { type Tab } from './lib/components/PillNav.svelte';
   import { game, initGame } from './lib/game.svelte';
-  import { afterTransition, transitionTo } from './lib/motion';
+  import { transitionTo } from './lib/motion';
   import { applyUpdate, pwa } from './lib/pwa.svelte';
   import PathScreen from './screens/PathScreen.svelte';
   import Play, { type PlayMode } from './screens/play/Play.svelte';
@@ -20,12 +20,16 @@
   /** Erhöht sich bei jedem Spielstart, damit „Boss“ nach „Session“ eine frische Play-Instanz bekommt. */
   let playRun = $state(0);
 
-  // Jeder Ansichtswechsel beginnt oben (der Lernpfad scrollt danach selbst zur aktuellen Etappe).
-  const go = (next: Screen) =>
-    transitionTo(() => {
-      screen = next;
-      afterTransition(() => scrollTo(0, 0));
-    });
+  // Jeder Ansichtswechsel beginnt oben (der Lernpfad scrollt beim Einhängen selbst zur aktuellen Etappe).
+  // Gescrollt wird im Update, also vor dem neuen View-Transition-Schnappschuss – sonst springt die Seite danach.
+  const go = (next: Screen, morph = false) =>
+    transitionTo(
+      () => {
+        scrollTo(0, 0);
+        screen = next;
+      },
+      { morph },
+    );
   const start = (mode: PlayMode) => {
     playRun++;
     go({ name: 'play', mode });
@@ -40,7 +44,7 @@
   <div class="loading" aria-busy="true"></div>
 {:else if screen.name === 'tabs'}
   {#if tab === 'path'}
-    <PathScreen onopen={(stage) => go({ name: 'stage', stage })} />
+    <PathScreen onopen={(stage) => go({ name: 'stage', stage }, true)} />
   {:else if tab === 'training'}
     <TrainingScreen onstart={(verbsOnly) => start({ kind: 'training', verbsOnly })} />
   {:else if tab === 'profile'}
@@ -57,15 +61,15 @@
     active={tab}
     onselect={(t) =>
       transitionTo(() => {
+        scrollTo(0, 0);
         tab = t;
-        afterTransition(() => scrollTo(0, 0));
       })}
   />
 {:else if screen.name === 'stage'}
   {@const stage = screen.stage}
   <StageScreen
     {stage}
-    onback={() => go({ name: 'tabs' })}
+    onback={() => go({ name: 'tabs' }, true)}
     onlearn={() => start({ kind: 'stage', stage })}
     onboss={() => start({ kind: 'boss', stage })}
   />
@@ -79,6 +83,12 @@
   {/key}
 {:else}
   <SettingsScreen onback={() => go({ name: 'tabs' })} />
+{/if}
+
+<!-- Fläche unter Uhr/Dynamic Island: gescrollter Inhalt verschwindet darunter statt die Statusleiste zu überlagern.
+     Die Etappen-Ansicht ist randlos farbig und braucht sie nicht. -->
+{#if screen.name !== 'stage'}
+  <div class="statusbar" aria-hidden="true"></div>
 {/if}
 
 {#if game.error}
@@ -103,6 +113,14 @@
   .placeholder h1 {
     font-size: var(--fs-h1);
     font-weight: 800;
+  }
+  .statusbar {
+    position: fixed;
+    inset: 0 0 auto;
+    height: var(--safe-top);
+    background: var(--paper);
+    z-index: 15;
+    view-transition-name: statusbar;
   }
   .toast {
     position: fixed;

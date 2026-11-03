@@ -1,12 +1,10 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
   import { content } from '../content';
   import type { Stage } from '../content/types';
   import Card from '../lib/components/Card.svelte';
   import ProgressRing from '../lib/components/ProgressRing.svelte';
   import { game, today } from '../lib/game.svelte';
   import MarbleMountains from '../lib/illustrations/MarbleMountains.svelte';
-  import { afterTransition } from '../lib/motion';
   import { currentStage, regionDone, stageLearned, stageStatus, stageWords } from '../lib/logic/path';
   import { currentStreak, levelInfo } from '../lib/logic/rewards';
   import Buffalo from '../lib/mascot/Buffalo.svelte';
@@ -27,13 +25,8 @@
   const tones = ['sea', 'lantern', 'lotus', 'yellow', 'paper'] as const;
   const regionOf = $derived(content.regions.find((r) => r.id === current.region)!);
 
-  onMount(() =>
-    afterTransition(() => {
-      // Nur scrollen, wenn die aktuelle Etappe weiter unten liegt – sonst bleibt die Kopfzeile sichtbar.
-      const el = document.querySelector('[data-current]');
-      if (el && el.getBoundingClientRect().top > innerHeight * 0.6) el.scrollIntoView({ block: 'center', inline: 'nearest' });
-    }),
-  );
+  const currentOpen = $derived(stageStatus(save, current.id) === 'open');
+  const currentNo = $derived(content.stages.findIndex((s) => s.id === current.id) + 1);
 </script>
 
 <main class="home">
@@ -52,6 +45,15 @@
     <div class="stat"><strong>{xpToday}/{save.dailyGoal}</strong><span>XP heute</span></div>
     <div class="stat"><strong>Lv {level}</strong><span>Level</span></div>
   </div>
+
+  <!-- Weiter-Karte oben: auf jedem iPhone ohne Scrollen sichtbar, wächst zur Etappen-Ansicht auf. -->
+  {#if currentOpen}
+    <Card tone="lantern" vtName="stage-card" onclick={() => onopen(current)}>
+      <p class="kicker dark">Etappe {currentNo} · {stageWords(current.id).length} Wörter · {Math.round(stageLearned(save, current.id) * 100)} %</p>
+      <h2 style:view-transition-name="stage-title">{current.title}</h2>
+      <p class="go">Los geht's →</p>
+    </Card>
+  {/if}
 
   {#each content.regions as region, r (region.id)}
     {@const stages = content.stages.filter((s) => s.region === region.id)}
@@ -91,15 +93,6 @@
                 <span>{n}</span>
               {/if}
             </button>
-            {#if isCurrent}
-              <div class="current-card">
-                <Card tone="lantern" vtName="stage-card" onclick={() => onopen(stage)}>
-                  <p class="kicker dark">Etappe {n} · {stageWords(stage.id).length} Wörter · {Math.round(stageLearned(save, stage.id) * 100)} %</p>
-                  <h2 style:view-transition-name="stage-title">{stage.title}</h2>
-                  <p class="go">Los geht's →</p>
-                </Card>
-              </div>
-            {/if}
           </li>
         {/each}
       </ol>
@@ -189,10 +182,6 @@
     justify-items: center;
     gap: 14px;
     transform: translateX(var(--x));
-  }
-  .current-card {
-    width: min(320px, 100%);
-    transform: translateX(calc(var(--x) * -1));
   }
   .node {
     width: 68px;

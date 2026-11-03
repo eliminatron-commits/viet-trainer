@@ -51,6 +51,10 @@ button {
   animation-duration: var(--dur-slow);
   animation-timing-function: var(--ease-out);
 }
+/* Shared Elements (Inline-Namen) morphen nur bei transitionTo(…, { morph: true }) – siehe motion.ts */
+:root[data-vt='plain'] [style*='view-transition-name'] {
+  view-transition-name: none !important;
+}
 @media (prefers-reduced-motion: reduce) {
   ::view-transition-group(*),
   ::view-transition-old(*),

@@ -18,6 +18,10 @@ Node liegt in `C:\Program Files\nodejs` und ist **nicht** auf dem PATH der Sitzu
 | `npm run build` | `dist/` inkl. `sw.js` mit Precache (App-Shell, Fonts, alle Audios) |
 | `npm run migrate` | Einmal-Migration legacy/prepared → `src/content/*.json` + `public/audio/` (überschreibt!) |
 
+Push-Worker: in `worker/` `npx wrangler deploy` (Alex ist angemeldet; Konto Free-Plan). Secrets `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `PUSH_TOKEN` nur per `wrangler secret put/bulk` über Pipe. Die App braucht beim Build `VITE_PUSH_URL` (`https://viet-trainer-push.alex-rettig.workers.dev`) und `VITE_PUSH_TOKEN` aus der Umgebung – fehlen sie, zeigt die App „nicht eingerichtet“. Achtung: `npx playwright test` baut `dist/` ohne diese Variablen neu.
+
+Testkopie bis Phase 4: Worker `viet-trainer-v2` (nur statische Assets) unter `https://viet-trainer-v2.alex-rettig.workers.dev/viet-trainer/`. Deploy-Ordner außerhalb des Repos mit `wrangler.jsonc` (`assets.directory` → Ordner mit `viet-trainer/` = `dist/` und `_redirects`). `wrangler pages project create` legt seit wrangler 4.15x stattdessen einen Worker an – nicht verwenden.
+
 Kein `python` im Bash-Tool aufrufen: Auf diesem Rechner ist `python` ein Microsoft-Store-Stub, der hängt. Die Python-Skripte in `scripts/` (ElevenLabs/Trim) sind Altbestand; neue Audios gibt es nicht (Abo gekündigt).
 
 Stack: Svelte 5 (nur Runes) + Vite 8 + TypeScript **6** (svelte-check unterstützt TS 7 noch nicht), vite-plugin-pwa (injectManifest, `src/sw.ts`), idb-keyval, Vitest, Playwright WebKit (ab Phase 2). Worker unter `worker/` (ab Phase 2, wrangler).
@@ -32,15 +36,18 @@ src/
     audio/        player.ts – WebAudio-Wiedergabe, iOS-Unlock, Pegel für die Klangscheibe
     storage/      state.ts (Spielstand-Typen, Defaults, normalizeSave), persist.ts (IndexedDB, persist(), Export/Import)
     illustrations/ Szenen als Svelte-SVG
-    mascot/       Maskottchen-Entwürfe
+    logic/        srs, path (Freischaltung), session (Aufgaben-Mix), rewards (XP/Level/Serie) – reine Funktionen
+    mascot/       Buffalo.svelte (Trâu)
     motion.ts     View Transitions + Crossfade-Fallback
+    game.svelte.ts globaler Spielstand + Aktionen; push.svelte.ts Push-Client
     pwa.svelte.ts SW-Registrierung, „Neue Version“-Hinweis
-  prototype/      Stil-Prototyp aus Phase 1 (wird in Phase 2 durch echte Screens ersetzt)
+  screens/        Lernpfad, Etappe, Training, Profil, Einstellungen; play/ = Session/Boss/Training
   styles/         tokens.css (Design-Tokens), base.css
-  sw.ts           Service Worker (→ /viet-trainer/sw.js)
+  sw.ts           Service Worker (→ /viet-trainer/sw.js) inkl. push/notificationclick
 public/audio/     <id>.mp3 für jedes Wort und jeden Satz
 scripts/migrate/  curriculum.ts (Etappen-Zuordnung), migrate.ts
-tests/            Vitest
+tests/            Vitest; tests/e2e/ Playwright
+worker/           Push-Worker „viet-trainer-push“ (eigenes package.json): schedule.ts (Berlin-Zeit, fällige Erinnerungen), index.ts (Routen + Cron)
 legacy/           alte App v13 – nur Migrationsquelle, nicht anfassen
 prepared/         vorbereitete Inhalte (w251–w538, s151–s270) – nur Migrationsquelle
 ```
@@ -71,7 +78,8 @@ prepared/         vorbereitete Inhalte (w251–w538, s151–s270) – nur Migrat
 - Tokens nur aus `src/styles/tokens.css`: Flaggenrot `#DA251D`, Sternengelb `#FFCD00`, Flächen Lotus/Laterne/Meer, Grund warmes Off-White `#FBF5EC`, Text `--ink`. Kontrast WCAG AA (Text `--ink` auf allen Flächen, Weiß nur auf Rot).
 - Schrift Be Vietnam Pro, selbst gehostet über `@fontsource` (400/600/800), Headlines ≥ 32 px.
 - Karten-Radius 24–32 px, Tap-Ziele ≥ 44 px, schwebende Pill-Navigation unten (Lernpfad, Training, Sprachführer, Profil), Safe-Area über `--safe-top/--safe-bottom`, nur Hochformat.
-- Übergänge: `transitionTo()` aus `motion.ts` (View Transitions API, Shared Elements per `view-transition-name`); Fallback Svelte-`crossfade` (`send/receive`), der bei vorhandener View Transition 0 ms dauert. `prefers-reduced-motion` schaltet alles ab.
+- Übergänge: `transitionTo()` aus `motion.ts` (View Transitions API, Shared Elements per `view-transition-name`); Fallback Svelte-`crossfade` (`send/receive`), der bei vorhandener View Transition 0 ms dauert. `prefers-reduced-motion` schaltet alles ab. Shared Elements (Inline-`view-transition-name`) morphen nur bei `transitionTo(…, { morph: true })` (Lernpfad ↔ Etappe); sonst Kreuzblende. Scrollen gehört **in** das Update (vor den neuen Schnappschuss), nie danach – sonst springt die Seite. Übergänge in Edge per Playwright mit iPhone-Standalone-Maßen (440×956, Safe-Area per `--safe-top`-Override) Bild für Bild prüfen, bevor Alex sie sieht (WebKit unter Windows stürzt bei View Transitions ab).
+- Safe Area: Inhalt läuft unter Uhr/Dynamic Island. Die feste Fläche `.statusbar` (App.svelte) deckt sie in `--paper` ab; Kopfzeilen beginnen bei `--safe-top + 20px`. Wichtiges (Weiter-Karte) muss ohne Scrollen sichtbar sein – kein automatisches Scrollen.
 - **Illustrationen:** eigene flache SVGs, keine Konturen (nur Flächen), ≤ 14 Farben pro Szene als Konstanten-Objekt `C`, Licht von rechts oben (Schattenseite links dunkler), Ferne blasser/kühler, Vordergrund unten groß. Referenz: `MarbleMountains.svelte`.
 - Maskottchen: **Wasserbüffel „Trâu“** (Alex, 2026-11-02) – `src/lib/mascot/Buffalo.svelte`: schieferblau, cremefarbene Hörner, Lotus auf dem Kopf, rotes Halstuch mit gelbem Stern. Wächst mit dem Level, Accessoires ab Phase 3. Gleiche Regeln wie Illustrationen. Der Gecko-Entwurf ist verworfen.
 - Richtung: mit der Maskottchen-Wahl am Stil-Prototyp aus Phase 1 abgenommen (2026-11-02).

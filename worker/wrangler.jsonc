@@ -5,10 +5,10 @@
   "main": "src/index.ts",
   "compatibility_date": "2026-10-01",
   "workers_dev": true,
-  "kv_namespaces": [{ "binding": "STATE", "id": "KV_ID_NACH_WRANGLER_LOGIN" }],
+  "kv_namespaces": [{ "binding": "STATE", "id": "7bae3fa3cf374869a0817bcf080391ca" }],
   "triggers": { "crons": ["*/5 * * * *"] },
   "vars": {
     "VAPID_SUBJECT": "https://eliminatron-commits.github.io/viet-trainer/",
-    "ALLOWED_ORIGINS": "https://eliminatron-commits.github.io,https://viet-trainer-v2.pages.dev,http://localhost:5173,http://localhost:4173"
+    "ALLOWED_ORIGINS": "https://eliminatron-commits.github.io,https://viet-trainer-v2.alex-rettig.workers.dev,http://localhost:5173,http://localhost:4173"
   }
 }
