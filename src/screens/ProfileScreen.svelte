@@ -1,5 +1,6 @@
 <script lang="ts">
   import Button from '../lib/components/Button.svelte';
+  import { arrivingByTab } from '../lib/motion';
   import Card from '../lib/components/Card.svelte';
   import { game, today } from '../lib/game.svelte';
   import { currentStreak, levelInfo } from '../lib/logic/rewards';
@@ -13,7 +14,7 @@
   const stagesDone = $derived(Object.values(game.save.stages).filter((s) => s?.done).length);
 </script>
 
-<main class="profile">
+<main class="profile" class:arrive={arrivingByTab()}>
   <div class="hero">
     <Buffalo size={150} tappable />
     <h1>Level {info.level}</h1>

@@ -1,13 +1,21 @@
+<script lang="ts" module>
+  /** Zuletzt geöffnete Etappe samt Scrollstand: dorthin schrumpft die Etappe beim Zurückgehen (überlebt das Neu-Einhängen). */
+  let returnTo: { id: string; scroll: number } | null = null;
+</script>
+
 <script lang="ts">
+  import { onMount } from 'svelte';
   import { content } from '../content';
   import type { Stage } from '../content/types';
   import Card from '../lib/components/Card.svelte';
   import ProgressRing from '../lib/components/ProgressRing.svelte';
   import { game, today } from '../lib/game.svelte';
-  import MarbleMountains from '../lib/illustrations/MarbleMountains.svelte';
+  import RegionHero, { REGION_TONE } from '../lib/illustrations/RegionHero.svelte';
+  import RegionScene from '../lib/illustrations/RegionScene.svelte';
   import { currentStage, regionDone, stageLearned, stageStatus, stageWords } from '../lib/logic/path';
   import { currentStreak, levelInfo } from '../lib/logic/rewards';
   import Buffalo from '../lib/mascot/Buffalo.svelte';
+  import { arrivingByTab } from '../lib/motion';
 
   let { onopen }: { onopen: (stage: Stage) => void } = $props();
 
@@ -22,14 +30,30 @@
     return h < 11 ? 'Guten Morgen' : h < 18 ? 'Hallo' : 'Guten Abend';
   })();
   const offsets = [0, 70, 30, -50, -70, 10];
-  const tones = ['sea', 'lantern', 'lotus', 'yellow', 'paper'] as const;
   const regionOf = $derived(content.regions.find((r) => r.id === current.region)!);
 
   const currentOpen = $derived(stageStatus(save, current.id) === 'open');
   const currentNo = $derived(content.stages.findIndex((s) => s.id === current.id) + 1);
+
+  // Genau ein Element heißt `stage-card` (sonst bricht die View Transition ab): die Weiter-Karte,
+  // oder – wenn eine andere Etappe geöffnet wird bzw. wurde – deren Knoten.
+  let opening = $state(returnTo?.id ?? null);
+  const fromCard = $derived(currentOpen && (opening === null || opening === current.id));
+  function open(stage: Stage) {
+    opening = stage.id;
+    returnTo = { id: stage.id, scroll: scrollY };
+    onopen(stage);
+  }
+
+  // Zurück aus der Etappe: Scrollstand wiederherstellen, bevor der neue Schnappschuss entsteht,
+  // damit die Etappe in ihren Knoten zurückschrumpft. Beim Tab-Wechsel gleiten die Teile gestaffelt herein.
+  const motionOnArrival = document.documentElement.dataset.vt ?? '';
+  onMount(() => {
+    if (motionOnArrival === 'morph-close' && returnTo) scrollTo(0, returnTo.scroll);
+  });
 </script>
 
-<main class="home">
+<main class="home" class:arrive={arrivingByTab()}>
   <header class="top">
     <div>
       <p class="kicker">{greeting}, Alex</p>
@@ -46,13 +70,24 @@
     <div class="stat"><strong>Lv {level}</strong><span>Level</span></div>
   </div>
 
-  <!-- Weiter-Karte oben: auf jedem iPhone ohne Scrollen sichtbar, wächst zur Etappen-Ansicht auf. -->
+  <!-- Weiter-Karte oben: auf jedem iPhone ohne Scrollen sichtbar. Wie im Kajak-Vorbild liegt das Hero-Objekt
+       der Region schräg darauf und fliegt beim Öffnen aufrecht in die Etappen-Ansicht. -->
   {#if currentOpen}
-    <Card tone="lantern" vtName="stage-card" onclick={() => onopen(current)}>
-      <p class="kicker dark">Etappe {currentNo} · {stageWords(current.id).length} Wörter · {Math.round(stageLearned(save, current.id) * 100)} %</p>
-      <h2 style:view-transition-name="stage-title">{current.title}</h2>
-      <p class="go">Los geht's →</p>
-    </Card>
+    <div class="weiter">
+      <Card tone={REGION_TONE[current.region]} vtName={fromCard ? 'stage-card' : undefined} onclick={() => open(current)}>
+        <div class="weiter-text">
+          <p class="kicker dark">
+            <span>Etappe {currentNo}</span> · <span>{stageWords(current.id).length} Wörter</span> ·
+            <span>{Math.round(stageLearned(save, current.id) * 100)} %</span>
+          </p>
+          <h2 style:view-transition-name={fromCard ? 'stage-title' : undefined}>{current.title}</h2>
+          <p class="go">Los geht's →</p>
+        </div>
+      </Card>
+      <div class="hero" style:view-transition-name={fromCard ? 'stage-hero' : undefined} aria-hidden="true">
+        <div class="bob"><RegionHero region={current.region} size={112} /></div>
+      </div>
+    </div>
   {/if}
 
   {#each content.regions as region, r (region.id)}
@@ -60,9 +95,9 @@
     {@const done = stages.filter((s) => save.stages[s.id]?.done).length}
     {@const firstIndex = content.stages.findIndex((s) => s.region === region.id)}
     <section class="region" class:locked={stageStatus(save, stages[0]!.id) === 'locked'}>
-      <Card tone={tones[r]}>
-        <div class="region-card" class:with-scene={region.id === 'danang'}>
-          {#if region.id === 'danang'}<div class="scene"><MarbleMountains /></div>{/if}
+      <Card tone={REGION_TONE[region.id]}>
+        <div class="region-card">
+          <div class="scene"><RegionScene region={region.id} /></div>
           <div class="region-text">
             <p class="kicker dark">Region {r + 1} von {content.regions.length}{regionDone(save, region.id) ? ' · geschafft' : ''}</p>
             <h2>{region.name}</h2>
@@ -79,8 +114,9 @@
           <li class="node-row" style:--x="{offsets[i % offsets.length]}px" data-current={isCurrent ? '' : undefined}>
             <button
               class="node {isCurrent ? 'current' : status}"
+              style:view-transition-name={!fromCard && opening === stage.id ? 'stage-card' : undefined}
               disabled={status === 'locked'}
-              onclick={() => onopen(stage)}
+              onclick={() => open(stage)}
               aria-label="Etappe {n}: {stage.title} – {status === 'done' ? 'geschafft' : status === 'open' ? 'offen' : 'gesperrt'}"
             >
               {#if status === 'done'}
@@ -123,6 +159,10 @@
   .kicker.dark {
     color: rgb(35 26 21 / 0.75);
   }
+  /* Kennzahlen umbrechen nur als Ganzes (sonst steht „%“ allein in der Zeile). */
+  .kicker span {
+    white-space: nowrap;
+  }
   h1 {
     font-size: var(--fs-h1);
     font-weight: 800;
@@ -154,6 +194,34 @@
     font-size: 13px;
     color: var(--ink-2);
   }
+  .weiter {
+    position: relative;
+    margin-top: 6px;
+  }
+  .weiter-text {
+    padding-right: 100px;
+  }
+  /* Das Hero-Objekt bricht oben rechts aus der Karte aus, schräg wie das Kajak im Vorbild. */
+  .hero {
+    position: absolute;
+    top: -24px;
+    right: 0;
+    width: 112px;
+    height: 112px;
+    transform: rotate(-22deg);
+    pointer-events: none;
+  }
+  .bob {
+    animation: hero-bob 3.2s ease-in-out infinite alternate;
+  }
+  @keyframes hero-bob {
+    from {
+      transform: translateY(2px) rotate(-3deg);
+    }
+    to {
+      transform: translateY(-6px) rotate(3deg);
+    }
+  }
   .region {
     display: grid;
     gap: 20px;
@@ -161,13 +229,13 @@
   .region.locked {
     opacity: 0.6;
   }
-  .region-card.with-scene {
+  .region-card {
     margin: -22px;
   }
   .scene {
     aspect-ratio: 400 / 260;
   }
-  .with-scene .region-text {
+  .region-text {
     padding: 16px 22px 22px;
   }
   .path {
@@ -234,7 +302,8 @@
     }
   }
   @media (prefers-reduced-motion: reduce) {
-    .node.current {
+    .node.current,
+    .bob {
       animation: none;
     }
   }

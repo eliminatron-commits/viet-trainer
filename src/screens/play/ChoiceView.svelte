@@ -64,7 +64,14 @@
 
 <div class="answers">
   {#each options as o (o.id)}
-    <Button variant="answer" state={answerState(o.id)} dataId={o.id} disabled={picked !== null} onclick={() => onpick(o.id)}>
+    <Button
+      variant="answer"
+      state={answerState(o.id)}
+      cheer={picked === o.id && o.id === answerId}
+      dataId={o.id}
+      disabled={picked !== null}
+      onclick={() => onpick(o.id)}
+    >
       <span lang={o.vi ? 'vi' : 'de'}>{o.text}</span>
     </Button>
   {/each}

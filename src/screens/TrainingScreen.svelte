@@ -1,5 +1,6 @@
 <script lang="ts">
   import Button from '../lib/components/Button.svelte';
+  import { arrivingByTab } from '../lib/motion';
   import Card from '../lib/components/Card.svelte';
   import { game, today } from '../lib/game.svelte';
   import { learnedKeys } from '../lib/logic/session';
@@ -13,7 +14,7 @@
   const due = $derived(keys.filter((k) => isDue(game.save.items[k]!, day)).length);
 </script>
 
-<main class="training">
+<main class="training" class:arrive={arrivingByTab()}>
   <h1>Training</h1>
   <p class="lead">Endlos wiederholen, was du schon kannst – fällige Einheiten zuerst.</p>
 

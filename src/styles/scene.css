@@ -1,0 +1,231 @@
+/*
+ * Bewegung der Orts-Szenen (Scene.svelte) – wie im Kajak-Vorbild:
+ * 1. Aufbau: beim ersten Sichtbarwerden steigen, sinken oder gleiten die Ebenen gestaffelt herein.
+ *    Klassen `in in-rise|in-drop|in-left|in-right|in-pop|in-fade|in-grow`, Verzögerung `--e` (ms),
+ *    Gleitweg `--from` (px, Standard: ganze Bildbreite, damit nichts vorab am Rand hervorlugt).
+ * 2. Leben: danach Schleifen `loop-*` mit Dauer `--t`, Versatz `--d` und Ausschlag je Art.
+ * Eintritt und Schleife nie am selben Element (beide nutzen transform) – Gruppen verschachteln.
+ * Alles nur transform/opacity an SVG-Gruppen; außerhalb des Bildschirms pausiert (.paused).
+ */
+.scene .in,
+.scene [class*='loop-'] {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.scene .origin-top {
+  transform-origin: 50% 0;
+}
+.scene .origin-bottom {
+  transform-origin: 50% 100%;
+}
+.scene .origin-left {
+  transform-origin: 0 50%;
+}
+
+/* Aufbau */
+.scene[data-phase='wait'] .in {
+  opacity: 0;
+}
+.scene[data-phase='in'] .in {
+  animation: 900ms var(--ease-out) both;
+  animation-delay: calc(var(--e, 0) * 1ms);
+}
+.scene[data-phase='in'] .in-rise {
+  animation-name: s-rise;
+}
+.scene[data-phase='in'] .in-drop {
+  animation-name: s-drop;
+}
+.scene[data-phase='in'] .in-left {
+  animation-name: s-left;
+}
+.scene[data-phase='in'] .in-right {
+  animation-name: s-right;
+}
+.scene[data-phase='in'] .in-pop {
+  animation-name: s-pop;
+  animation-duration: 640ms;
+  animation-timing-function: var(--ease-spring);
+}
+.scene[data-phase='in'] .in-fade {
+  animation-name: s-fade;
+}
+.scene[data-phase='in'] .in-grow {
+  transform-origin: 50% 100%;
+  animation-name: s-grow;
+  animation-duration: 760ms;
+  animation-timing-function: var(--ease-spring);
+}
+@keyframes s-rise {
+  from {
+    transform: translateY(80px);
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+}
+@keyframes s-drop {
+  from {
+    transform: translateY(-60px);
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+}
+@keyframes s-left {
+  from {
+    transform: translateX(calc(var(--from, 420) * -1px));
+  }
+}
+@keyframes s-right {
+  from {
+    transform: translateX(calc(var(--from, 420) * 1px));
+  }
+}
+@keyframes s-pop {
+  from {
+    transform: scale(0);
+  }
+}
+@keyframes s-fade {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes s-grow {
+  from {
+    transform: scaleY(0);
+  }
+}
+
+/* Leben */
+.scene .loop-bob {
+  animation: l-bob var(--t, 3.4s) ease-in-out var(--d, 0s) infinite alternate;
+}
+.scene .loop-drift {
+  animation: l-drift var(--t, 30s) ease-in-out var(--d, 0s) infinite alternate;
+}
+.scene .loop-breathe {
+  animation: l-breathe var(--t, 4.8s) ease-in-out var(--d, 0s) infinite alternate;
+}
+.scene .loop-shimmer {
+  animation: l-shimmer var(--t, 3.2s) ease-in-out var(--d, 0s) infinite alternate;
+}
+.scene .loop-sway {
+  animation: l-sway var(--t, 3s) ease-in-out var(--d, 0s) infinite alternate;
+}
+.scene .loop-cross {
+  animation: l-cross var(--t, 16s) linear var(--d, 0s) infinite;
+}
+.scene .loop-flap {
+  animation: l-flap var(--t, 0.32s) ease-in-out var(--d, 0s) infinite alternate;
+}
+.scene .loop-wave {
+  animation: l-wave var(--t, 1.4s) ease-in-out var(--d, 0s) infinite alternate;
+}
+.scene .loop-ring {
+  animation: l-ring var(--t, 2.6s) ease-out var(--d, 0s) infinite;
+}
+.scene .loop-spin {
+  animation: l-spin var(--t, 1s) linear var(--d, 0s) infinite;
+}
+.scene .loop-drip {
+  animation: l-drip var(--t, 1.6s) ease-in var(--d, 0s) infinite;
+}
+@keyframes l-bob {
+  from {
+    transform: translateY(0) rotate(calc(var(--rot, 3) * -1deg));
+  }
+  to {
+    transform: translateY(calc(var(--amp, 3) * -1px)) rotate(calc(var(--rot, 3) * 1deg));
+  }
+}
+@keyframes l-drift {
+  from {
+    transform: translateX(calc(var(--dx, 16) * -1px));
+  }
+  to {
+    transform: translateX(calc(var(--dx, 16) * 1px));
+  }
+}
+@keyframes l-breathe {
+  to {
+    transform: scale(var(--s, 1.08));
+  }
+}
+@keyframes l-shimmer {
+  from {
+    transform: translateX(calc(var(--dx, 10) * -1px));
+    opacity: 0.35;
+  }
+  to {
+    transform: translateX(calc(var(--dx, 10) * 1px));
+    opacity: 1;
+  }
+}
+@keyframes l-sway {
+  from {
+    transform: rotate(calc(var(--rot, 4) * -1deg));
+  }
+  to {
+    transform: rotate(calc(var(--rot, 4) * 1deg));
+  }
+}
+@keyframes l-cross {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(var(--dist, 520px));
+  }
+}
+@keyframes l-flap {
+  to {
+    transform: scaleY(0.35);
+  }
+}
+@keyframes l-wave {
+  from {
+    transform: skewY(calc(var(--rot, 6) * -1deg));
+  }
+  to {
+    transform: skewY(calc(var(--rot, 6) * 1deg));
+  }
+}
+@keyframes l-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes l-drip {
+  from {
+    transform: translateY(0) scale(0.4);
+    opacity: 0;
+  }
+  20% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(var(--fall, 40px));
+    opacity: 0;
+  }
+}
+@keyframes l-ring {
+  from {
+    transform: scale(0.5);
+    opacity: 0.9;
+  }
+  to {
+    transform: scale(1.35);
+    opacity: 0;
+  }
+}
+
+/* Außerhalb des Bildschirms ruht die Szene (Akku, 60 fps für das Sichtbare). */
+.scene.paused,
+.scene.paused * {
+  animation-play-state: paused !important;
+}

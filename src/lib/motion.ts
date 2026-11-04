@@ -1,6 +1,4 @@
 import { tick } from 'svelte';
-import { crossfade } from 'svelte/transition';
-import { cubicOut } from 'svelte/easing';
 
 export const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -12,13 +10,19 @@ export const supportsViewTransitions = () => typeof document !== 'undefined' && 
  * - morph-open / morph-close: dieselbe Karte wächst zum Vollbild bzw. schrumpft zurück (Lernpfad ↔ Etappe)
  * - tab-next / tab-prev: Seiten gleiten in Richtung des gewählten Tabs
  * - push / pop: Unterseite schiebt sich von rechts herein bzw. zurück (Einstellungen)
- * - sheet-up / sheet-down: Session fährt wie ein Blatt von unten hoch bzw. wieder hinunter
+ * - reveal: Session öffnet sich als Kreis vom Tippunkt aus (wie die Tipp-Welle im Vorbild)
+ * - sheet-down: Session sinkt wie ein Blatt hinunter und gibt die Welt dahinter frei
  * Außer bei morph-* sind alle Inline-`view-transition-name`s abgeschaltet (base.css), sonst
  * ploppt z. B. die Etappenkarte deckend über die alte Ansicht.
  */
-export type Motion = 'morph-open' | 'morph-close' | 'tab-next' | 'tab-prev' | 'push' | 'pop' | 'sheet-up' | 'sheet-down';
+export type Motion = 'morph-open' | 'morph-close' | 'tab-next' | 'tab-prev' | 'push' | 'pop' | 'reveal' | 'sheet-down';
 
 let seq = 0;
+
+/** Letzter Tippunkt – Mittelpunkt des Kreises bei „reveal“. */
+let tap = { x: 0, y: 0 };
+if (typeof window !== 'undefined')
+  window.addEventListener('pointerdown', (e: PointerEvent) => (tap = { x: e.clientX, y: e.clientY }), { capture: true, passive: true });
 
 /** Führt einen Ansichtswechsel aus – mit View Transition, wenn verfügbar und Bewegung erwünscht ist. */
 export function transitionTo(update: () => void, motion: Motion): void {
@@ -29,6 +33,10 @@ export function transitionTo(update: () => void, motion: Motion): void {
   const root = document.documentElement;
   const id = ++seq;
   root.dataset.vt = motion;
+  if (motion === 'reveal') {
+    root.style.setProperty('--vt-x', `${tap.x || innerWidth / 2}px`);
+    root.style.setProperty('--vt-y', `${tap.y || innerHeight * 0.8}px`);
+  }
   const vt = document.startViewTransition(async () => {
     update();
     await tick();
@@ -38,11 +46,6 @@ export function transitionTo(update: () => void, motion: Motion): void {
   });
 }
 
-/**
- * Fallback-Morph für Browser ohne View Transitions. Bei verfügbarer View Transition
- * oder reduzierter Bewegung dauert er 0 ms, damit nichts doppelt animiert.
- */
-export const [send, receive] = crossfade({
-  duration: () => (supportsViewTransitions() || reducedMotion() ? 0 : 380),
-  easing: cubicOut,
-});
+
+/** Wurde die Ansicht gerade per Tab-Wechsel betreten? (beim Initialisieren aufrufen) → Klasse `arrive`, base.css. */
+export const arrivingByTab = () => document.documentElement.dataset.vt?.startsWith('tab') ?? false;

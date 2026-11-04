@@ -5,12 +5,16 @@
 </script>
 
 <script lang="ts">
+  import { cubicOut } from 'svelte/easing';
+  import { Tween } from 'svelte/motion';
   import Button from '../../lib/components/Button.svelte';
   import Card from '../../lib/components/Card.svelte';
+  import RegionScene from '../../lib/illustrations/RegionScene.svelte';
   import Buffalo from '../../lib/mascot/Buffalo.svelte';
   import { play } from '../../lib/audio/player';
   import { game, recordAnswer, recordBossWin, recordSeen, today } from '../../lib/game.svelte';
-  import { bossReady } from '../../lib/logic/path';
+  import { bossReady, currentStage } from '../../lib/logic/path';
+  import { reducedMotion } from '../../lib/motion';
   import { XP_PER_CORRECT } from '../../lib/logic/rewards';
   import {
     answerOf,
@@ -47,6 +51,10 @@
   const correct = $derived(picked !== null && picked === answer);
   const total = $derived(mode.kind === 'training' ? 12 : tasks.length);
   const position = $derived(mode.kind === 'training' ? index % 12 : index);
+
+  // Ergebnis wie die Bestätigung im Vorbild: der Ort baut sich auf, der Büffel jubelt davor, die XP zählen hoch.
+  const resultRegion = $derived(mode.kind === 'training' ? currentStage(game.save).region : mode.stage.region);
+  const xpShown = new Tween(0, { duration: 1100, delay: 380, easing: cubicOut });
 
   function options(t: Task): Opt[] {
     if (t.kind === 'role') return t.options.map((w) => ({ id: w.id, text: w.vn, vi: true }));
@@ -85,6 +93,7 @@
   function finish(result: 'done' | 'won' | 'lost') {
     if (result === 'won' && mode.kind === 'boss') recordBossWin(mode.stage.id, lives);
     outcome = result;
+    void xpShown.set(round.xp, reducedMotion() ? { duration: 0, delay: 0 } : undefined);
     void reportToWorker(game.save, today());
   }
 
@@ -107,6 +116,7 @@
     picked = null;
     lives = BOSS_LIVES;
     round = { right: 0, wrong: 0, xp: 0, levelUp: null, goal: false };
+    void xpShown.set(0, { duration: 0, delay: 0 });
     outcome = null;
   }
 
@@ -119,7 +129,10 @@
 <main class="play" data-task-kind={task?.kind} data-answer={answer} data-outcome={outcome}>
   {#if outcome}
     <section class="result">
-      <div class="mascot"><Buffalo size={150} mood={outcome === 'lost' ? 'sad' : 'cheer'} /></div>
+      <div class="result-scene">
+        <div class="scene-clip"><RegionScene region={resultRegion} /></div>
+        <div class="mascot"><Buffalo size={130} mood={outcome === 'lost' ? 'sad' : 'cheer'} /></div>
+      </div>
       {#if outcome === 'won'}
         <Card tone="yellow">
           <p class="kicker">Boss besiegt</p>
@@ -136,7 +149,7 @@
         <Card tone="sea">
           <p class="kicker">{mode.kind === 'training' ? 'Training beendet' : 'Runde geschafft'}</p>
           <h1>{round.right} von {round.right + round.wrong} richtig</h1>
-          <p>+{round.xp} XP</p>
+          <p class="xp">+{Math.round(xpShown.current)} XP</p>
         </Card>
       {/if}
 
@@ -361,14 +374,44 @@
     gap: 16px;
     padding-top: 10px;
   }
-  .mascot {
-    justify-self: center;
-    margin-bottom: -28px;
+  .result-scene {
     position: relative;
+    margin-bottom: 30px;
+  }
+  .scene-clip {
+    aspect-ratio: 400 / 230;
+    border-radius: var(--radius-card);
+    overflow: hidden;
+    box-shadow: var(--shadow-card);
+    animation: pop-in 560ms var(--ease-out) both;
+  }
+  .mascot {
+    position: absolute;
+    left: 50%;
+    bottom: -52px;
+    translate: -50% 0;
     z-index: 1;
   }
   .result > :global(.card) {
-    animation: pop-in 520ms var(--ease-spring) both;
+    animation: pop-in 520ms var(--ease-spring) 240ms both;
+  }
+  .result > .badge,
+  .result > .actions {
+    animation: rise-in 480ms var(--ease-out) 420ms both;
+  }
+  .result > .actions {
+    animation-delay: 520ms;
+  }
+  @keyframes rise-in {
+    from {
+      transform: translateY(24px);
+      opacity: 0;
+    }
+  }
+  .xp {
+    font-size: 22px;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
   }
   @keyframes pop-in {
     from {

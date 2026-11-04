@@ -4,7 +4,8 @@
   import Button from '../lib/components/Button.svelte';
   import { game } from '../lib/game.svelte';
   import { bossReady, isDone, stageLearned, stageWords } from '../lib/logic/path';
-  import { receive, send } from '../lib/motion';
+  import RegionHero, { REGION_TONE } from '../lib/illustrations/RegionHero.svelte';
+  import RegionScene from '../lib/illustrations/RegionScene.svelte';
 
   let { stage, onback, onlearn, onboss }: { stage: Stage; onback: () => void; onlearn: () => void; onboss: () => void } =
     $props();
@@ -20,13 +21,22 @@
   );
 </script>
 
-<section class="detail" style:view-transition-name="stage-card" in:receive={{ key: 'stage' }} out:send={{ key: 'stage' }}>
+<section
+  class="detail"
+  data-tone={REGION_TONE[stage.region]}
+  style:view-transition-name="stage-card"
+>
+  <!-- Der Ort baut sich im wachsenden Fenster auf; das Hero-Objekt landet aufrecht an seiner Unterkante. -->
+  <div class="band"><RegionScene region={stage.region} /></div>
+  <div class="hero" style:view-transition-name="stage-hero" aria-hidden="true">
+    <div class="bob"><RegionHero region={stage.region} /></div>
+  </div>
   <button class="back" onclick={onback} aria-label="Zurück">
     <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><path d="M15.4 4.6 8 12l7.4 7.4-1.4 1.4L5.2 12 14 3.2z" fill="currentColor" /></svg>
   </button>
 
-  <p class="kicker">Etappe {index} · {words.length} {kindLabel}{done ? ' · geschafft' : ''}</p>
-  <h1 style:view-transition-name="stage-title">{stage.title}</h1>
+  <p class="kicker head">Etappe {index} · {words.length} {kindLabel}{done ? ' · geschafft' : ''}</p>
+  <h1 class="head" style:view-transition-name="stage-title">{stage.title}</h1>
 
   <div class="meter" role="progressbar" aria-label="Gelernt" aria-valuemin="0" aria-valuemax="100" aria-valuenow={Math.round(learned * 100)}>
     <div class="fill" style:width="{learned * 100}%"></div>
@@ -53,23 +63,79 @@
 </section>
 
 <style>
+  /* Fläche je Region (wie Weiter- und Regionskarte); --soft für Leiste und Wort-Chips. */
   .detail {
+    --bg: var(--lantern);
+    --soft: var(--lantern-soft);
+    --band: calc(var(--safe-top) + clamp(150px, 27vh, 250px));
+    position: relative;
     min-height: 100dvh;
-    background: var(--lantern);
-    padding: calc(var(--safe-top) + 12px) var(--gutter) calc(var(--safe-bottom) + 24px);
+    background: var(--bg);
+    padding: 0 var(--gutter) calc(var(--safe-bottom) + 24px);
     display: flex;
     flex-direction: column;
     gap: 14px;
   }
+  .detail[data-tone='sea'] {
+    --bg: var(--sea);
+    --soft: var(--sea-soft);
+  }
+  .detail[data-tone='lotus'] {
+    --bg: var(--lotus);
+    --soft: var(--lotus-soft);
+  }
+  .detail[data-tone='yellow'] {
+    --bg: var(--yellow);
+    --soft: var(--sun-halo);
+  }
+  .detail[data-tone='paper'] {
+    --bg: #fff;
+    --soft: var(--paper-2);
+  }
+  .band {
+    height: var(--band);
+    margin: 0 calc(-1 * var(--gutter)) 4px;
+  }
+  /* Hero-Objekt bricht aus der Unterkante der Szene aus, wie das Kajak aus seinem Feld. */
+  .hero {
+    position: absolute;
+    --size: clamp(128px, 38vw, 168px);
+    top: calc(var(--band) - var(--size) * 0.62);
+    right: calc(var(--gutter) - 8px);
+    width: var(--size);
+    height: var(--size);
+    pointer-events: none;
+    z-index: 1;
+  }
+  .bob {
+    height: 100%;
+    animation: hero-bob 3.4s ease-in-out infinite alternate;
+  }
+  @keyframes hero-bob {
+    from {
+      transform: translateY(2px) rotate(-2deg);
+    }
+    to {
+      transform: translateY(-6px) rotate(2deg);
+    }
+  }
+  .head {
+    padding-right: calc(clamp(128px, 38vw, 168px) - 16px);
+  }
   .back {
+    position: absolute;
+    top: calc(var(--safe-top) + 8px);
+    left: calc(var(--gutter) - 6px);
     width: var(--tap);
     height: var(--tap);
-    margin-left: -10px;
     border: 0;
-    background: transparent;
+    border-radius: 50%;
+    background: rgb(255 255 255 / 0.85);
+    color: var(--ink);
     display: grid;
     place-items: center;
     cursor: pointer;
+    box-shadow: var(--shadow-card);
   }
   .kicker {
     font-size: var(--fs-small);
@@ -85,7 +151,7 @@
   .meter {
     height: 12px;
     border-radius: 999px;
-    background: var(--lantern-soft);
+    background: var(--soft);
     overflow: hidden;
   }
   .fill {
@@ -102,13 +168,16 @@
     gap: 8px;
   }
   .chips li {
-    background: var(--lantern-soft);
+    background: var(--soft);
     border-radius: 999px;
     padding: 8px 14px;
     font-weight: 600;
   }
   .chips li.known {
-    background: #fff;
+    background: var(--known, #fff);
+  }
+  .detail[data-tone='paper'] .chips li.known {
+    --known: var(--sun-halo);
   }
   .actions {
     margin-top: auto;

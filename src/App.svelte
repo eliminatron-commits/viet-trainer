@@ -30,7 +30,7 @@
     }, motion);
   const start = (mode: PlayMode) => {
     playRun++;
-    go({ name: 'play', mode }, 'sheet-up');
+    go({ name: 'play', mode }, 'reveal');
   };
 
   // Tabs gleiten in Richtung des gewählten Tabs (Reihenfolge wie in der Pill-Navigation).

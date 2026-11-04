@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
+  import { ripple } from '../ripple';
 
   export type CardTone = 'lotus' | 'lantern' | 'sea' | 'red' | 'yellow' | 'paper';
 
@@ -18,7 +19,7 @@
 </script>
 
 {#if onclick}
-  <button class="card {tone} pressable" style:view-transition-name={vtName} {onclick}>
+  <button class="card {tone} pressable" style:view-transition-name={vtName} {onclick} use:ripple>
     {@render children()}
   </button>
 {:else}

@@ -1,11 +1,13 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
+  import { ripple } from '../ripple';
 
   let {
     variant = 'primary',
     state = 'idle',
     disabled = false,
     dataId,
+    cheer = false,
     onclick,
     children,
   }: {
@@ -15,17 +17,27 @@
     disabled?: boolean;
     /** Kennung der Antwort (data-id), u. a. für E2E-Tests. */
     dataId?: string;
+    /** Richtig getippt: Sternenregen vom Tippunkt (Flaggenstern in Gelb und Rot). */
+    cheer?: boolean;
     onclick?: () => void;
     children: Snippet;
   } = $props();
 </script>
 
-<button class="btn {variant} {state}" data-id={dataId} {disabled} {onclick}>
+<button class="btn {variant} {state}" data-id={dataId} {disabled} {onclick} use:ripple>
+  <span class="fx" aria-hidden="true"></span>
   {@render children()}
+  {#if cheer}
+    <span class="burst" aria-hidden="true">
+      {#each [0, 36, 72, 108, 144, 180, 216, 252, 288, 324] as a (a)}<i style:--a="{a}deg"></i>{/each}
+    </span>
+  {/if}
 </button>
 
 <style>
   .btn {
+    position: relative;
+    isolation: isolate;
     min-height: 56px;
     min-width: var(--tap);
     width: 100%;
@@ -47,10 +59,15 @@
   .btn:disabled {
     cursor: default;
   }
-  .primary:disabled,
-  .secondary:disabled {
+  .primary:disabled {
     opacity: 0.45;
     box-shadow: none;
+  }
+  /* Neutral statt 45 % Gelb – das würde auf Meer-Türkis zu Oliv. */
+  .secondary:disabled {
+    background: rgb(255 255 255 / 0.45);
+    color: rgb(35 26 21 / 0.55);
+    box-shadow: inset 0 0 0 2px rgb(35 26 21 / 0.08);
   }
 
   .primary {
@@ -96,6 +113,50 @@
     opacity: 0.45;
   }
 
+  .fx {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    overflow: hidden;
+    pointer-events: none;
+    z-index: -1;
+  }
+  .burst {
+    position: absolute;
+    left: var(--px, 50%);
+    top: var(--py, 50%);
+    pointer-events: none;
+  }
+  .burst i {
+    position: absolute;
+    left: -10px;
+    top: -10px;
+    width: 20px;
+    height: 20px;
+    background: var(--yellow);
+    clip-path: polygon(50% 0, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+    animation: burst 760ms var(--ease-out) both;
+  }
+  .burst i:nth-child(even) {
+    left: -7px;
+    top: -7px;
+    width: 14px;
+    height: 14px;
+    background: var(--red);
+    animation-delay: 40ms;
+  }
+  @keyframes burst {
+    from {
+      transform: rotate(var(--a)) translateY(-6px) scale(0.3);
+    }
+    70% {
+      opacity: 1;
+    }
+    to {
+      transform: rotate(var(--a)) translateY(-92px) scale(1) rotate(140deg);
+      opacity: 0;
+    }
+  }
   @keyframes pop {
     50% { transform: scale(1.04); }
   }
