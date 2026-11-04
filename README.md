@@ -1,96 +1,52 @@
 # Việt-Trainer
 
-PWA zum Lernen der 100 häufigsten vietnamesischen Wörter im Duolingo-Stil.
-Vanilla HTML/CSS/JS, kein Build-Schritt, kein Backend – läuft komplett offline
-vom iPhone-Homescreen.
+Vietnamesisch lernen auf dem iPhone, wie eine native App: vom Homescreen, im Vollbild, komplett offline,
+mit Erinnerungen am Morgen und am Abend. Deutschsprachige Oberfläche, Alltagssprache aus Đà Nẵng.
+
+**Live:** https://eliminatron-commits.github.io/viet-trainer/
+
+## Was drin ist
+
+- **Lernpfad als Reise durch Vietnam:** 5 Regionen (Đà Nẵng → Hội An → Huế → Hà Nội → Sài Gòn), 33 Etappen mit
+  eigener Vignette, jede endet mit einem Bosskampf. 538 Wörter, 270 Sätze, Anrede-Rollen – alle mit Audio.
+- **Wiederholung:** Leitner-System mit 5 Boxen (1/2/4/8/16 Tage), fällige Einheiten mischen sich in jede Runde.
+- **Spielmodi:** Übersetzen in beide Richtungen, Hören, Anreden, Paare gegen die Uhr, Satzbau, Hör-Diktat,
+  Ton-Ninja; freies Training mit Moduswahl.
+- **Belohnungen:** XP, Level, Tagesziel und Serie (mit Streak-Schutz), Truhen nach Bosskämpfen, 22 Erfolge,
+  3 Wochen-Challenges und der Wasserbüffel Trâu, der mit dem Level wächst und Accessoires trägt.
+- **Sprachführer** nach Situationen, durchsuchbar (auch ohne Akzente), mit Favoriten.
+- **Prüfmodus** für die Muttersprachlerin: ungeprüfte Inhalte anhören, „passt“ oder „unnatürlich“ mit Notiz,
+  Ergebnis als JSON exportieren.
+- **Tag und Nacht:** automatisch nach Uhrzeit (Nacht 20–9 Uhr) oder fest einstellbar, alle Szenen auch nachts.
+- **Fortschritt** liegt nur auf dem Gerät (IndexedDB), jede Aktion wird sofort gespeichert; Export/Import als JSON.
 
 ## Auf dem iPhone installieren
 
-1. Diesen Ordner (`viet-trainer/`) auf einen beliebigen statischen Webserver
-   legen (siehe unten) und die URL in **Safari** auf dem iPhone öffnen.
-   *Wichtig:* Für den Service Worker und die Installation muss die Seite über
-   **https://** oder ein lokales Netzwerk (`http://<Rechner-IP>:<Port>`)
-   erreichbar sein – ein direktes `file://`-Öffnen auf dem iPhone reicht für
-   die Installation **nicht**, da Safari Service Worker unter `file://` nicht
-   registriert.
-2. In Safari auf **Teilen** (Quadrat mit Pfeil) tippen → **Zum Home-Bildschirm**.
-3. App-Icon auf dem Homescreen öffnen. Sie startet im Standalone-Modus (ohne
-   Safari-Adressleiste).
-4. Beim ersten Öffnen lädt die App alle Assets inkl. der 100 Audio-Dateien
-   einmalig herunter (Service-Worker-Precache). Danach funktioniert sie
-   **vollständig offline**, auch im Flugmodus.
+1. Die Live-URL in **Safari** öffnen.
+2. **Teilen** → **Zum Home-Bildschirm**.
+3. Die App vom Homescreen starten. Beim ersten Start lädt sie alle Inhalte samt Audios (~9 MB) einmalig;
+   danach läuft sie auch im Flugmodus.
+4. Für Erinnerungen: in der App unter **Profil → Einstellungen** Mitteilungen erlauben (nur aus der
+   installierten App möglich, iOS 16.4+).
 
-Zum lokalen Testen am PC/Mac genügt jeder einfache Static-File-Server im
-`viet-trainer/`-Ordner, z. B.:
+Wer noch die alte Version (v13) installiert hat, bekommt v2 beim nächsten Öffnen automatisch. Das neue Icon
+übernimmt iOS erst, wenn man die App einmal neu zum Home-Bildschirm hinzufügt.
 
-```bash
-# Python (falls vorhanden)
-python -m http.server 8150
+## Entwicklung
 
-# oder Node
-npx serve -l 8150
-```
-
-Dann `http://<Rechner-IP>:8150` auf dem iPhone im selben WLAN öffnen.
-
-> In diesem Repository liegt zusätzlich `.claude/launch.json` mit einer
-> PowerShell-basierten Server-Konfiguration (`viet`, Port 8150) für die
-> Entwicklung ohne Node/Python – siehe das Haupt-`CLAUDE.md`.
-
-## Audio neu generieren
-
-Die 100 MP3s in `audio/` wurden mit [edge-tts](https://github.com/rany2/edge-tts)
-und der vietnamesischen Neural-Stimme `vi-VN-HoaiMyNeural` erzeugt.
+Svelte 5 + Vite + TypeScript, PWA mit eigenem Service Worker, Push über einen Cloudflare Worker (`worker/`).
+Befehle, Konventionen und Designregeln stehen in [`CLAUDE.md`](CLAUDE.md), der Projektstand in
+[`PROGRESS.md`](PROGRESS.md) und [`SESSION.md`](SESSION.md).
 
 ```bash
-pip install edge-tts
-python scripts/generate_audio.py            # nur fehlende Dateien erzeugen
-python scripts/generate_audio.py --force    # alle 100 neu erzeugen
-python scripts/generate_audio.py --only w001,w042   # gezielt einzelne Wörter
-python scripts/generate_audio.py --voice vi-VN-NamMinhNeural  # andere Stimme
+npm install
+npm run dev      # Entwicklungsserver, im LAN erreichbar
+npm run check    # Typecheck
+npm test         # Vitest
+npx playwright test   # E2E (WebKit, iPhone-Viewport)
 ```
 
-Das Script liest die Wortliste direkt aus [`js/data.js`](js/data.js) (per
-Regex auf `id`/`vn`-Felder) – es gibt keine zweite, separat zu pflegende
-Wortliste. Wer den Wortschatz ändert oder erweitert, muss danach nur das
-Script erneut laufen lassen.
+**Deploy:** Jeder Push auf `main` baut und veröffentlicht die App über GitHub Actions
+(`.github/workflows/pages.yml`).
 
-**Nach jeder Audio-Änderung:** die `CACHE`-Version in [`sw.js`](sw.js) um
-eins erhöhen (z. B. `viet-trainer-v2` → `v3`), sonst liefert der
-Service-Worker-Cache auf bereits installierten Geräten weiter die alten
-Dateien aus.
-
-## Projektstruktur
-
-```
-viet-trainer/
-├── index.html              App-Shell, iOS-Metatags, Skript-Ladereihenfolge
-├── manifest.webmanifest     Web App Manifest (Android/Chrome; iOS nutzt
-│                            zusätzlich die apple-touch-icon-Metatags)
-├── sw.js                    Service Worker: Precache + Cache-First-Fetch
-├── icons/                   Homescreen-Icons (180/192/512 px)
-├── css/style.css            Mobile-first Styling, Animationen
-├── audio/                   100 generierte MP3s (w001.mp3 … w100.mp3)
-├── scripts/generate_audio.py  edge-tts-Generierungsscript
-└── js/
-    ├── data.js              Wortschatz + Pakete (Daten, keine Logik)
-    ├── store.js              localStorage-Persistenz, Streak-Tageslogik
-    ├── srs.js                Leitner-SRS (5 Boxen, gewichtete Auswahl,
-    │                         Paket-Freischaltung)
-    ├── audio.js              Audio-Wiedergabe (MP3 + Web-Speech-Fallback)
-    ├── quiz.js                Quiz-Engine (Sessions, 3 Modi, Auswertung)
-    ├── ui.js                  Screens & DOM-Rendering (Home/Session/Ergebnis)
-    └── app.js                 Bootstrap (SW-Registrierung, iOS-Audio-Unlock)
-```
-
-Modulgrenzen: nur `store.js` fasst `localStorage` an, nur `ui.js` das DOM;
-`srs.js`/`quiz.js` sind reine Logik ohne Seiteneffekte auf UI oder Storage
-außerhalb von `VT.Store`.
-
-## Bekannte Grenzen (bewusste Nicht-Ziele)
-
-- Kein Account, keine Cloud-Synchronisation – Fortschritt lebt ausschließlich
-  in `localStorage` dieses einen Browsers/Geräts.
-- Löschen der Safari-Website-Daten löscht den Fortschritt unwiderruflich.
-- iOS kann `localStorage` bei sehr langer Nichtnutzung räumen (kein
-  Export/Import vorgesehen, siehe Anforderungen).
+Die alte Vanilla-JS-App (v13) liegt nur noch als Quelle in `legacy/`.

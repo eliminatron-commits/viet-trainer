@@ -1,12 +1,14 @@
 /**
- * App-Icon: Kopf des Wasserbüffels Trâu vor einer gelben Sonne auf Flaggenrot.
+ * App-Icon und Startbilder: Kopf des Wasserbüffels Trâu vor einer gelben Sonne auf Flaggenrot.
  * Gleiche Formen und Farben wie src/lib/mascot/Buffalo.svelte, flach, ohne Konturen, Licht von rechts oben.
- * Erzeugt public/icons/*.png über den installierten Edge (Playwright), keine zusätzlichen Abhängigkeiten.
+ * Erzeugt public/icons/*.png und public/splash/*.png über den installierten Edge (Playwright), keine
+ * zusätzlichen Abhängigkeiten. Das Startbild (iOS: apple-touch-startup-image, Links in index.html) zeigt
+ * dieselbe Komposition wie das Icon – beim Öffnen wächst das Icon nahtlos in den Startbildschirm.
  *
  *   node scripts/icons.ts            → PNGs schreiben
  *   node scripts/icons.ts --preview  → nur Vorschaubogen nach ./icon-preview.png (nicht einchecken)
  */
-import { writeFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import { chromium } from '@playwright/test';
 
 const C = {
@@ -24,10 +26,11 @@ const C = {
   white: '#FFFFFF',
 };
 
-/** Büffel-Kopf in den Koordinaten von Buffalo.svelte (viewBox 0 0 200 200). */
-const head = `
+/** Büffel in den Koordinaten von Buffalo.svelte (viewBox 0 0 200 200): Schultern, Kopf, Halstuch. */
+const shoulders = `
   <path d="M66 116 C66 140 58 152 38 160 C22 167 18 192 16 240 L184 240 C182 192 178 167 162 160 C142 152 134 140 134 116 Z" fill="${C.shade}" />
-  <path d="M134 122 C138 146 148 154 162 160 C178 167 182 192 184 240 L166 240 C164 198 160 178 148 171 C136 164 132 148 134 122 Z" fill="${C.body}" />
+  <path d="M134 122 C138 146 148 154 162 160 C178 167 182 192 184 240 L166 240 C164 198 160 178 148 171 C136 164 132 148 134 122 Z" fill="${C.body}" />`;
+const face = `
   <path d="M64 80 C28 74 18 44 38 28 C36 48 50 64 76 66 Z" fill="${C.horn}" />
   <path d="M64 80 C28 74 18 44 38 28 C30 50 40 66 66 72 Z" fill="${C.hornShade}" />
   <path d="M136 80 C172 74 182 44 162 28 C164 48 150 64 124 66 Z" fill="${C.horn}" />
@@ -49,10 +52,12 @@ const head = `
   <ellipse cx="100" cy="116" rx="30" ry="20" fill="${C.muzzle}" />
   <ellipse cx="90" cy="114" rx="4" ry="5.5" fill="${C.dark}" />
   <ellipse cx="110" cy="114" rx="4" ry="5.5" fill="${C.dark}" />
-  <path d="M92 126 Q100 132 108 126 Q100 129 92 126 Z" fill="${C.dark}" />
+  <path d="M92 126 Q100 132 108 126 Q100 129 92 126 Z" fill="${C.dark}" />`;
+const scarf = `
   <path d="M62 128 Q100 146 138 128 L139 137 Q100 156 61 137 Z" fill="${C.bg}" />
   <path d="M116 140 L130 162 L115 157 Z" fill="${C.bg}" />
   <path d="M121 146 l1.6 3.4 3.7.4-2.8 2.5.8 3.6-3.3-1.9-3.3 1.9.8-3.6-2.8-2.5 3.7-.4Z" fill="${C.sun}" />`;
+const head = shoulders + face + scarf;
 
 /**
  * Icon auf 1024er-Fläche. `scale` = Größe des Büffels; maskierbare Icons (Android-Kreis/Squircle)
@@ -70,6 +75,37 @@ function iconSvg(scale: number): string {
 </svg>`;
 }
 
+/**
+ * Startbild für ein iPhone (Pixelmaße): Kopf ohne Schultern mittig, die Sonne steht wie im Icon rechts
+ * oben hinter ihm (gleiche Abstände in Büffel-Einheiten).
+ */
+function splashSvg(w: number, h: number): string {
+  const s = (0.5 * w) / 164;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}">
+  <rect width="${w}" height="${h}" fill="${C.bg}" />
+  <g transform="translate(${w / 2} ${h * 0.46}) scale(${s}) translate(-100 -98)">
+    <circle cx="156.8" cy="54.8" r="45.5" fill="${C.halo}" />
+    <circle cx="156.8" cy="54.8" r="34" fill="${C.sun}" />${face}
+  </g>
+</svg>`;
+}
+
+/** iPhones im Hochformat: CSS-Maße und Pixeldichte (gleiche Liste wie die Links in index.html). */
+const SPLASH = [
+  { w: 440, h: 956, dpr: 3 }, // 16/17 Pro Max
+  { w: 402, h: 874, dpr: 3 }, // 16/17 Pro, 17
+  { w: 430, h: 932, dpr: 3 }, // 14 Pro Max, 15 Plus/Pro Max, 16 Plus
+  { w: 420, h: 912, dpr: 3 }, // Air
+  { w: 393, h: 852, dpr: 3 }, // 14 Pro, 15, 15 Pro, 16
+  { w: 428, h: 926, dpr: 3 }, // 12/13 Pro Max, 14 Plus
+  { w: 390, h: 844, dpr: 3 }, // 12, 13, 14, 16e
+  { w: 375, h: 812, dpr: 3 }, // X, XS, 11 Pro, 12/13 mini
+  { w: 414, h: 896, dpr: 3 }, // XS Max, 11 Pro Max
+  { w: 414, h: 896, dpr: 2 }, // XR, 11
+  { w: 414, h: 736, dpr: 3 }, // 8 Plus
+  { w: 375, h: 667, dpr: 2 }, // SE, 8
+];
+
 const targets = [
   { file: 'public/icons/icon-180.png', size: 180, scale: 4.4 },
   { file: 'public/icons/icon-192.png', size: 192, scale: 4.4 },
@@ -80,12 +116,12 @@ const targets = [
 const browser = await chromium.launch({ channel: 'msedge' });
 const page = await browser.newPage();
 
-async function render(svg: string, size: number): Promise<Buffer> {
-  await page.setViewportSize({ width: size, height: size });
+async function render(svg: string, width: number, height = width): Promise<Buffer> {
+  await page.setViewportSize({ width, height });
   await page.setContent(
-    `<style>html,body{margin:0}svg{display:block;width:${size}px;height:${size}px}</style>${svg}`,
+    `<style>html,body{margin:0}svg{display:block;width:${width}px;height:${height}px}</style>${svg}`,
   );
-  return page.screenshot({ clip: { x: 0, y: 0, width: size, height: size } });
+  return page.screenshot({ clip: { x: 0, y: 0, width, height } });
 }
 
 if (process.argv.includes('--preview')) {
@@ -107,6 +143,12 @@ if (process.argv.includes('--preview')) {
   for (const t of targets) {
     writeFileSync(t.file, await render(iconSvg(t.scale), t.size));
     console.log(`${t.file} (${t.size}px)`);
+  }
+  mkdirSync('public/splash', { recursive: true });
+  for (const d of SPLASH) {
+    const [w, h] = [d.w * d.dpr, d.h * d.dpr];
+    writeFileSync(`public/splash/${w}x${h}.png`, await render(splashSvg(w, h), w, h));
+    console.log(`public/splash/${w}x${h}.png`);
   }
 }
 await browser.close();

@@ -1,12 +1,8 @@
 import { readFileSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
+import { withoutViewTransitions } from './helpers';
 
-/** Wie stage.spec.ts: ohne View Transitions (WebKit unter Windows stürzt sonst ab); die Übergänge prüft die Hauptsitzung am iPhone-Maß. */
-test.beforeEach(async ({ page }) => {
-  await page.addInitScript(() => {
-    delete (Document.prototype as { startViewTransition?: unknown }).startViewTransition;
-  });
-});
+test.beforeEach(({ page }) => withoutViewTransitions(page));
 
 /** „cảm ơn“ als Unicode-Escape, damit die Schreibweise (zusammengesetzt) nicht vom Editor abhängt. */
 const CAM_ON = 'cảm ơn';

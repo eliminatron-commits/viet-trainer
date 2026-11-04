@@ -12,6 +12,7 @@
   import { game, today } from '../lib/game.svelte';
   import RegionHero, { REGION_TONE } from '../lib/illustrations/RegionHero.svelte';
   import RegionScene from '../lib/illustrations/RegionScene.svelte';
+  import StageVignette from '../lib/illustrations/StageVignette.svelte';
   import { currentStage, regionDone, stageLearned, stageStatus, stageWords } from '../lib/logic/path';
   import { currentStreak, levelInfo } from '../lib/logic/rewards';
   import Trau from '../lib/mascot/Trau.svelte';
@@ -111,7 +112,8 @@
           {@const status = stageStatus(save, stage.id)}
           {@const isCurrent = stage.id === current.id && status === 'open'}
           {@const n = firstIndex + i + 1}
-          <li class="node-row" style:--x="{offsets[i % offsets.length]}px" data-current={isCurrent ? '' : undefined}>
+          {@const x = offsets[i % offsets.length]!}
+          <li class="node-row" style:--x="{x}px" data-current={isCurrent ? '' : undefined}>
             <button
               class="node {isCurrent ? 'current' : status}"
               style:view-transition-name={!fromCard && opening === stage.id ? 'stage-card' : undefined}
@@ -129,6 +131,11 @@
                 <span>{n}</span>
               {/if}
             </button>
+            <!-- Vignette der Etappe auf der freien Seite des Knotens; gesperrte noch blass. -->
+            <div class="vig {x >= 0 ? 'left' : 'right'} {isCurrent ? 'current' : status}" aria-hidden="true">
+              <div class="vig-img"><StageVignette stage={stage.id} tone={REGION_TONE[region.id]} /></div>
+              <span>{stage.title}</span>
+            </div>
           </li>
         {/each}
       </ol>
@@ -246,10 +253,47 @@
     gap: 18px;
   }
   .node-row {
+    position: relative;
     display: grid;
     justify-items: center;
     gap: 14px;
     transform: translateX(var(--x));
+  }
+  /* Vignette mit Titel neben dem Knoten (Knoten 68 px, Abstand 10 px); höchstens so hoch wie ein Pfad-Schritt. */
+  .vig {
+    position: absolute;
+    top: 50%;
+    width: 112px;
+    display: grid;
+    justify-items: center;
+    gap: 2px;
+    transform: translateY(-50%);
+    pointer-events: none;
+    text-align: center;
+  }
+  .vig.left {
+    right: calc(50% + 44px);
+  }
+  .vig.right {
+    left: calc(50% + 44px);
+  }
+  .vig span {
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.2;
+    color: var(--ink-2);
+  }
+  .vig.locked .vig-img {
+    filter: grayscale(1);
+    opacity: 0.45;
+  }
+  /* Gesperrt: die Vignette verblasst, der Titel bleibt lesbar (AA bei Tag und Nacht). */
+  .vig.locked span {
+    color: var(--ink-muted);
+    font-weight: 400;
+  }
+  .vig.current .vig-img {
+    animation: hero-bob 3.2s ease-in-out infinite alternate;
   }
   .node {
     width: 68px;
@@ -303,7 +347,8 @@
   }
   @media (prefers-reduced-motion: reduce) {
     .node.current,
-    .bob {
+    .bob,
+    .vig.current .vig-img {
       animation: none;
     }
   }

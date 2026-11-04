@@ -25,7 +25,7 @@
     - Alle Regionen nachts in Pro-Max-Maßen, WebKit-Rauchtest nachts.
     - 114 Tests und E2E grün.
   - Von Alex auf dem iPhone abgenommen (2026-11-04: „iPhone-Test ist gut, sieht gut aus“).
-- **Phase 3/4 – Spielmodi, Belohnungen und Sprachführer: gebaut und geprüft** (2026-11-04, Opus 5.5 hoch). Check, 197 Vitest-Tests, 4 Playwright-WebKit-Tests grün; alle neuen Ansichten in Edge bei 440×956 und 375×667, Tag (12:00) und Nacht (22:00) Bild für Bild angesehen. Auf Alex' iPhone noch nicht getestet.
+- **Phase 3/4 – Spielmodi, Belohnungen und Sprachführer: abgeschlossen** (2026-11-04, Opus 5.5 hoch). Check, 197 Vitest-Tests, 4 Playwright-WebKit-Tests grün; alle neuen Ansichten in Edge bei 440×956 und 375×667, Tag (12:00) und Nacht (22:00) Bild für Bild angesehen. Von Alex auf dem iPhone abgenommen (2026-11-04: „Alles passt“).
   - Modi: Paare gegen die Uhr (5 Wörter, 40 s), Satzbau, Hör-Diktat (flache Klangscheibe), Ton-Ninja (Ablenker nur im Ton verschieden, echte Minimalpaare zuerst). Eingemischt in Etappe, Boss (eine Paare-Aufgabe) und Training; Training mit Modus-Wahl.
   - Belohnungen: Truhe beim ersten Sieg je Boss (XP-Boost 2× für 15 min, Streak-Schutz bis 3, Accessoire; makelloser Boss = garantiert Accessoire), 22 Achievements, 3 rotierende Wochen-Challenges (+50 XP), Neuigkeiten als Toast bzw. auf dem Ergebnis. Trâu wächst (Kalb bis Level 4, jung bis 9) und trägt 8 Accessoires (Nón lá, Roller-Helm, Sonnenbrille, Khăn rằn, Glöckchen, Blumenkette, Mai-Blüte, Laterne). Profil zeigt Vorrat, Einkleiden, Woche, Erfolge.
   - Sprachführer: Situationskarten, Suche ohne Akzente, Favoriten. Prüfmodus (Einstellungen): 408 ungeprüfte Einträge, „passt“/„unnatürlich“ + Notiz, JSON-Export.
@@ -33,7 +33,19 @@
   - UI-Klänge (WebAudio-Synthese über den Player-Kontext) und Haptik-Tick (iOS-18-switch, Feature-Detection), beide in den Einstellungen abschaltbar. Alte Spielstände bekommen Zähler aus dem Fortschritt nachgetragen.
   - Subagenten: fliessband ×4 (Haiku: pron ×2, Tags Wörter, Tags Sätze), builder ×2 (Sonnet: Spielmodi; Sprachführer + Prüfmodus), pruefer (Opus).
   - pruefer-Review: 1 Mangel (Satzbau bot Synonyme als Ablenker an, z. B. chờ/đợi „warten“, bố/cha „Vater“) und 5 Kleinigkeiten (Garantie der makellosen Truhe ging beim späteren Öffnen verloren; Challenge-XP zählten nicht fürs Tagesziel; erste Aufgabe einer neuen Woche fiel in die Basis; Haptik bei Paaren außerhalb der Geste; Test fürs Nachtragen alter Stände fehlte) – alle behoben, mit Tests (je per Mutation gegengeprüft), Nachprüfung ohne offene Mängel. Eigener Fund vorher: Anrede-Wörter als Satzbau-Ablenker (Hallo. = Chào bà./Chào ông.).
-- **Nächste Schritte:** Testkopie ist deployt (2026-11-04, mit Push-Env). Alex testet auf dem iPhone: alle vier Modi, Truhe, Profil, Sprachführer, Prüfmodus-Export (Teilen), Effekt-Klänge und Haptik (Einstellungen zeigen, ob das iPhone sie unterstützt). Danach Phase 4 „Illustrationen, Animationen und Release“ (Opus 5.5, hoch). Hinweis Phase 4: Icon, Übergänge und Regionsszenen sind vorgezogen – dort nur noch Splash und Feinschliff.
+- **Phase 4/4 – Illustrationen, Animationen und Release: gebaut und geprüft, Release ausstehend** (2026-11-04, Opus 5.5 hoch). Icon, Übergänge und Regionsszenen waren vorgezogen.
+  - Etappen-Vignetten: 33 flache Motive (`StageVignette.svelte`) neben den Pfad-Knoten mit Titel; gesperrt grau, die aktuelle wiegt sich. Alle Motive bei Tag und Nacht groß und in Pfadgröße angesehen, Pfad in Pro-Max- und SE-Maßen.
+  - Splash: 12 iOS-Startbilder (gleiche Komposition wie das Icon, `scripts/icons.ts`), nicht im Precache. Inline-Skript setzt nachts vor dem ersten Bild das Nachtthema.
+  - Ablösung v13: Der SW lädt offene Fenster der alten App nach dem Übernehmen einmal neu. Lokal nachgestellt (v13 aus `main` installiert → Server auf `dist/` → Update): v2 erscheint nach ~3 s von selbst, `viet-trainer-v13` gelöscht, alte start_url und Audios offline. Dabei gefunden und behoben: Neuladen innerhalb von `waitUntil` blockierte sich selbst.
+  - Qualität (Edge, Produktions-Build, 440×956, CPU ×4): Warmstart FCP ~330 ms, CLS 0, Scrollen des Pfads Median 8 ms/Bild (p95 17 ms), keine Tap-Ziele < 44 px auf 9 Ansichten.
+  - Tests: 204 Vitest (neu: Vignetten, Startbilder, Nachtskript), 7 Playwright WebKit (neu: App-Kill mitten in der Session, Export/Import, Offline mit allen 808 Audios); neue Tests per Mutation gegengeprüft.
+  - Deploy: `.github/workflows/pages.yml` (check, test, build → Pages). README und SESSION.md auf v2.
+  - Subagenten: pruefer (Opus). Befunde: Release-Voraussetzungen in GitHub fehlen noch (siehe unten), PROGRESS nicht nachgeführt, Titel gesperrter Vignetten unter AA-Kontrast bei Tag → behoben (`--ink-muted`).
+- **Nächste Schritte (Release, nur mit Alex' Freigabe):**
+  1. Repo-Secret `VITE_PUSH_TOKEN` setzen (Wert aus `push.env`, per Pipe).
+  2. Pages-Quelle auf „GitHub Actions“ umstellen – **vor** dem Push, sonst veröffentlicht Pages das rohe `main` (lädt `/src/main.ts`).
+  3. Commit „Phase 4“, `main` per Fast-Forward auf `v2`, Push → Workflow baut und deployt.
+  4. Live prüfen (sw.js, Precache, App), dann Alex' iPhone-Abnahme: P4-01 (Qualität), P4-02 (installierte v13 wird v2), P4-03 (Flugmodus), P4-04 (Definition of Done inkl. Push morgens/abends).
 
 ## Phase 2 – Ergebnis
 
@@ -54,7 +66,6 @@
 ## Offene Punkte / Abweichungen
 
 - Phase 3: Die KI-Aussprache (w251–w538) und die Situations-Tags sind ungeprüft – die Verlobte sieht pron im Prüfmodus. Tag „smalltalk“ ist bei Wörtern sehr häufig (Sammeltag für Verben/Partikel), „familie“ bei Sätzen oft Zweittag (sozialer Kontext).
-- Phase 3: Ob iOS die Haptik-Erkennung (`'switch' in HTMLInputElement.prototype`) bestätigt, zeigt erst das iPhone – die Einstellungen melden „nicht verfügbar“, falls nicht. Der Teilen-Zweig des Prüfmodus-Exports ist nur auf dem iPhone prüfbar.
 - Phase 3: Satzbau zeigt bei Sätzen mit Kontext die Anrede („zu alter Frau (Oma)“), weil die deutsche Übersetzung sie nicht enthält; Anrede-/Pronomenwörter sind als Ablenker ausgeschlossen.
 
 - Partikel-Etappe: `de` der Partikel ist noch der Text aus `prepared/words-ext.js` (teils Übersetzung, teils Erklärung) – bei Bedarf in Phase 3 mit dem Prüfmodus nachschärfen.

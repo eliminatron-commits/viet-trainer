@@ -18,12 +18,20 @@ self.addEventListener('install', (event) => {
 });
 
 self.addEventListener('activate', (event) => {
-  event.waitUntil(
-    caches
-      .keys()
-      .then((keys) => Promise.all(keys.filter((k) => LEGACY_CACHE.test(k)).map((k) => caches.delete(k))))
-      .then(() => self.clients.claim()),
-  );
+  const cleanup = (async () => {
+    const legacy = (await caches.keys()).filter((k) => LEGACY_CACHE.test(k));
+    await Promise.all(legacy.map((k) => caches.delete(k)));
+    await self.clients.claim();
+    return legacy.length > 0;
+  })();
+  event.waitUntil(cleanup);
+  // Offene Fenster zeigen nach der Ablösung noch die alte App: einmal neu laden, damit sie sofort v2 zeigen.
+  // Bewusst außerhalb von waitUntil – die Navigation wartet auf den aktiven SW, das Aktivieren nicht auf sie.
+  void cleanup.then(async (replacedLegacy) => {
+    if (!replacedLegacy) return;
+    const windows = await self.clients.matchAll({ type: 'window' });
+    await Promise.all(windows.map((w) => ('navigate' in w ? w.navigate(w.url).catch(() => null) : null)));
+  });
 });
 
 self.addEventListener('message', (event) => {

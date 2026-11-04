@@ -33,6 +33,8 @@ export default defineConfig({
       injectManifest: {
         // App-Shell, Fonts (nur woff2) und alle Audios vorab
         globPatterns: ['**/*.{js,css,html,svg,png,woff2,mp3,webmanifest}'],
+        // Startbilder holt iOS selbst beim Hinzufügen zum Homescreen – nicht vorab cachen.
+        globIgnores: ['**/node_modules/**/*', 'splash/**'],
       },
     }),
   ],
