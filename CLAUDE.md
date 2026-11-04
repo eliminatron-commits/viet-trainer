@@ -34,7 +34,7 @@ src/
   content/        types.ts (Inhaltsmodell), *.json (Quelle der Wahrheit), index.ts (typisierter Zugriff, audioUrl)
   lib/
     components/   Card, Button, PillNav, ProgressRing, SoundDisc – Kernkomponenten
-    audio/        player.ts – WebAudio-Wiedergabe, iOS-Unlock, Pegel für die Klangscheibe
+    audio/        player.ts – WebAudio-Wiedergabe, iOS-Unlock und Selbstheilung, Pegel für die Klangscheibe
     storage/      state.ts (Spielstand-Typen, Defaults, normalizeSave), persist.ts (IndexedDB, persist(), Export/Import)
     illustrations/ Szenen als Svelte-SVG
     logic/        srs, path (Freischaltung), session (Aufgaben-Mix), rewards (XP/Level/Serie) – reine Funktionen
@@ -87,7 +87,8 @@ prepared/         vorbereitete Inhalte (w251–w538, s151–s270) – nur Migrat
 
 ## Technische Entscheidungen
 
-- Audio ausschließlich über WebAudio (`lib/audio/player.ts`): iOS-Unlock beim ersten `pointerdown`, AnalyserNode für die Klangscheibe, keine Range-Requests gegen den SW-Cache (Safari-`<audio>` damit unzuverlässig). Hör-Aufgaben starten Audio automatisch.
+- Audio ausschließlich über WebAudio (`lib/audio/player.ts`): Audio-Session `playback` (sonst schaltet der Stummschalter ab), Unlock bei jeder Geste (iOS zählt erst touchend/click), AnalyserNode für die Klangscheibe, keine Range-Requests gegen den SW-Cache (Safari-`<audio>` damit unzuverlässig). Hör-Aufgaben starten Audio automatisch.
+- **Audio-Selbstheilung – nie entfernen** (Ton war auf Alex' iPhone zweimal weg: iOS liefert nach Sperre/App-Wechsel/Anruf Kontexte, die „interrupted“ sind oder „running“ melden, aber eine stehende Uhr haben; `resume()` hängt dann): Kontext beim Wechsel in den Hintergrund schließen, die nächste Geste baut einen frischen; unterbrochene Kontexte und stehende Audio-Uhr → Neubau bei der nächsten Geste; `resume()` und Abspielen nur mit Zeitlimit; bleibt der Ton blockiert, Hinweis „Der Ton hängt“ (App.svelte), dessen Tippen das verpasste Audio nachspielt. Abgesichert durch `tests/player.test.ts` (nachgebauter iOS-Kontext, jeder Mechanismus hat einen Test, der ohne ihn rot wird). Ton-Test und Diagnosezeile (Zustand, Neustarts, letzte Störung) in den Einstellungen – meldet Alex wieder Stille, zuerst diese Zeile erfragen.
 - Spielstand = ein Datensatz in IndexedDB (`viet-trainer`/`state`, Schlüssel `save`), bei **jeder** Aktion sofort komplett geschrieben. Neue Felder: nur in `newSave()` ergänzen – `normalizeSave` füllt alte Stände auf. Inkompatible Änderung: `SAVE_VERSION` erhöhen und migrieren.
 - Svelte-`$state` liefert Proxies: Inhaltsobjekte nie per Identität (`indexOf`, `===`) vergleichen, sondern per `id`.
 - Service Worker liegt unter `/viet-trainer/sw.js` (gleicher Pfad wie v13), löscht alle Caches `viet-trainer-v*` und übernimmt sofort, wenn solche Caches existieren. Sonst: „Neue Version“-Hinweis, Update erst auf Tippen.

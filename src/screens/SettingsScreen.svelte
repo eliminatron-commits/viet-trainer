@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import Button from '../lib/components/Button.svelte';
+  import { onAudioStatus, play, type AudioStatus } from '../lib/audio/player';
   import { flushed, game, replaceSave, today, updateSettings } from '../lib/game.svelte';
   import { disablePush, enablePush, push, refreshPushStatus, reportToWorker, sendTestPush } from '../lib/push.svelte';
   import { exportSave, importSave } from '../lib/storage/persist';
@@ -12,7 +13,37 @@
 
   onMount(() => {
     void refreshPushStatus();
+    return onAudioStatus((s) => {
+      if (audio.blocked && !s.blocked) soundMessage = 'Der Ton ist wieder da.';
+      audio = s;
+    });
   });
+
+  // Ton-Test und Diagnose: Bleibt es auf dem iPhone still, zeigt die Zeile, was der Player erkannt hat.
+  let audio = $state<AudioStatus>({ blocked: false, state: 'none', rebuilds: 0, issue: '' });
+  let soundMessage = $state('');
+  const audioStateText: Record<string, string> = {
+    none: 'noch nicht gestartet',
+    running: 'läuft',
+    suspended: 'wartet auf Tippen',
+    interrupted: 'unterbrochen',
+    closed: 'geschlossen',
+  };
+  const audioDiag = $derived(
+    [`Zustand: ${audioStateText[audio.state] ?? audio.state}`, `Neustarts: ${audio.rebuilds}`, audio.issue && `zuletzt: ${audio.issue}`]
+      .filter(Boolean)
+      .join(' · '),
+  );
+
+  async function testSound() {
+    soundMessage = 'Spielt „cảm ơn“ …';
+    try {
+      await play('w062');
+      soundMessage = 'Das war „cảm ơn“. Nichts gehört? Lautstärke prüfen und noch einmal tippen.';
+    } catch {
+      soundMessage = 'Der Ton war blockiert und wird neu gestartet – tippe noch einmal.';
+    }
+  }
 
   const statusText: Record<typeof push.status, string> = {
     checking: 'Wird geprüft …',
@@ -104,6 +135,16 @@
   </section>
 
   <section class="group">
+    <h2>Ton</h2>
+    <p class="status">Lerninhalte sind auch bei eingeschaltetem Stummschalter zu hören.</p>
+    <div class="buttons">
+      <Button variant="secondary" onclick={testSound}>Ton testen</Button>
+    </div>
+    {#if soundMessage}<p class="message" role="status">{soundMessage}</p>{/if}
+    <p class="diag" data-audio-state={audio.state}>{audioDiag}</p>
+  </section>
+
+  <section class="group">
     <h2>Fortschritt sichern</h2>
     <p class="status">Der Fortschritt liegt nur auf diesem Gerät. Ein Export ist deine Sicherung.</p>
     <div class="buttons">
@@ -180,5 +221,9 @@
   .buttons {
     display: grid;
     gap: 10px;
+  }
+  .diag {
+    font-size: var(--fs-small);
+    color: var(--ink-2);
   }
 </style>

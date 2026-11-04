@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import type { Stage } from './content/types';
+  import { onAudioStatus, retry } from './lib/audio/player';
   import Card from './lib/components/Card.svelte';
   import PillNav, { type Tab } from './lib/components/PillNav.svelte';
   import { game, initGame } from './lib/game.svelte';
@@ -43,8 +44,12 @@
     }, motion);
   };
 
+  /** iOS hat den Ton blockiert und der Player konnte ihn nicht selbst retten – ein Tippen auf den Hinweis repariert ihn. */
+  let audioBlocked = $state(false);
+
   onMount(() => {
     void initGame();
+    return onAudioStatus((s) => (audioBlocked = s.blocked));
   });
 </script>
 
@@ -94,6 +99,13 @@
 
 {#if game.error}
   <div class="toast error" role="alert">{game.error}</div>
+{/if}
+
+{#if audioBlocked}
+  <div class="toast" role="alert">
+    <span>Der Ton hängt</span>
+    <button onclick={retry}>Ton an</button>
+  </div>
 {/if}
 
 {#if pwa.needRefresh}
