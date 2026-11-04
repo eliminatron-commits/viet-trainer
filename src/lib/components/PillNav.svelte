@@ -56,7 +56,7 @@
     display: flex;
     gap: 4px;
     padding: 6px;
-    background: var(--ink);
+    background: var(--nav-bg);
     border-radius: var(--radius-pill);
     box-shadow: var(--shadow-float);
     z-index: 10;
@@ -73,7 +73,7 @@
     border: 0;
     border-radius: var(--radius-pill);
     background: transparent;
-    color: var(--paper);
+    color: var(--nav-fg);
     opacity: 0.7;
     overflow: hidden;
     cursor: pointer;
@@ -86,7 +86,7 @@
   .item.active {
     flex-grow: 3;
     background: var(--yellow);
-    color: var(--ink);
+    color: var(--on-yellow);
     opacity: 1;
   }
   .item svg {

@@ -63,10 +63,10 @@
     opacity: 0.45;
     box-shadow: none;
   }
-  /* Neutral statt 45 % Gelb – das würde auf Meer-Türkis zu Oliv. */
+  /* Neutral statt 45 % Gelb – das würde auf Meer-Türkis zu Oliv; nachts gedämpft (tokens.css). */
   .secondary:disabled {
-    background: rgb(255 255 255 / 0.45);
-    color: rgb(35 26 21 / 0.55);
+    background: var(--disabled-bg);
+    color: var(--disabled-ink);
     box-shadow: inset 0 0 0 2px rgb(35 26 21 / 0.08);
   }
 
@@ -81,7 +81,7 @@
   }
   .secondary {
     background: var(--yellow);
-    color: var(--ink);
+    color: var(--on-yellow);
   }
   .ghost {
     background: transparent;
@@ -91,7 +91,7 @@
 
   /* Antwort-Kacheln (helles Quiz) */
   .answer {
-    background: #fff;
+    background: var(--surface);
     color: var(--ink);
     text-align: left;
     font-weight: 600;
@@ -105,7 +105,7 @@
   }
   .answer.wrong {
     background: var(--bad-soft);
-    color: var(--red-deep);
+    color: var(--bad-ink);
     box-shadow: 0 4px 0 var(--red);
     animation: shake var(--dur-slow) var(--ease-out);
   }

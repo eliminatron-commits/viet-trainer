@@ -41,11 +41,11 @@
     overflow: hidden;
     position: relative;
   }
-  .paper { background: #fff; }
+  .paper { background: var(--surface); }
   .lotus { background: var(--lotus); }
   .lantern { background: var(--lantern); }
   .sea { background: var(--sea); }
-  .yellow { background: var(--yellow); }
+  .yellow { background: var(--tone-yellow); }
   .red { background: var(--red); color: var(--on-red); }
 
   .pressable {

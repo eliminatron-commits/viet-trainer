@@ -20,7 +20,7 @@
     height: 56px;
     border-radius: 50%;
     border: 0;
-    background: rgb(255 255 255 / 0.45);
+    background: var(--glass);
     color: var(--ink);
     display: grid;
     place-items: center;

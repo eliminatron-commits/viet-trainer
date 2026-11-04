@@ -1,7 +1,7 @@
 /*
- * Design-Tokens. Hell & illustriert für Home/Lernpfad/Karten/Quiz,
- * dunkel mit Rot-Orange-Glühen für Hör-Aufgaben ([data-theme='dark']).
- * Kontraste (Text --ink auf allen Kartenflächen, Weiß auf --red) erfüllen WCAG AA.
+ * Design-Tokens. Tag: warmes Off-White, kräftige Kartenflächen. Nacht ([data-theme='dark'], theme.svelte.ts):
+ * tiefes Nachtblau, dieselben Flächen gedämpft und dunkel, Schrift cremeweiß; Akzente Rot und Gelb bleiben leuchtend.
+ * Kontraste (Text --ink auf allen Kartenflächen, --on-yellow auf Gelb, Weiß auf --red) erfüllen WCAG AA – hell wie dunkel.
  */
 :root {
   /* Akzente */
@@ -24,12 +24,23 @@
   --ink-2: #5f5249;
   --ink-3: #8f8177;
   --on-red: #ffffff;
+  --on-yellow: #231a15; /* Text auf Gelb bleibt auch nachts dunkel */
+  --ink-muted: rgb(35 26 21 / 0.75); /* Kicker und Hinweise auf Kartenflächen */
+  --surface: #ffffff; /* weiße Karten, Kacheln, Antworten */
+  --glass: rgb(255 255 255 / 0.85); /* Knopf über Szenen */
+  --nav-bg: #231a15;
+  --nav-fg: #fbf5ec;
+  --tone-yellow: #ffcd00; /* gelbe Kartenfläche (nachts gedämpft, der Akzent --yellow nicht) */
+  --tone-yellow-soft: #ffe58a;
 
   /* Feedback */
   --ok: #1f8a5b;
   --ok-soft: #cdeedb;
   --bad: var(--red);
   --bad-soft: #fbd3cf;
+  --bad-ink: #a8170f;
+  --disabled-bg: rgb(255 255 255 / 0.45);
+  --disabled-ink: rgb(35 26 21 / 0.55);
 
   /* Klangscheibe (Hör-Aufgaben): Sonnenhof wie in den Illustrationen */
   --sun-halo: #ffe58a;
@@ -70,4 +81,41 @@
     --dur: 0ms;
     --dur-slow: 0ms;
   }
+}
+
+:root {
+  color-scheme: light;
+}
+/* Nacht: von 20 bis 9 Uhr automatisch oder fest gewählt (Einstellungen → Darstellung). */
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --paper: #131a2e; /* Nachthimmel */
+  --paper-2: #1f2843;
+  --surface: #232c49;
+  --ink: #f6ebdd; /* Mondlicht-Creme */
+  --ink-2: #c4b9b1;
+  --ink-3: #8a8398;
+  --ink-muted: rgb(246 235 221 / 0.78);
+  --glass: rgb(19 26 46 / 0.8);
+  --nav-bg: #2b3555;
+  --nav-fg: #f6ebdd;
+
+  --sea: #17666b;
+  --sea-soft: #23807e;
+  --lantern: #9c4a20;
+  --lantern-soft: #b6612f;
+  --lotus: #7e3d5c;
+  --lotus-soft: #9a5577;
+  --tone-yellow: #7d6012;
+  --tone-yellow-soft: #977718;
+
+  --ok: #74d8a6;
+  --ok-soft: #1d4a39;
+  --bad-soft: #4d2226;
+  --bad-ink: #ff9a8e;
+  --disabled-bg: rgb(255 255 255 / 0.1);
+  --disabled-ink: rgb(246 235 221 / 0.5);
+
+  --shadow-card: 0 10px 30px -12px rgb(0 0 0 / 0.6);
+  --shadow-float: 0 14px 40px -10px rgb(0 0 0 / 0.7);
 }

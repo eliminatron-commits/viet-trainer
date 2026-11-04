@@ -157,7 +157,7 @@
     letter-spacing: 0.02em;
   }
   .kicker.dark {
-    color: rgb(35 26 21 / 0.75);
+    color: var(--ink-muted);
   }
   /* Kennzahlen umbrechen nur als Ganzes (sonst steht „%“ allein in der Zeile). */
   .kicker span {
@@ -180,7 +180,7 @@
     gap: 10px;
   }
   .stat {
-    background: #fff;
+    background: var(--surface);
     border-radius: 20px;
     padding: 12px;
     display: grid;
@@ -273,13 +273,13 @@
     box-shadow: 0 6px 0 var(--red-deep);
   }
   .node.open {
-    background: #fff;
+    background: var(--surface);
     color: var(--ink);
     box-shadow: 0 6px 0 var(--paper-2);
   }
   .node.current {
     background: var(--yellow);
-    color: var(--ink);
+    color: var(--on-yellow);
     box-shadow:
       0 6px 0 #d9a900,
       0 0 0 8px rgb(255 205 0 / 0.3);

@@ -7,6 +7,7 @@
   import { game, initGame } from './lib/game.svelte';
   import { transitionTo, type Motion } from './lib/motion';
   import { applyUpdate, pwa } from './lib/pwa.svelte';
+  import { setThemeMode } from './lib/theme.svelte';
   import PathScreen from './screens/PathScreen.svelte';
   import Play, { type PlayMode } from './screens/play/Play.svelte';
   import ProfileScreen from './screens/ProfileScreen.svelte';
@@ -48,7 +49,8 @@
   let audioBlocked = $state(false);
 
   onMount(() => {
-    void initGame();
+    // Bis der Spielstand da ist, gilt die Uhrzeit; danach der gespeicherte Modus (ohne Übergang).
+    void initGame().then(() => setThemeMode(game.save.settings.theme, false));
     return onAudioStatus((s) => (audioBlocked = s.blocked));
   });
 </script>
@@ -163,7 +165,7 @@
     border: 0;
     border-radius: var(--radius-pill);
     background: var(--yellow);
-    color: var(--ink);
+    color: var(--on-yellow);
     font-weight: 600;
   }
 </style>

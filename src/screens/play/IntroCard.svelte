@@ -29,7 +29,7 @@
     color: var(--ink-2);
   }
   .card {
-    background: var(--yellow);
+    background: var(--tone-yellow);
     border-radius: var(--radius-lg);
     padding: 34px 22px 28px;
     display: grid;
@@ -45,7 +45,7 @@
     line-height: 1.1;
   }
   .pron {
-    color: rgb(35 26 21 / 0.7);
+    color: var(--ink-muted);
     font-weight: 600;
   }
   .de {

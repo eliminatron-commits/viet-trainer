@@ -1,14 +1,18 @@
 <script lang="ts">
+  import { theme } from '../theme.svelte';
+  import Glow from './Glow.svelte';
   import Scene from './Scene.svelte';
+  import Sky from './Sky.svelte';
 
   /**
    * Hà Nội: schmale Röhrenhäuser der Altstadt mit Balkonen, Kabelbündeln und Flagge; unten fließt der Rollerverkehr.
    * Aufbau: Straße steigt, Häuser wachsen nacheinander, Kabel fallen herab, Pflanzen und Flagge ploppen auf.
    * Leben: Roller fahren in beiden Richtungen durch (einer mit Blumenkorb), die Flagge weht, Wolken ziehen.
+   * Nacht: Fenster und Läden erleuchtet, Straßenlaternen mit Lichtkegeln, Roller mit Scheinwerfern, Mond und Sterne.
    */
   let { label = 'Roller in der Altstadt von Hà Nội' }: { label?: string } = $props();
 
-  const C = {
+  const DAY = {
     sky: '#FDE6CF',
     cloud: '#FFF4E6',
     yellow: '#F7C548',
@@ -23,16 +27,43 @@
     walk: '#EAD9C2',
     red: '#DA251D',
     star: '#FFCD00',
+    /** Fenster und Läden: tags dunkel, nachts erleuchtet. */
+    win: '#6B3D1E',
+    shop: '#6B3D1E',
+    helmet: '#FFF4E6',
   };
+  const NIGHT: typeof DAY = {
+    sky: '#1A2140',
+    cloud: '#283055',
+    yellow: '#A27E2E',
+    yellowShade: '#7E6022',
+    pink: '#9C5F74',
+    pinkShade: '#7A4659',
+    mint: '#4F7F7A',
+    mintShade: '#3B625E',
+    wood: '#2A1A10',
+    green: '#2F5F57',
+    road: '#34313F',
+    walk: '#5A5266',
+    red: '#E5332A',
+    star: '#FFD54A',
+    win: '#FFC861',
+    shop: '#F2A548',
+    helmet: '#E2DACB',
+  };
+  const LAMP = '#FFD27A';
+  const night = $derived(theme.dark);
+  const C = $derived(night ? NIGHT : DAY);
 
+  type Key = keyof typeof DAY;
   /** Röhrenhäuser von links: x, Breite, Dachhöhe, Farbe, Schatten. */
-  const houses = [
-    [0, 74, 70, C.pink, C.pinkShade],
-    [74, 82, 52, C.yellow, C.yellowShade],
-    [156, 76, 84, C.mint, C.mintShade],
-    [232, 88, 60, C.pink, C.pinkShade],
-    [320, 80, 76, C.yellow, C.yellowShade],
-  ] as const;
+  const houses: [number, number, number, Key, Key][] = [
+    [0, 74, 70, 'pink', 'pinkShade'],
+    [74, 82, 52, 'yellow', 'yellowShade'],
+    [156, 76, 84, 'mint', 'mintShade'],
+    [232, 88, 60, 'pink', 'pinkShade'],
+    [320, 80, 76, 'yellow', 'yellowShade'],
+  ];
   const GROUND = 208;
   /** Balkonpflanzen: x, y. */
   const plants = [
@@ -44,7 +75,13 @@
   ] as const;
 </script>
 
-{#snippet scooter(body: string, shirt: string, helmet: string, flowers: boolean)}
+{#snippet scooter(body: Key, shirt: Key, helmet: Key, flowers: boolean)}
+  {#if night}
+    <!-- Scheinwerferkegel nach vorn, Rücklicht hinten -->
+    <path d="M24 -9 L66 -18 L66 6 L24 -3 Z" fill={LAMP} opacity="0.28" />
+    <circle cx="23" cy="-6" r="2.6" fill={LAMP} />
+    <circle cx="-21" cy="-4" r="2" fill={C.red} />
+  {/if}
   <circle cx="-14" cy="0" r="6.5" fill={C.wood} />
   <circle cx="17" cy="0" r="6.5" fill={C.wood} />
   <circle cx="-14" cy="0" r="2.4" fill={C.walk} />
@@ -56,19 +93,28 @@
     <circle cx="-13" cy="-16" r="4" fill={C.pink} />
     <circle cx="-21" cy="-22" r="3.5" fill={C.red} />
   {/if}
-  <path d="M-21 -6 L-4 -6 Q2 -14 10 -15 L16 -15 L23 -3 Q23 1 17 1 L-14 1 Q-22 1 -21 -6 Z" fill={body} />
+  <path d="M-21 -6 L-4 -6 Q2 -14 10 -15 L16 -15 L23 -3 Q23 1 17 1 L-14 1 Q-22 1 -21 -6 Z" fill={C[body]} />
   <rect x="-15" y="-10" width="15" height="4" rx="2" fill={C.wood} />
   <rect x="14" y="-22" width="2.4" height="9" fill={C.wood} />
   <rect x="10" y="-23" width="8" height="2.4" rx="1" fill={C.wood} />
   <!-- Fahrer -->
-  <path d="M-10 -10 L-2 -10 L2 -28 L-6 -30 Z" fill={shirt} />
-  <path d="M0 -26 L13 -22 L12 -19 L-1 -22 Z" fill={shirt} />
-  <circle cx="-1" cy="-34" r="6" fill={helmet} />
+  <path d="M-10 -10 L-2 -10 L2 -28 L-6 -30 Z" fill={C[shirt]} />
+  <path d="M0 -26 L13 -22 L12 -19 L-1 -22 Z" fill={C[shirt]} />
+  <circle cx="-1" cy="-34" r="6" fill={C[helmet]} />
   <rect x="-2" y="-14" width="6" height="12" rx="2" fill={C.wood} />
+{/snippet}
+
+{#snippet streetLamp(x: number)}
+  <ellipse cx={x + 10} cy={GROUND + 6} rx="26" ry="5" fill={LAMP} opacity="0.25" />
+  <rect x={x - 1.5} y="150" width="3" height={GROUND - 150} fill={C.wood} />
+  <path d="M{x} 150 Q{x + 2} 144 {x + 12} 146 L{x + 12} 148 Q{x + 3} 147 {x + 1.5} 152 Z" fill={C.wood} />
+  <Glow x={x + 12} y={150} r={6} color={LAMP} t={3} />
+  <rect x={x + 8} y="147" width="8" height="5" rx="2" fill={LAMP} />
 {/snippet}
 
 <Scene {label}>
   <rect width="400" height="260" fill={C.sky} />
+  <Sky x={352} y={36} r={13} sun={false} />
 
   <g class="in in-left" style="--e: 140">
     <g class="loop-drift" style="--t: 26s; --dx: 20">
@@ -93,20 +139,21 @@
   <!-- Röhrenhäuser wachsen nacheinander aus dem Boden -->
   {#each houses as [x, w, top, color, shade], i (x)}
     <g class="in in-grow" style="--e: {90 + i * 70}">
-      <rect {x} y={top} width={w} height={GROUND - top} fill={color} />
-      <rect {x} y={top} width="6" height={GROUND - top} fill={shade} />
-      <rect x={x - 2} y={top - 6} width={w + 4} height="8" rx="2" fill={shade} />
+      <rect {x} y={top} width={w} height={GROUND - top} fill={C[color]} />
+      <rect {x} y={top} width="6" height={GROUND - top} fill={C[shade]} />
+      <rect x={x - 2} y={top - 6} width={w + 4} height="8" rx="2" fill={C[shade]} />
       <!-- Stockwerke: hohe Fenster mit Läden, darunter Balkone -->
       {#each { length: Math.floor((GROUND - top - 40) / 40) } as _, f (f)}
         {@const fy = top + 14 + f * 40}
         <rect x={x + w / 2 - 15} y={fy} width="30" height="24" rx="2" fill={C.green} />
-        <rect x={x + w / 2 - 10} y={fy + 3} width="20" height="21" fill={C.wood} />
+        <rect x={x + w / 2 - 10} y={fy + 3} width="20" height="21" fill={(i + f) % 3 === 1 ? C.wood : C.win} />
         <rect x={x + 8} y={fy + 26} width={w - 12} height="4" fill={C.wood} />
-        <rect x={x + 8} y={fy + 30} width={w - 12} height="3" fill={shade} />
+        <rect x={x + 8} y={fy + 30} width={w - 12} height="3" fill={C[shade]} />
       {/each}
-      <!-- Laden im Erdgeschoss -->
-      <rect x={x + 10} y={GROUND - 26} width={w - 16} height="26" fill={C.wood} />
-      <rect x={x + 6} y={GROUND - 32} width={w - 8} height="6" fill={shade} />
+      <!-- Laden im Erdgeschoss, nachts mit Licht auf dem Gehweg -->
+      {#if night}<ellipse cx={x + w / 2} cy={GROUND + 4} rx={w / 2 - 4} ry="4" fill={LAMP} opacity="0.3" />{/if}
+      <rect x={x + 10} y={GROUND - 26} width={w - 16} height="26" fill={C.shop} />
+      <rect x={x + 6} y={GROUND - 32} width={w - 8} height="6" fill={C[shade]} />
     </g>
   {/each}
 
@@ -138,19 +185,27 @@
     <path d="M0 94 Q190 128 400 92 L400 94.5 Q190 130.5 0 96.5 Z" fill={C.wood} />
   </g>
 
+  <!-- Straßenlaternen (nachts) -->
+  {#if night}
+    <g class="in in-fade" style="--e: 700">
+      {@render streetLamp(64)}
+      {@render streetLamp(296)}
+    </g>
+  {/if}
+
   <!-- Rollerverkehr: vorne nach rechts, hinten nach links -->
   <g class="in in-fade" style="--e: 160">
     <g class="loop-cross" style="--t: 8s; --d: -3s; --dist: -540px">
-      <g transform="translate(470 226) scale(-0.78 0.78)">{@render scooter(C.mint, C.yellow, C.cloud, false)}</g>
+      <g transform="translate(470 226) scale(-0.78 0.78)">{@render scooter('mint', 'yellow', 'helmet', false)}</g>
     </g>
     <g class="loop-cross" style="--t: 11s; --d: -8s; --dist: -540px">
-      <g transform="translate(470 226) scale(-0.78 0.78)">{@render scooter(C.yellow, C.red, C.mint, false)}</g>
+      <g transform="translate(470 226) scale(-0.78 0.78)">{@render scooter('yellow', 'red', 'mint', false)}</g>
     </g>
     <g class="loop-cross" style="--t: 7s; --d: -1s; --dist: 540px">
-      <g transform="translate(-70 248)">{@render scooter(C.red, C.mint, C.star, true)}</g>
+      <g transform="translate(-70 248)">{@render scooter('red', 'mint', 'star', true)}</g>
     </g>
     <g class="loop-cross" style="--t: 9.5s; --d: -6.2s; --dist: 540px">
-      <g transform="translate(-70 248)">{@render scooter(C.green, C.pink, C.cloud, false)}</g>
+      <g transform="translate(-70 248)">{@render scooter('green', 'pink', 'helmet', false)}</g>
     </g>
   </g>
 </Scene>

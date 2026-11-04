@@ -1,14 +1,19 @@
 <script lang="ts">
+  import { theme } from '../theme.svelte';
+  import Glow from './Glow.svelte';
   import Scene from './Scene.svelte';
+  import Sky from './Sky.svelte';
 
   /**
    * Hội An: ockergelbe Altstadthäuser am Thu Bồn, Laternenketten, eine Ruderin im Sampan.
    * Aufbau: Fluss steigt, Häuser wachsen nacheinander, die Kette fällt herab, Laternen ploppen auf.
    * Leben: Laternen pendeln, das Boot gleitet und schaukelt, das Ruder zieht, Wellenlichter glitzern.
+   * Nacht: Laternen leuchten mit pulsierenden Lichthöfen, Fenster und Läden sind erleuchtet, ihr Licht spiegelt sich
+   * im Fluss, Blütenkerzen (hoa đăng) treiben auf dem Wasser, Sterne funkeln.
    */
   let { label = 'Laternen über der Altstadt von Hội An' }: { label?: string } = $props();
 
-  const C = {
+  const DAY = {
     sky: '#FDE6CF',
     cloud: '#FFF4E6',
     wall: '#F4B942',
@@ -23,30 +28,79 @@
     red: '#DA251D',
     yellow: '#FFCD00',
     pink: '#F6A5B8',
+    /** Fenster- und Ladeninneres: tags dunkel, nachts erleuchtet. */
+    win: '#6B3D1E',
+    door: '#4E9E8F',
   };
+  const NIGHT: typeof DAY = {
+    sky: '#221F3F',
+    cloud: '#302D52',
+    wall: '#9E702C',
+    wallShade: '#76521F',
+    roof: '#6A2C1D',
+    roofShade: '#4A1E13',
+    wood: '#33200F',
+    shutter: '#2C5753',
+    river: '#1A2C48',
+    riverLight: '#3D5A86',
+    quay: '#584E62',
+    red: '#FF4D3D',
+    yellow: '#FFD54A',
+    pink: '#FF92B4',
+    win: '#FFC861',
+    door: '#F2A548',
+  };
+  const night = $derived(theme.dark);
+  const C = $derived(night ? NIGHT : DAY);
 
-  /** Laternen an der Kette: x, y auf der Kurve, Farbe, Ringfarbe. */
-  const chain = [
-    [30, 27, C.red, C.yellow],
-    [85, 37, C.yellow, C.red],
-    [140, 42, C.pink, C.red],
-    [195, 44, C.red, C.yellow],
-    [250, 42, C.yellow, C.red],
-    [305, 36, C.pink, C.red],
-    [360, 26, C.red, C.yellow],
-  ] as const;
+  type Hue = 'red' | 'yellow' | 'pink';
+  const RING: Record<Hue, Hue> = { red: 'yellow', yellow: 'red', pink: 'red' };
+  /** Laternen an der Kette: x, y auf der Kurve, Farbe. */
+  const chain: [number, number, Hue][] = [
+    [30, 27, 'red'],
+    [85, 37, 'yellow'],
+    [140, 42, 'pink'],
+    [195, 44, 'red'],
+    [250, 42, 'yellow'],
+    [305, 36, 'pink'],
+    [360, 26, 'red'],
+  ];
+  /** Laternen unter den Traufen: x, y, Farbe. */
+  const eaves: [number, number, Hue][] = [
+    [22, 118, 'red'],
+    [128, 104, 'yellow'],
+    [336, 112, 'pink'],
+  ];
+  /** Spiegelungen im Fluss (nur nachts): x, Breite, Farbe – unter Traufenlaternen und erleuchteten Läden. */
+  const reflections: [number, number, Hue | 'win'][] = [
+    [22, 12, 'red'],
+    [128, 12, 'yellow'],
+    [336, 12, 'pink'],
+    [47, 22, 'win'],
+    [154, 40, 'win'],
+    [255, 24, 'win'],
+    [350, 30, 'win'],
+  ];
+  /** Blütenkerzen auf dem Fluss (nur nachts): x, y, Farbe, Drift. */
+  const candles: [number, number, Hue, number][] = [
+    [60, 222, 'pink', 26],
+    [126, 230, 'yellow', 22],
+    [262, 224, 'pink', 30],
+    [340, 232, 'yellow', 24],
+  ];
 </script>
 
-{#snippet lantern(x: number, y: number, s: number, body: string, ring: string, t: number, d: number)}
+{#snippet lantern(x: number, y: number, s: number, hue: Hue, t: number, d: number)}
   <g transform="translate({x} {y}) scale({s})">
     <g class="loop-sway origin-top" style="--t: {t}s; --d: {d}s; --rot: 7">
+      {#if night}<Glow x={0} y={20} r={11} color={C[hue]} t={2.2 + d * -0.3} d={d} />{/if}
       <rect x="-0.8" y="0" width="1.6" height="8" fill={C.wood} />
-      <rect x="-5" y="7" width="10" height="3.5" rx="1" fill={ring} />
-      <ellipse cx="0" cy="20" rx="10" ry="11" fill={body} />
-      <path d="M-4 10 Q-9.5 20 -4 30 Q-6.5 20 -4 10 Z" fill={ring} />
-      <path d="M4 10 Q9.5 20 4 30 Q6.5 20 4 10 Z" fill={ring} />
-      <rect x="-5" y="29.5" width="10" height="3.5" rx="1" fill={ring} />
-      <path d="M-1.5 33 L1.5 33 L2.5 42 L-2.5 42 Z" fill={ring} />
+      <rect x="-5" y="7" width="10" height="3.5" rx="1" fill={C[RING[hue]]} />
+      <ellipse cx="0" cy="20" rx="10" ry="11" fill={C[hue]} />
+      <path d="M-4 10 Q-9.5 20 -4 30 Q-6.5 20 -4 10 Z" fill={C[RING[hue]]} />
+      <path d="M4 10 Q9.5 20 4 30 Q6.5 20 4 10 Z" fill={C[RING[hue]]} />
+      <rect x="-5" y="29.5" width="10" height="3.5" rx="1" fill={C[RING[hue]]} />
+      <path d="M-1.5 33 L1.5 33 L2.5 42 L-2.5 42 Z" fill={C[RING[hue]]} />
     </g>
   </g>
 {/snippet}
@@ -54,19 +108,35 @@
 {#snippet door(x: number, y: number, w: number, h: number)}
   <rect {x} {y} width={w} height={h} fill={C.wood} />
   {#each { length: Math.round(w / 19) } as _, i (i)}
-    <rect x={x + 3 + i * ((w - 3) / Math.round(w / 19))} y={y + 3} width={(w - 3) / Math.round(w / 19) - 3} height={h - 3} rx="1.5" fill={C.shutter} />
+    <rect x={x + 3 + i * ((w - 3) / Math.round(w / 19))} y={y + 3} width={(w - 3) / Math.round(w / 19) - 3} height={h - 3} rx="1.5" fill={C.door} />
   {/each}
 {/snippet}
 
 {#snippet windows(xs: number[], y: number)}
   {#each xs as x (x)}
     <rect x={x - 3} {y} width="24" height="26" rx="2" fill={C.shutter} />
-    <rect x={x} y={y + 3} width="18" height="20" fill={C.wood} />
+    <rect x={x} y={y + 3} width="18" height="20" fill={C.win} />
   {/each}
+{/snippet}
+
+{#snippet candle(x: number, y: number, hue: Hue, dx: number, i: number)}
+  <g class="loop-drift" style="--t: {16 + i * 3}s; --dx: {dx}; --d: {-i * 4}s">
+    <g transform="translate({x} {y})">
+      <g class="loop-bob" style="--t: {2.4 + i * 0.3}s; --rot: 6; --amp: 1.5">
+        <g>
+          <ellipse cx="0" cy="4" rx="9" ry="2.2" fill={C.yellow} opacity="0.35" />
+          <Glow x={0} y={-4} r={4} color={C.yellow} t={1.8 + i * 0.3} />
+          <path d="M-7 0 Q-8 -6 -3 -5 Q0 -10 3 -5 Q8 -6 7 0 Z" fill={C[hue]} />
+          <path d="M0 -12 Q2 -8 0 -6 Q-2 -8 0 -12 Z" fill={C.yellow} />
+        </g>
+      </g>
+    </g>
+  </g>
 {/snippet}
 
 <Scene {label}>
   <rect width="400" height="260" fill={C.sky} />
+  <Sky x={0} y={0} r={0} sun={false} moon={false} />
 
   <g class="in in-left" style="--e: 100">
     <g class="loop-drift" style="--t: 24s; --dx: 18">
@@ -85,10 +155,20 @@
     <g class="loop-shimmer" style="--t: 3.3s"><ellipse cx="70" cy="200" rx="26" ry="2" fill={C.riverLight} /></g>
     <g class="loop-shimmer" style="--t: 2.9s; --d: -1.4s; --dx: -12"><ellipse cx="300" cy="212" rx="32" ry="2.2" fill={C.riverLight} /></g>
     <g class="loop-shimmer" style="--t: 3.6s; --d: -0.7s"><ellipse cx="190" cy="226" rx="24" ry="1.8" fill={C.riverLight} /></g>
-    <!-- Spiegelungen der Laternen -->
-    <g class="loop-shimmer" style="--t: 2.4s; --d: -1s; --dx: 4"><ellipse cx="22" cy="196" rx="5" ry="1.6" fill={C.red} /></g>
-    <g class="loop-shimmer" style="--t: 2.7s; --dx: 4"><ellipse cx="128" cy="196" rx="5" ry="1.6" fill={C.yellow} /></g>
-    <g class="loop-shimmer" style="--t: 2.2s; --d: -0.4s; --dx: 4"><ellipse cx="336" cy="196" rx="5" ry="1.6" fill={C.pink} /></g>
+    {#if night}
+      <!-- Spiegelungen: Laternen und erleuchtete Läden zittern als Lichtbänder im Wasser, nach unten schwächer -->
+      {#each reflections as [rx, w, key], i (i)}
+        <g class="loop-shimmer" style="--t: {2 + (i % 3) * 0.4}s; --d: {-i * 0.5}s; --dx: 3">
+          <rect x={rx - w / 2} y="192" width={w} height="3" rx="1.5" fill={C[key]} opacity="0.8" />
+          <rect x={rx - w / 2 + 2} y="199" width={w - 4} height="2.5" rx="1.2" fill={C[key]} opacity="0.5" />
+          <rect x={rx - w / 2 + 4} y="206" width={w - 8} height="2" rx="1" fill={C[key]} opacity="0.3" />
+        </g>
+      {/each}
+    {:else}
+      <g class="loop-shimmer" style="--t: 2.4s; --d: -1s; --dx: 4"><ellipse cx="22" cy="196" rx="5" ry="1.6" fill={C.red} /></g>
+      <g class="loop-shimmer" style="--t: 2.7s; --dx: 4"><ellipse cx="128" cy="196" rx="5" ry="1.6" fill={C.yellow} /></g>
+      <g class="loop-shimmer" style="--t: 2.2s; --d: -0.4s; --dx: 4"><ellipse cx="336" cy="196" rx="5" ry="1.6" fill={C.pink} /></g>
+    {/if}
   </g>
 
   <!-- Haus A -->
@@ -144,13 +224,13 @@
   </g>
 
   <!-- Laternen unter den Traufen -->
-  {#each [[22, 118, C.red, C.yellow, 0], [128, 104, C.yellow, C.red, 1], [336, 112, C.pink, C.red, 2]] as [x, y, body, ring, i] (x)}
-    <g class="in in-pop origin-top" style="--e: {640 + Number(i) * 70}">
-      {@render lantern(Number(x), Number(y), 0.75, String(body), String(ring), 2.6 + Number(i) * 0.3, -Number(i) * 0.8)}
+  {#each eaves as [x, y, hue], i (x)}
+    <g class="in in-pop origin-top" style="--e: {640 + i * 70}">
+      {@render lantern(x, y, 0.75, hue, 2.6 + i * 0.3, -i * 0.8)}
     </g>
   {/each}
 
-  <!-- Ruderin im Sampan gleitet über den Fluss -->
+  <!-- Ruderin im Sampan gleitet über den Fluss, nachts mit Bootslaterne -->
   <g class="in in-left" style="--e: 480">
     <g class="loop-drift" style="--t: 22s; --dx: 70">
       <g transform="translate(170 210)">
@@ -163,6 +243,11 @@
             <rect x="22" y="-34" width="12" height="25" rx="5" fill={C.pink} />
             <path d="M15 -33 L28 -46 L41 -33 Z" fill={C.quay} />
             <path d="M15 -33 L28 -46 L28 -33 Z" fill={C.wallShade} />
+            {#if night}
+              <rect x="-41" y="-34" width="2" height="24" fill={C.wood} />
+              <Glow x={-40} y={-30} r={6} color={C.yellow} />
+              <ellipse cx="-40" cy="-30" rx="5" ry="6" fill={C.red} />
+            {/if}
             <path d="M-50 -10 L50 -10 Q44 4 30 6 L-30 6 Q-44 4 -50 -10 Z" fill={C.wood} />
             <path d="M-48 -10 L48 -10 L46 -6 L-46 -6 Z" fill={C.roof} />
           </g>
@@ -170,6 +255,13 @@
       </g>
     </g>
   </g>
+
+  <!-- Blütenkerzen treiben auf dem Fluss -->
+  {#if night}
+    {#each candles as [x, y, hue, dx], i (x)}
+      <g class="in in-fade" style="--e: {760 + i * 90}">{@render candle(x, y, hue, dx, i)}</g>
+    {/each}
+  {/if}
 
   <!-- Kai im Vordergrund -->
   <g class="in in-rise" style="--e: 220">
@@ -187,9 +279,9 @@
   <g class="in in-drop" style="--e: 300">
     <path d="M0 20 Q200 70 400 16 L400 19.5 Q200 73.5 0 23.5 Z" fill={C.wood} />
   </g>
-  {#each chain as [x, y, body, ring], i (x)}
+  {#each chain as [x, y, hue], i (x)}
     <g class="in in-pop origin-top" style="--e: {520 + i * 55}">
-      {@render lantern(x, y, 1, body, ring, 2.2 + (i % 3) * 0.35, -i * 0.45)}
+      {@render lantern(x, y, 1, hue, 2.2 + (i % 3) * 0.35, -i * 0.45)}
     </g>
   {/each}
 </Scene>

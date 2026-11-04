@@ -85,11 +85,11 @@
     --soft: var(--lotus-soft);
   }
   .detail[data-tone='yellow'] {
-    --bg: var(--yellow);
-    --soft: var(--sun-halo);
+    --bg: var(--tone-yellow);
+    --soft: var(--tone-yellow-soft);
   }
   .detail[data-tone='paper'] {
-    --bg: #fff;
+    --bg: var(--surface);
     --soft: var(--paper-2);
   }
   .band {
@@ -130,7 +130,7 @@
     height: var(--tap);
     border: 0;
     border-radius: 50%;
-    background: rgb(255 255 255 / 0.85);
+    background: var(--glass);
     color: var(--ink);
     display: grid;
     place-items: center;
@@ -140,7 +140,7 @@
   .kicker {
     font-size: var(--fs-small);
     font-weight: 600;
-    color: rgb(35 26 21 / 0.75);
+    color: var(--ink-muted);
   }
   h1 {
     font-size: var(--fs-hero);
@@ -174,10 +174,10 @@
     font-weight: 600;
   }
   .chips li.known {
-    background: var(--known, #fff);
+    background: var(--known, var(--surface));
   }
   .detail[data-tone='paper'] .chips li.known {
-    --known: var(--sun-halo);
+    --known: var(--tone-yellow-soft);
   }
   .actions {
     margin-top: auto;
@@ -215,6 +215,6 @@
   .hint {
     text-align: center;
     font-size: var(--fs-small);
-    color: rgb(35 26 21 / 0.75);
+    color: var(--ink-muted);
   }
 </style>

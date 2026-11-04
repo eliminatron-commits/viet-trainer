@@ -314,7 +314,7 @@
   }
   .boss-title {
     font-weight: 800;
-    color: var(--red-deep);
+    color: var(--bad-ink);
   }
   .feedback {
     position: fixed;
@@ -430,7 +430,7 @@
     font-size: var(--fs-small);
   }
   .badge {
-    background: #fff;
+    background: var(--surface);
     border-radius: 20px;
     padding: 14px 18px;
     font-weight: 600;

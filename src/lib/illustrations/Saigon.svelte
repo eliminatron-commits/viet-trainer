@@ -1,18 +1,21 @@
 <script lang="ts">
+  import { theme } from '../theme.svelte';
+  import Glow from './Glow.svelte';
   import Scene from './Scene.svelte';
+  import Sky from './Sky.svelte';
 
   /**
    * Sài Gòn: Skyline am Saigon-Fluss mit Lotusknospen-Turm und Stufenturm, ein Baukran, Fähre, Palmen.
    * Aufbau: Fluss steigt, die Türme wachsen aus dem Boden, der Kran ploppt auf, die Fähre gleitet herein.
    * Leben: Kranarm schwenkt, Fähre und Boote treiben, Palmen wiegen sich, Wellenlichter glitzern.
+   * Nacht: Die Stadt, die nie schläft – erleuchtete Fensterbänder, ihre bunten Spiegelungen im Fluss, blinkende
+   * Warnlichter auf Landeplattform und Kran, Promenadenlaternen, Mond und Sterne.
    */
   let { label = 'Skyline von Sài Gòn am Fluss' }: { label?: string } = $props();
 
-  const C = {
+  const DAY = {
     sky: '#FDE6CF',
     cloud: '#FFF4E6',
-    sun: '#FFCD00',
-    sunHalo: '#FFE58A',
     far: '#C9D6E3',
     glass: '#8FB8C9',
     glassShade: '#6E9AAF',
@@ -23,7 +26,30 @@
     red: '#DA251D',
     palm: '#4E9E8F',
     palmShade: '#3B7F73',
+    crane: '#FFCD00',
+    /** Fensterbänder: tags hell, nachts warm bzw. kühl erleuchtet. */
+    win: '#FFF4E6',
+    win2: '#FFF4E6',
   };
+  const NIGHT: typeof DAY = {
+    sky: '#151B36',
+    cloud: '#232B4F',
+    far: '#222C4E',
+    glass: '#2C3D63',
+    glassShade: '#223154',
+    cream: '#4A4560',
+    creamShade: '#383449',
+    river: '#12294A',
+    riverLight: '#4E6FA0',
+    red: '#FF3B30',
+    palm: '#1F4A47',
+    palmShade: '#163733',
+    crane: '#9C8530',
+    win: '#FFD27A',
+    win2: '#8FE3F0',
+  };
+  const night = $derived(theme.dark);
+  const C = $derived(night ? NIGHT : DAY);
   const BANK = 184;
 
   /** Mittelhohe Blöcke: x, Breite, Oberkante, Glas oder Stein. */
@@ -34,6 +60,16 @@
     [222, 26, 140, 'glass'],
     [292, 34, 118, 'cream'],
     [356, 40, 136, 'glass'],
+  ] as const;
+  /** Spiegelungen der Lichter im Fluss (nur nachts): x, Breite, Farbe. */
+  const reflections = [
+    [25, 8, 'win'],
+    [59, 6, 'win2'],
+    [151, 10, 'win'],
+    [200, 8, 'win'],
+    [266, 7, 'win2'],
+    [309, 8, 'win'],
+    [376, 9, 'win2'],
   ] as const;
 </script>
 
@@ -53,13 +89,17 @@
   </g>
 {/snippet}
 
+{#snippet beacon(x: number, y: number, d: number)}
+  <g class="loop-twinkle" style="--t: 0.7s; --d: {d}s">
+    <circle cx={x} cy={y} r="5" fill={C.red} opacity="0.3" />
+    <circle cx={x} cy={y} r="2" fill={C.red} />
+  </g>
+{/snippet}
+
 <Scene {label}>
   <rect width="400" height="260" fill={C.sky} />
+  <Sky x={336} y={50} r={25} e={120} />
 
-  <g class="in in-rise" style="--e: 120">
-    <g class="loop-breathe" style="--t: 4.8s; --s: 1.1"><circle cx="336" cy="50" r="40" fill={C.sunHalo} /></g>
-    <circle cx="336" cy="50" r="25" fill={C.sun} />
-  </g>
   <g class="in in-left" style="--e: 160">
     <g class="loop-drift" style="--t: 24s; --dx: 18">
       <path d="M30 50 C32 42 46 40 50 46 C54 38 70 40 70 52 C78 52 80 62 70 62 L34 62 C24 62 22 52 30 50 Z" fill={C.cloud} />
@@ -71,9 +111,14 @@
     </g>
   </g>
 
-  <!-- ferne Stadt -->
+  <!-- ferne Stadt, nachts mit vereinzelten Lichtern -->
   <g class="in in-rise" style="--e: 40">
     <path d="M0 {BANK} L0 150 L22 150 L22 138 L40 138 L40 156 L70 156 L70 130 L96 130 L96 146 L120 146 L120 160 L170 160 L170 136 L196 136 L196 150 L230 150 L230 128 L250 128 L250 146 L286 146 L286 134 L312 134 L312 152 L340 152 L340 140 L372 140 L372 154 L400 154 L400 {BANK} Z" fill={C.far} />
+    {#if night}
+      {#each [[30, 146], [78, 138], [104, 152], [176, 144], [236, 136], [296, 142], [348, 148], [386, 160]] as [lx, ly], i (lx)}
+        <g class="loop-twinkle" style="--t: {1.2 + (i % 3) * 0.7}s; --d: {-i * 0.45}s"><rect x={lx} y={ly} width="3" height="2" fill={i % 2 ? C.win2 : C.win} /></g>
+      {/each}
+    {/if}
   </g>
 
   <!-- Blöcke wachsen aus dem Boden -->
@@ -82,7 +127,7 @@
       <rect {x} y={top} width={w} height={BANK - top} fill={kind === 'glass' ? C.glass : C.cream} />
       <rect {x} y={top} width={w * 0.34} height={BANK - top} fill={kind === 'glass' ? C.glassShade : C.creamShade} />
       {#each { length: Math.floor((BANK - top - 10) / 12) } as _, r (r)}
-        <rect x={x + w * 0.42} y={top + 8 + r * 12} width={w * 0.5} height="3" fill={C.cloud} />
+        <rect x={x + w * 0.42} y={top + 8 + r * 12} width={w * 0.5} height="3" fill={kind === 'glass' ? C.win2 : C.win} />
       {/each}
     </g>
   {/each}
@@ -96,7 +141,8 @@
     <rect x="136" y="30" width="16" height="20" fill={C.glass} />
     <rect x="136" y="30" width="6" height="20" fill={C.glassShade} />
     <rect x="143" y="12" width="2" height="20" fill={C.glassShade} />
-    {#each { length: 9 } as _, r (r)}<rect x="142" y={80 + r * 11} width="18" height="3" fill={C.cloud} />{/each}
+    {#each { length: 9 } as _, r (r)}<rect x="142" y={80 + r * 11} width="18" height="3" fill={C.win} />{/each}
+    {#if night}{@render beacon(144, 12, 0)}{/if}
   </g>
 
   <!-- Lotusknospen-Turm mit Landeplattform -->
@@ -105,44 +151,56 @@
     <path d="M250 {BANK} L254 84 Q258 66 262 60 Q259 80 260 {BANK} Z" fill={C.creamShade} />
     <ellipse cx="276" cy="96" rx="15" ry="4" fill={C.red} />
     <rect x="262" y="96" width="8" height="4" fill={C.creamShade} />
-    {#each { length: 7 } as _, r (r)}<rect x="263" y={110 + r * 10} width="9" height="2.5" fill={C.cloud} />{/each}
+    {#each { length: 7 } as _, r (r)}<rect x="263" y={110 + r * 10} width="9" height="2.5" fill={C.win2} />{/each}
+    {#if night}{@render beacon(290, 95, -0.35)}{/if}
   </g>
 
   <!-- Baukran: Arm schwenkt langsam -->
   <g class="in in-grow" style="--e: 520">
-    <rect x="194" y="70" width="5" height={BANK - 70} fill={C.sun} />
+    <rect x="194" y="70" width="5" height={BANK - 70} fill={C.crane} />
     {#each { length: 9 } as _, r (r)}<rect x="194" y={78 + r * 12} width="5" height="2" fill={C.creamShade} />{/each}
   </g>
   <g class="in in-pop" style="--e: 760">
     <g class="loop-sway" style="--t: 6s; --rot: 7; transform-origin: 36% 50%">
-      <rect x="166" y="66" width="80" height="5" fill={C.sun} />
+      <rect x="166" y="66" width="80" height="5" fill={C.crane} />
       <rect x="168" y="71" width="12" height="8" fill={C.creamShade} />
       <rect x="232" y="71" width="1.5" height="30" fill={C.palmShade} />
       <rect x="228" y="100" width="10" height="7" fill={C.red} />
+      {#if night}{@render beacon(244, 66, -0.2)}{/if}
     </g>
   </g>
 
-  <!-- Fluss -->
+  <!-- Fluss; nachts spiegeln sich die Lichter der Stadt als zitternde Bänder -->
   <g class="in in-rise" style="--e: 0">
     <rect x="0" y={BANK} width="400" height="56" fill={C.river} />
+    {#if night}
+      {#each reflections as [rx, rw, key], i (rx)}
+        <g class="loop-shimmer" style="--t: {1.8 + (i % 3) * 0.5}s; --d: {-i * 0.4}s; --dx: 3">
+          <rect x={rx - rw / 2} y={BANK + 4} width={rw} height="3" rx="1.5" fill={C[key]} opacity="0.75" />
+          <rect x={rx - rw / 2 + 1} y={BANK + 11} width={rw - 2} height="2.5" rx="1.2" fill={C[key]} opacity="0.5" />
+          <rect x={rx - rw / 2 + 2} y={BANK + 18} width={rw - 4} height="2" rx="1" fill={C[key]} opacity="0.3" />
+        </g>
+      {/each}
+    {/if}
     <g class="loop-shimmer" style="--t: 3s"><ellipse cx="80" cy="196" rx="28" ry="2" fill={C.riverLight} /></g>
     <g class="loop-shimmer" style="--t: 3.5s; --d: -1.6s; --dx: -12"><ellipse cx="250" cy="206" rx="34" ry="2.2" fill={C.riverLight} /></g>
     <g class="loop-shimmer" style="--t: 2.7s; --d: -0.8s"><ellipse cx="360" cy="194" rx="22" ry="1.8" fill={C.riverLight} /></g>
     <g class="loop-shimmer" style="--t: 3.2s; --d: -2.2s; --dx: -8"><ellipse cx="170" cy="226" rx="26" ry="2" fill={C.riverLight} /></g>
   </g>
 
-  <!-- Fähre gleitet herein -->
+  <!-- Fähre gleitet herein, nachts mit erleuchteten Fenstern -->
   <g class="in in-left" style="--e: 460">
     <g class="loop-drift" style="--t: 22s; --dx: 60">
       <g transform="translate(150 212)">
         <ellipse cx="0" cy="7" rx="54" ry="4" fill={C.riverLight} />
+        {#if night}<ellipse cx="0" cy="9" rx="40" ry="3.5" fill={C.win} opacity="0.35" />{/if}
         <g class="loop-bob" style="--t: 2.9s; --rot: 1.5; --amp: 2">
           <g>
-            <rect x="-26" y="-22" width="44" height="12" rx="2" fill={C.cloud} />
-            <rect x="-26" y="-22" width="14" height="12" rx="2" fill={C.cream} />
-            {#each [-8, 2, 12] as wx (wx)}<rect x={wx - 3} y="-19" width="6" height="5" fill={C.glassShade} />{/each}
+            <rect x="-26" y="-22" width="44" height="12" rx="2" fill={night ? C.cream : C.cloud} />
+            <rect x="-26" y="-22" width="14" height="12" rx="2" fill={night ? C.creamShade : C.cream} />
+            {#each [-8, 2, 12] as wx (wx)}<rect x={wx - 3} y="-19" width="6" height="5" fill={night ? C.win : C.glassShade} />{/each}
             <path d="M-46 -10 L44 -10 Q40 2 30 4 L-36 4 Q-44 2 -46 -10 Z" fill={C.red} />
-            <rect x="-42" y="-10" width="84" height="3" fill={C.cloud} />
+            <rect x="-42" y="-10" width="84" height="3" fill={night ? C.win : C.cloud} />
           </g>
         </g>
       </g>
@@ -152,16 +210,26 @@
     <g transform="translate(320 228) scale(0.6)">
       <g class="loop-bob" style="--t: 2.4s; --d: -1s; --rot: 4">
         <path d="M-30 -6 L30 -6 Q26 4 18 6 L-18 6 Q-26 4 -30 -6 Z" fill={C.creamShade} />
-        <path d="M-6 -6 L-6 -26 L14 -8 Z" fill={C.cloud} />
+        <path d="M-6 -6 L-6 -26 L14 -8 Z" fill={night ? C.cream : C.cloud} />
       </g>
     </g>
   </g>
 
-  <!-- Uferpromenade mit Palmen -->
+  <!-- Uferpromenade mit Palmen, nachts mit Laternen -->
   <g class="in in-rise" style="--e: 240">
     <path d="M0 238 L400 236 L400 260 L0 260 Z" fill={C.cream} />
     <rect x="0" y="236" width="400" height="4" fill={C.creamShade} />
   </g>
+  {#if night}
+    <g class="in in-fade" style="--e: 680">
+      {#each [110, 200, 290] as lx, i (lx)}
+        <ellipse cx={lx} cy="246" rx="18" ry="3.5" fill={C.win} opacity="0.3" />
+        <rect x={lx - 1} y="226" width="2" height="20" fill={C.creamShade} />
+        <Glow x={lx} y={225} r={4.5} color={C.win} t={2.8 + i * 0.3} d={-i * 0.5} />
+        <circle cx={lx} cy="225" r="3" fill={C.win} />
+      {/each}
+    </g>
+  {/if}
   <g class="in in-rise" style="--e: 420">{@render palmTree(26, 1.25, 0)}</g>
   <g class="in in-rise" style="--e: 500">{@render palmTree(380, 1.1, -1.4)}</g>
 </Scene>

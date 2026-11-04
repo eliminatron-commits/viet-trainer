@@ -13,10 +13,14 @@
 </script>
 
 <script lang="ts">
+  import { theme } from '../theme.svelte';
+  import Glow from './Glow.svelte';
+
   /**
    * Hero-Objekt je Region – wie das Kajak im Vorbild: liegt schräg auf der Weiter-Karte, fliegt beim
    * Öffnen aufrecht und groß in die Etappen-Ansicht (View Transition `stage-hero`). Dieselben Stilregeln
    * wie die Szenen (flach, keine Konturen, Licht von rechts oben); lebt mit den Schleifen aus scene.css.
+   * Nachts leuchtet die Laterne und der Roller hat Licht.
    */
   /** Ohne `size` füllt das Objekt seinen Container (Größe dann per CSS). */
   let { region, size }: { region: RegionId; size?: number } = $props();
@@ -75,6 +79,7 @@
   {:else if region === 'hoian'}
     <!-- Seidenlaterne: pendelt an ihrer Schnur -->
     <g class="loop-sway origin-top" style="--t: 2.6s; --rot: 6">
+      {#if theme.dark}<Glow x={100} y={104} r={44} color="#FF7A45" t={2.4} />{/if}
       <rect x="98" y="0" width="4" height="40" fill={C.boatDark} />
       <rect x="80" y="38" width="40" height="12" rx="4" fill={C.yellow} />
       <ellipse cx="100" cy="104" rx="50" ry="56" fill={C.red} />
@@ -129,6 +134,10 @@
     <path d="M128 144 L140 144 Q160 108 154 56 L140 54 Q140 100 122 132 Z" fill={C.red} />
     <path d="M134 140 Q154 118 180 136 L176 144 Q156 130 140 150 Z" fill={C.red} />
     <rect x="128" y="44" width="44" height="10" rx="5" fill={C.boatDark} />
+    {#if theme.dark}
+      <path d="M166 62 L200 46 L200 92 L166 74 Z" fill={C.yellow} opacity="0.3" />
+      <Glow x={160} y={68} r={9} color={C.yellow} t={2} />
+    {/if}
     <circle cx="160" cy="68" r="8" fill={C.yellow} />
   {:else}
     <!-- Cà phê sữa đá: Phin tropft in das Glas -->

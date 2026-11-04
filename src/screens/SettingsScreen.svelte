@@ -4,9 +4,28 @@
   import { onAudioStatus, play, type AudioStatus } from '../lib/audio/player';
   import { flushed, game, replaceSave, today, updateSettings } from '../lib/game.svelte';
   import { disablePush, enablePush, push, refreshPushStatus, reportToWorker, sendTestPush } from '../lib/push.svelte';
+  import type { ThemeMode } from '../lib/logic/theme';
   import { exportSave, importSave } from '../lib/storage/persist';
+  import { setThemeMode, theme } from '../lib/theme.svelte';
 
   let { onback }: { onback: () => void } = $props();
+
+  // Darstellung: „Automatisch“ stellt jederzeit die Standardzeiten wieder her (Nacht 20–9 Uhr).
+  const themeOptions: { mode: ThemeMode; label: string }[] = [
+    { mode: 'auto', label: 'Automatisch' },
+    { mode: 'light', label: 'Tag' },
+    { mode: 'dark', label: 'Nacht' },
+  ];
+  const themeHint = $derived(
+    theme.mode === 'auto'
+      ? `Nacht von 20 bis 9 Uhr, sonst Tag – gerade ${theme.dark ? 'Nacht' : 'Tag'}.`
+      : `Immer ${theme.mode === 'dark' ? 'Nacht' : 'Tag'}. „Automatisch“ stellt die Zeiten 20–9 Uhr wieder her.`,
+  );
+  function chooseTheme(mode: ThemeMode) {
+    if (mode === theme.mode) return;
+    updateSettings({ theme: mode });
+    setThemeMode(mode);
+  }
 
   let dataMessage = $state('');
   let fileInput: HTMLInputElement | undefined = $state();
@@ -145,6 +164,18 @@
   </section>
 
   <section class="group">
+    <h2>Darstellung</h2>
+    <div class="segments" role="radiogroup" aria-label="Darstellung">
+      {#each themeOptions as o (o.mode)}
+        <button role="radio" aria-checked={theme.mode === o.mode} class:on={theme.mode === o.mode} onclick={() => chooseTheme(o.mode)}>
+          {o.label}
+        </button>
+      {/each}
+    </div>
+    <p class="status" data-theme-mode={theme.mode}>{themeHint}</p>
+  </section>
+
+  <section class="group">
     <h2>Fortschritt sichern</h2>
     <p class="status">Der Fortschritt liegt nur auf diesem Gerät. Ein Export ist deine Sicherung.</p>
     <div class="buttons">
@@ -183,7 +214,7 @@
     font-weight: 800;
   }
   .group {
-    background: #fff;
+    background: var(--surface);
     border-radius: var(--radius-card);
     padding: 20px;
     display: grid;
@@ -225,5 +256,34 @@
   .diag {
     font-size: var(--fs-small);
     color: var(--ink-2);
+  }
+  /* Umschalter Automatisch / Tag / Nacht: die gelbe Pille gleitet zur Wahl. */
+  .segments {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px;
+    padding: 4px;
+    border-radius: var(--radius-pill);
+    background: var(--paper-2);
+  }
+  .segments button {
+    min-height: var(--tap);
+    border: 0;
+    border-radius: var(--radius-pill);
+    background: transparent;
+    color: var(--ink);
+    font-weight: 600;
+    cursor: pointer;
+    transition:
+      background-color var(--dur) var(--ease-out),
+      color var(--dur) var(--ease-out),
+      transform var(--dur-fast) var(--ease-out);
+  }
+  .segments button:active {
+    transform: scale(0.96);
+  }
+  .segments button.on {
+    background: var(--yellow);
+    color: var(--on-yellow);
   }
 </style>

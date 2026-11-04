@@ -7,7 +7,25 @@
 - **Design-Block (vorgezogen aus Phase 4, Alex 2026-11-03): umgesetzt, Alex' Abnahme auf dem iPhone steht aus.** Neues App-Icon (Büffelkopf vor Sonne auf Flaggenrot, `scripts/icons.ts`), Büffel lebt und reagiert (Leerlauf, happy/sad/cheer, im Antwortbalken und auf dem Ergebnis), Bewegungsvokabular für alle Ansichtswechsel (Karte wächst, Tabs gleiten, Pille fließt, Einstellungen schieben, Session als Blatt), Aufgabenwechsel und Etappen-Inhalte animiert. Alle Wechsel in Pro-Max-Maßen Bild für Bild und in Echtzeit geprüft.
 - **Audio-Selbstheilung (2026-11-04):** Ton war auf dem iPhone ein zweites Mal plötzlich weg (iOS-Kontext nach Sperre/App-Wechsel unterbrochen bzw. „running“ mit stehender Uhr, `resume()` hängt). Player schließt den Kontext im Hintergrund, ersetzt gestörte Kontexte bei der nächsten Geste, wartet nie ohne Zeitlimit und zeigt sonst den Hinweis „Der Ton hängt“ (Tippen spielt nach). 10 Tests mit nachgebautem iOS-Kontext (`tests/player.test.ts`), jeder Mechanismus per Mutation gegengeprüft; in Edge mit eingefrorener Audio-Uhr in Einstellungen und Session durchgespielt. Ton-Test und Diagnosezeile in den Einstellungen. Alex' Bestätigung auf dem iPhone steht aus.
 - **Lebendige Orte und Kajak-Übergänge (2026-11-04, Alex: „mehr Animationen, wie im Surfbrett-Beispiel, die Orte sollen Animationen haben“):** Vorbild ist Alex' `beispiel design1.mp4` (Kajak-Verleih). Alle fünf Regionen haben eine Szene, die sich beim Sichtbarwerden aufbaut und danach lebt (Hội An, Huế, Hà Nội, Sài Gòn neu; Đà Nẵng animiert), dazu Kartenfarbe und Hero-Objekt je Region. Die Weiter-Karte trägt das Hero-Objekt schräg; beim Öffnen fliegt es aufrecht in die Etappe, die mit Szenen-Band oben beginnt. Auch vom Pfad-Knoten aus wächst die Etappe, und zurück schrumpft sie in den Knoten (Scrollstand bleibt). Die Session öffnet sich als Kreis vom Tippunkt. Neu sind außerdem Tipp-Welle, Sternenregen bei richtiger Antwort, Ergebnis mit Szene und hochzählenden XP sowie gestaffelte Ankunft bei Tab-Wechseln. Toter Crossfade-Fallback entfernt. Geprüft: alle Szenen Bild für Bild, alle Übergänge Bild für Bild und per CDP-Screencast in Echtzeit, alle Regionen in drei iPhone-Größen und reduzierte Bewegung. Check, 110 Tests und E2E grün. Alex' Abnahme auf dem iPhone steht aus.
-- **Nächste Schritte:** Alex' Rückmeldung zu Orten und Übergängen einarbeiten; danach Phase 3 (Sonnet 5.5, hoch). Hinweis Phase 4: Icon, Übergänge und Regionsszenen sind vorgezogen – dort nur noch Splash und Feinschliff.
+- **Tag und Nacht (2026-11-04, Alex: „Darkmode, die Szenen bei Nacht, Nacht 20–9 Uhr, in den Einstellungen hart schaltbar, Standardzeiten wiederherstellbar“):**
+  - Automatik wechselt um 20:00 und 9:00 Uhr, auch bei offener App.
+  - In den Einstellungen gibt es „Automatisch / Tag / Nacht“; „Automatisch“ stellt die Zeiten wieder her. Die Wahl liegt im Spielstand und übersteht Neuladen.
+  - Der Wechsel wächst als Kreis vom Tippunkt bzw. vom Himmel.
+  - Nachts: alle Tokens nachtblau mit gedämpften Kartenflächen.
+  - Fünf Nachtszenen:
+    - Đà Nẵng: Mondpfad, Fischerlaterne, erleuchtete Pagode, Lichter der Stadt.
+    - Hội An: leuchtende Laternen, erleuchtete Läden, Spiegelungen, Blütenkerzen.
+    - Huế: Mondschein mit Lichtsäule, angestrahlte Pagode, Drachenboot mit Laternen, Glühwürmchen.
+    - Hà Nội: Fenster, Straßenlaternen, Scheinwerfer.
+    - Sài Gòn: City-Skyline, bunte Spiegelungen, blinkende Warnlichter.
+  - Hero-Laterne leuchtet, der Roller hat Licht.
+  - Geprüft:
+    - Szenen Tag und Nacht Bild für Bild (Tag unverändert).
+    - App mit fester Uhr 12:00 und 22:00: alle Ansichten, Umschalten, Neuladen, Automatik, Übergänge nachts.
+    - Alle Regionen nachts in Pro-Max-Maßen, WebKit-Rauchtest nachts.
+    - 114 Tests und E2E grün.
+  - Auf dem iPhone offen: Lesbarkeit der Statusleiste (Uhr, Akku) nachts, sonst Alex' Abnahme.
+- **Nächste Schritte:** Alex' Rückmeldung zu Orten, Übergängen und Nacht einarbeiten; danach Phase 3 (Sonnet 5.5, hoch). Hinweis Phase 4: Icon, Übergänge und Regionsszenen sind vorgezogen – dort nur noch Splash und Feinschliff.
 
 ## Phase 2 – Ergebnis
 

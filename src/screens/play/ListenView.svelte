@@ -100,7 +100,7 @@
   .status {
     font-size: var(--fs-small);
     font-weight: 600;
-    color: rgb(35 26 21 / 0.75);
+    color: var(--ink-muted);
     min-height: 1.4em;
   }
   .reveal {

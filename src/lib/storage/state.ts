@@ -1,4 +1,5 @@
 import type { ItemId, StageId } from '../../content/types';
+import type { ThemeMode } from '../logic/theme';
 
 /** Lokales Datum im Format YYYY-MM-DD (Europe/Berlin = Gerätezeit). */
 export type DateKey = string;
@@ -34,6 +35,8 @@ export interface Settings {
   evening: string;
   sound: boolean;
   haptics: boolean;
+  /** Darstellung: 'auto' = Nacht von 20 bis 9 Uhr, sonst Tag; oder fest gewählt. */
+  theme: ThemeMode;
 }
 
 /** Gesamter Spielstand; liegt als ein Datensatz in IndexedDB und wird bei jeder Aktion sofort geschrieben. */
@@ -79,7 +82,7 @@ export function newSave(now: Date = new Date()): SaveState {
     challenges: { week: null, list: [] },
     favorites: [],
     review: {},
-    settings: { morning: '08:00', evening: '20:00', sound: true, haptics: true },
+    settings: { morning: '08:00', evening: '20:00', sound: true, haptics: true, theme: 'auto' },
   };
 }
 

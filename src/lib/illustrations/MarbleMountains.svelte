@@ -1,18 +1,20 @@
 <script lang="ts">
+  import { theme } from '../theme.svelte';
+  import Glow from './Glow.svelte';
   import Scene from './Scene.svelte';
+  import Sky from './Sky.svelte';
 
   /**
    * Đà Nẵng: Thúng-chai-Korbboote vor den Marmorbergen (Ngũ Hành Sơn) – Referenz für alle Szenen.
-   * Aufbau: Sonne steigt, Berge wachsen aus dem Meer, Boote gleiten herein, die Pagode ploppt auf.
-   * Leben: Sonnenhof atmet, Wolken ziehen, Vögel queren, Wellenlichter glitzern, Boote schaukeln, der Fischer rudert.
+   * Aufbau: Meer steigt, Berge wachsen daraus, Sonne bzw. Mond geht auf, Boote gleiten herein, die Pagode ploppt auf.
+   * Leben: Hof atmet, Wolken ziehen, Vögel queren (bei Tag), Wellenlichter glitzern, Boote schaukeln, der Fischer rudert.
+   * Nacht: Mondpfad auf dem Meer, Laterne am Fischerboot, erleuchtete Pagode, Lichter der Stadt hinter den Bergen.
    */
   let { label = 'Korbboote vor den Marmorbergen' }: { label?: string } = $props();
 
-  const C = {
+  const DAY = {
     sky: '#FDE6CF',
     cloud: '#FFF4E6',
-    sun: '#FFCD00',
-    sunHalo: '#FFE58A',
     far: '#B9DACF',
     rock: '#4E9E8F',
     rockShade: '#3B7F73',
@@ -26,14 +28,43 @@
     boatLight: '#C8854A',
     hat: '#F2D27A',
     hatShade: '#D9B456',
+    skin: '#C98A5E',
   };
+  const NIGHT: typeof DAY = {
+    sky: '#1B2442',
+    cloud: '#2A3459',
+    far: '#28365A',
+    rock: '#24545C',
+    rockShade: '#183D43',
+    roof: '#B8362C',
+    sea: '#173E58',
+    seaLight: '#4F72A0',
+    sand: '#4C4A60',
+    sandShade: '#3B394F',
+    boat: '#5E3A24',
+    boatDark: '#3C2416',
+    boatLight: '#7C5233',
+    hat: '#B7A26C',
+    hatShade: '#8E7C4F',
+    skin: '#8A5E43',
+  };
+  const LAMP = '#FFC14D';
+  const night = $derived(theme.dark);
+  const C = $derived(night ? NIGHT : DAY);
 </script>
 
 {#snippet boat(fisher: boolean, onWater: boolean)}
   {#if onWater}<ellipse cx="0" cy="13" rx="40" ry="6" fill={C.seaLight} />{:else}<ellipse cx="0" cy="17" rx="38" ry="6" fill={C.sandShade} />{/if}
   {#if fisher}
+    {#if night}
+      <!-- Laterne am Bug, ihr Licht liegt warm auf dem Wasser -->
+      <ellipse cx="-30" cy="14" rx="16" ry="3" fill={LAMP} opacity="0.35" />
+      <rect x="-31" y="-34" width="2" height="34" fill={C.boatDark} />
+      <Glow x={-30} y={-30} r={7} color={LAMP} />
+      <rect x="-34" y="-34" width="8" height="9" rx="2" fill={LAMP} />
+    {/if}
     <rect x="-9" y="-24" width="18" height="22" rx="7" fill={C.roof} />
-    <circle cx="0" cy="-27" r="6" fill="#C98A5E" />
+    <circle cx="0" cy="-27" r="6" fill={C.skin} />
     <path d="M-17 -27 L0 -42 L17 -27 Z" fill={C.hat} />
     <path d="M0 -42 L17 -27 L0 -27 Z" fill={C.hatShade} />
     <g class="loop-sway" style="--t: 1.6s; --rot: 9; transform-origin: 0 0">
@@ -60,11 +91,8 @@
 <Scene {label}>
   <rect width="400" height="260" fill={C.sky} />
 
-  <!-- Sonne steigt, ihr Hof atmet -->
-  <g class="in in-rise" style="--e: 140">
-    <g class="loop-breathe" style="--t: 4.6s; --s: 1.12"><circle cx="318" cy="62" r="46" fill={C.sunHalo} /></g>
-    <circle cx="318" cy="62" r="30" fill={C.sun} />
-  </g>
+  <!-- Sonne bzw. Mond mit Sternen -->
+  <Sky x={318} y={62} r={30} />
 
   <!-- Wolken gleiten herein und ziehen -->
   <g class="in in-left" style="--e: 120">
@@ -78,15 +106,22 @@
     </g>
   </g>
 
-  {@render bird(-60, 70, 0.8, 15, -3)}
-  {@render bird(-90, 92, 0.6, 19, -11)}
+  {#if !night}
+    {@render bird(-60, 70, 0.8, 15, -3)}
+    {@render bird(-90, 92, 0.6, 19, -11)}
+  {/if}
 
-  <!-- ferne Hügelkette -->
+  <!-- ferne Hügelkette, nachts mit den Lichtern der Stadt -->
   <g class="in in-rise" style="--e: 80">
     <path
       d="M0 158 C14 150 24 132 40 130 C54 128 60 146 76 144 C92 142 98 120 118 122 C140 124 150 150 176 148 C200 146 210 128 232 130 C254 132 262 150 286 150 C306 150 318 134 340 136 C362 138 380 152 400 150 L400 182 L0 182 Z"
       fill={C.far}
     />
+    {#if night}
+      {#each [[18, 168], [36, 174], [214, 170], [226, 176], [322, 164], [352, 172], [376, 168], [392, 176]] as [lx, ly], i (lx)}
+        <g class="loop-twinkle" style="--t: {1.4 + (i % 3) * 0.6}s; --d: {-i * 0.4}s"><circle cx={lx} cy={ly} r="1.4" fill={LAMP} /></g>
+      {/each}
+    {/if}
   </g>
 
   <!-- Marmorberge: Kalksteinkegel, Schattenseite links – wachsen aus dem Meer -->
@@ -103,10 +138,12 @@
     <circle cx="284" cy="128" r="7" fill={C.rockShade} />
   </g>
 
-  <!-- kleine Pagode auf dem Gipfel ploppt auf -->
+  <!-- kleine Pagode auf dem Gipfel ploppt auf, nachts erleuchtet -->
   <g class="in in-pop origin-bottom" style="--e: 620">
     <g transform="translate(104 72)">
+      {#if night}<Glow x={0} y={2} r={8} color={LAMP} t={3.2} />{/if}
       <rect x="-5" y="0" width="10" height="14" fill={C.boatDark} />
+      {#if night}<rect x="-2.5" y="3" width="5" height="7" fill={LAMP} />{/if}
       <path d="M-14 1 Q-8 0 -7 -4 L7 -4 Q8 0 14 1 Q0 -1.5 -14 1 Z" fill={C.roof} />
       <rect x="-3.5" y="-11" width="7" height="7" fill={C.boatDark} />
       <path d="M-11 -10 Q-6 -11 -5 -14.5 L5 -14.5 Q6 -11 11 -10 Q0 -12.5 -11 -10 Z" fill={C.roof} />
@@ -114,9 +151,14 @@
     </g>
   </g>
 
-  <!-- Meer mit glitzernden Wellenlichtern -->
+  <!-- Meer mit glitzernden Wellenlichtern; nachts liegt der Mondpfad darauf -->
   <g class="in in-rise" style="--e: 0">
     <rect x="0" y="180" width="400" height="48" fill={C.sea} />
+    {#if night}
+      {#each [[318, 189, 16], [312, 197, 24], [322, 206, 19], [314, 216, 30]] as [mx, my, mr], i (my)}
+        <g class="loop-shimmer" style="--t: {2.4 + i * 0.4}s; --d: {-i * 0.6}s; --dx: 5"><ellipse cx={mx} cy={my} rx={mr} ry="1.8" fill="#E9DEAF" /></g>
+      {/each}
+    {/if}
     <g class="loop-shimmer" style="--t: 3.1s"><ellipse cx="60" cy="190" rx="26" ry="2" fill={C.seaLight} /></g>
     <g class="loop-shimmer" style="--t: 3.7s; --d: -1.2s; --dx: -12"><ellipse cx="230" cy="202" rx="34" ry="2.2" fill={C.seaLight} /></g>
     <g class="loop-shimmer" style="--t: 2.8s; --d: -2s"><ellipse cx="350" cy="188" rx="22" ry="1.8" fill={C.seaLight} /></g>

@@ -107,7 +107,7 @@
     font-size: var(--fs-h2);
   }
   .pron {
-    color: rgb(35 26 21 / 0.7);
+    color: var(--ink-muted);
     font-weight: 600;
   }
   .question {
