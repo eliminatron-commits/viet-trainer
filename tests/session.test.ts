@@ -243,7 +243,9 @@ describe('Session einer Etappe', () => {
       expect(bossReady(save, stage.id), stage.id).toBe(true);
       const later = buildStageSession(stage, save, TODAY, rng(k + 999));
       expect(later.filter((t) => t.kind === 'intro'), stage.id).toHaveLength(0);
-      expect(later.filter((t) => t.kind !== 'intro').length, stage.id).toBe(SESSION_SIZE);
+      // Eine Paare-Aufgabe ersetzt zwei Übungsaufgaben (Gewicht 2).
+      const weight = later.filter((t) => t.kind !== 'intro').reduce((n, t) => n + (t.kind === 'pairs' ? 2 : 1), 0);
+      expect(weight, stage.id).toBe(SESSION_SIZE);
     }
   });
 

@@ -161,6 +161,14 @@ export function installAudioUnlock(): void {
     });
 }
 
+/**
+ * Kontext für die synthetisierten UI-Klänge (lib/feedback.ts): derselbe wie für die Lerninhalte, damit die
+ * Selbstheilung auch für sie gilt. Nur ein laufender, vertrauenswürdiger Kontext – sonst bleibt es still.
+ */
+export function uiContext(): AudioContext | null {
+  return ctx && isRunning(ctx) && !distrust ? ctx : null;
+}
+
 function load(id: string): Promise<AudioBuffer> {
   let p = buffers.get(id);
   if (!p) {

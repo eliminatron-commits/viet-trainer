@@ -1,7 +1,11 @@
 <script lang="ts" module>
   import type { Stage } from '../../content/types';
+  import type { TrainingFocus } from '../../lib/logic/session';
 
-  export type PlayMode = { kind: 'stage'; stage: Stage } | { kind: 'boss'; stage: Stage } | { kind: 'training'; verbsOnly: boolean };
+  export type PlayMode =
+    | { kind: 'stage'; stage: Stage }
+    | { kind: 'boss'; stage: Stage }
+    | { kind: 'training'; verbsOnly: boolean; focus: TrainingFocus };
 </script>
 
 <script lang="ts">
@@ -10,12 +14,25 @@
   import Button from '../../lib/components/Button.svelte';
   import Card from '../../lib/components/Card.svelte';
   import RegionScene from '../../lib/illustrations/RegionScene.svelte';
-  import Buffalo from '../../lib/mascot/Buffalo.svelte';
+  import Trau from '../../lib/mascot/Trau.svelte';
   import { play } from '../../lib/audio/player';
-  import { game, recordAnswer, recordBossWin, recordSeen, today } from '../../lib/game.svelte';
+  import { answered, cue } from '../../lib/feedback';
+  import {
+    game,
+    recordBossLoss,
+    recordBossWin,
+    recordRoundEnd,
+    recordSeen,
+    recordTask,
+    takeNews,
+    today,
+    type News,
+  } from '../../lib/game.svelte';
   import { bossReady, currentStage } from '../../lib/logic/path';
+  import { goalReached, levelInfo } from '../../lib/logic/rewards';
+  import type { ProgressKey } from '../../lib/storage/state';
+  import type { TaskMode } from '../../lib/logic/stats';
   import { reducedMotion } from '../../lib/motion';
-  import { XP_PER_CORRECT } from '../../lib/logic/rewards';
   import {
     answerOf,
     BOSS_LIVES,
@@ -26,31 +43,42 @@
     type Task,
   } from '../../lib/logic/session';
   import { reportToWorker } from '../../lib/push.svelte';
+  import BuildView from './BuildView.svelte';
   import ChoiceView, { type Opt } from './ChoiceView.svelte';
   import IntroCard from './IntroCard.svelte';
   import ListenView from './ListenView.svelte';
+  import PairsView, { type PairsResult } from './PairsView.svelte';
+  import RoundRewards from './RoundRewards.svelte';
 
   let { mode, onexit, onboss }: { mode: PlayMode; onexit: () => void; onboss: (stage: Stage) => void } = $props();
 
   function build(): Task[] {
     if (mode.kind === 'stage') return buildStageSession(mode.stage, game.save, today());
     if (mode.kind === 'boss') return buildBossSession(mode.stage, game.save);
-    return buildTrainingBatch(game.save, today(), mode.verbsOnly);
+    return buildTrainingBatch(game.save, today(), mode.verbsOnly, Math.random, mode.focus);
   }
 
   // Aufgaben enthalten nur unveränderliche Inhaltsobjekte → kein tiefes $state nötig.
-  let tasks = $state.raw<Task[]>(build());
+  const first = build();
+  let tasks = $state.raw<Task[]>(first);
+  // Training: Block, in dem der Fortschrittsbalken gerade läuft (Blöcke werden hinten angehängt).
+  let blockStart = $state(0);
+  let blockLen = $state(first.length);
   let index = $state(0);
+  /** Gewählte Option bei Auswahl-Aufgaben (Auswahl, Rolle, Ton-Ninja). */
   let picked = $state<string | null>(null);
+  /** Aufgelöst: Ergebnis und Lösungstext für die Rückmeldungsleiste. */
+  let resolved = $state<null | { correct: boolean; text: string; vi: boolean }>(null);
   let lives = $state(BOSS_LIVES);
-  let round = $state({ right: 0, wrong: 0, xp: 0, levelUp: null as number | null, goal: false });
+  const freshRound = () => ({ right: 0, wrong: 0, xp: 0, levelUp: null as number | null, goal: false, chest: false, news: [] as News[] });
+  let round = $state(freshRound());
   let outcome = $state<null | 'done' | 'won' | 'lost'>(null);
 
   const task = $derived(tasks[index]);
   const answer = $derived(task ? answerOf(task) : null);
-  const correct = $derived(picked !== null && picked === answer);
-  const total = $derived(mode.kind === 'training' ? 12 : tasks.length);
-  const position = $derived(mode.kind === 'training' ? index % 12 : index);
+  const correct = $derived(resolved?.correct ?? false);
+  const total = $derived(mode.kind === 'training' ? blockLen : tasks.length);
+  const position = $derived(mode.kind === 'training' ? index - blockStart : index);
 
   // Ergebnis wie die Bestätigung im Vorbild: der Ort baut sich auf, der Büffel jubelt davor, die XP zählen hoch.
   const resultRegion = $derived(mode.kind === 'training' ? currentStage(game.save).region : mode.stage.region);
@@ -62,21 +90,35 @@
     return t.options.map((o) => ({ id: o.id, text: optionText(o, t.mode), vi: t.mode === 'de2vn' }));
   }
 
+  function toneOptions(t: Extract<Task, { kind: 'tone' }>): Opt[] {
+    return t.options.map((o) => ({ id: o.id, text: o.vn, vi: true }));
+  }
+
+  /** Buchungsart der Aufgabe (Statistik für Achievements und Challenges). */
+  const modeOf = (t: Exclude<Task, { kind: 'intro' }>): TaskMode =>
+    t.kind === 'role' ? 'role' : t.kind === 'tone' ? 'tone' : t.kind === 'pairs' ? 'pairs' : t.mode;
+
   /** „vn – de“ der Lösung für die Rückmeldung. */
   function solution(t: Task): string {
-    if (t.kind === 'choice') return `${t.item.vn} – ${t.item.de}`;
+    if (t.kind === 'choice' || t.kind === 'build') return `${t.item.vn} – ${t.item.de}`;
     if (t.kind === 'role') return `${t.answer.vn} – ${t.answer.de}`;
+    if (t.kind === 'tone') return `${t.word.vn} – ${t.word.de}`;
     return '';
   }
 
-  function pick(id: string) {
-    if (!task || picked || task.kind === 'intro') return;
-    picked = id;
-    const ok = id === answer;
-    const result = recordAnswer(task.key, ok);
+  /**
+   * Eine Aufgabe auflösen: buchen, Klang + Haptik, Boss-Leben, Rückmeldungsleiste, danach das Lösungs-Audio
+   * (nur wo die Aufgabe die Lösung nicht schon gespielt hat: `audio`).
+   */
+  function settle(ok: boolean, units: { key: ProgressKey; correct: boolean }[], text: string, vi: boolean, audio?: string) {
+    if (!task || resolved || task.kind === 'intro') return;
+    const result = recordTask({ mode: modeOf(task), correct: ok, units });
+    resolved = { correct: ok, text, vi };
+    round.xp += result.xp;
+    // Paare lösen sich verzögert auf (außerhalb der Geste); ihren Haptik-Tick gibt PairsView beim Tippen.
+    answered(ok, task.kind !== 'pairs');
     if (ok) {
       round.right++;
-      round.xp += XP_PER_CORRECT;
     } else {
       round.wrong++;
       if (mode.kind === 'boss') lives--;
@@ -86,13 +128,52 @@
       round.goal = true;
       void reportToWorker(game.save, today());
     }
-    // Nach der Antwort die Lösung hören (Hör-Aufgaben haben sie schon gespielt).
-    if (!(task.kind === 'choice' && task.mode === 'listen')) play(answer!).catch(() => {});
+    // Nach der Antwort die Lösung hören – kurz nach dem Klang.
+    if (audio) {
+      const at = index;
+      setTimeout(() => at === index && play(audio).catch(() => {}), 180);
+    }
+  }
+
+  /** Auswahl, Rolle und Ton-Ninja: gewählte Option. */
+  function pick(id: string) {
+    if (!task || picked || task.kind === 'intro' || task.kind === 'pairs' || task.kind === 'build') return;
+    picked = id;
+    const ok = id === answer;
+    const listens = task.kind === 'tone' || (task.kind === 'choice' && task.mode === 'listen');
+    settle(ok, [{ key: task.key, correct: ok }], solution(task), true, listens ? undefined : answer!);
+  }
+
+  function onBuild(ok: boolean) {
+    if (task?.kind !== 'build') return;
+    settle(ok, [{ key: task.key, correct: ok }], solution(task), true, task.mode === 'build' ? task.item.id : undefined);
+  }
+
+  function onPairs(r: PairsResult) {
+    if (task?.kind !== 'pairs') return;
+    const n = task.words.length;
+    const text = r.correct
+      ? r.clean.length === n
+        ? 'Alle Paare ohne Fehler.'
+        : `Alle Paare gefunden, ${r.clean.length} von ${n} ohne Fehler.`
+      : `Zeit abgelaufen – ${r.found} von ${n} Paaren gefunden.`;
+    settle(r.correct, task.words.map((w) => ({ key: w.id, correct: r.clean.includes(w.id) })), text, false);
   }
 
   function finish(result: 'done' | 'won' | 'lost') {
-    if (result === 'won' && mode.kind === 'boss') recordBossWin(mode.stage.id, lives);
+    // Challenges am Rundenende können XP bringen – Level und Tagesziel davor und danach vergleichen.
+    const levelBefore = levelInfo(game.save.xp).level;
+    const goalBefore = goalReached(game.save, today());
+    if (result === 'won' && mode.kind === 'boss') round.chest = recordBossWin(mode.stage.id, lives, BOSS_LIVES);
+    else if (result === 'lost') recordBossLoss();
+    else recordRoundEnd();
+    const levelAfter = levelInfo(game.save.xp).level;
+    if (levelAfter > levelBefore) round.levelUp = levelAfter;
+    if (!goalBefore && goalReached(game.save, today())) round.goal = true;
+    // Was in der Runde neu erreicht wurde, zeigt das Ergebnis (außerhalb der Session käme es als Toast).
+    round.news = takeNews();
     outcome = result;
+    if (round.levelUp) cue('levelup');
     void xpShown.set(round.xp, reducedMotion() ? { duration: 0, delay: 0 } : undefined);
     void reportToWorker(game.save, today());
   }
@@ -100,10 +181,15 @@
   function next() {
     if (task?.kind === 'intro') recordSeen(task.key);
     picked = null;
+    resolved = null;
     if (mode.kind === 'boss' && lives <= 0) return finish('lost');
     if (index + 1 < tasks.length) return void index++;
     if (mode.kind === 'training') {
-      tasks = [...tasks, ...build()];
+      const more = build();
+      if (more.length === 0) return finish('done');
+      blockStart = tasks.length;
+      blockLen = more.length;
+      tasks = [...tasks, ...more];
       return void index++;
     }
     finish(mode.kind === 'boss' ? 'won' : 'done');
@@ -112,10 +198,13 @@
   /** Weiterspielen bzw. Boss erneut: neue Runde mit frischem Stand. */
   function again() {
     tasks = build();
+    blockStart = 0;
+    blockLen = tasks.length;
     index = 0;
     picked = null;
+    resolved = null;
     lives = BOSS_LIVES;
-    round = { right: 0, wrong: 0, xp: 0, levelUp: null, goal: false };
+    round = freshRound();
     void xpShown.set(0, { duration: 0, delay: 0 });
     outcome = null;
   }
@@ -131,7 +220,7 @@
     <section class="result">
       <div class="result-scene">
         <div class="scene-clip"><RegionScene region={resultRegion} /></div>
-        <div class="mascot"><Buffalo size={130} mood={outcome === 'lost' ? 'sad' : 'cheer'} /></div>
+        <div class="mascot"><Trau size={130} mood={outcome === 'lost' ? 'sad' : 'cheer'} /></div>
       </div>
       {#if outcome === 'won'}
         <Card tone="yellow">
@@ -155,6 +244,7 @@
 
       {#if round.levelUp}<p class="badge">Level {round.levelUp} erreicht!</p>{/if}
       {#if round.goal}<p class="badge">Tagesziel geschafft – deine Serie wächst.</p>{/if}
+      <RoundRewards chest={round.chest} news={round.news} />
 
       <div class="actions">
         {#if mode.kind === 'stage'}
@@ -191,7 +281,7 @@
       {/if}
     </header>
 
-    {#if mode.kind === 'boss' && index === 0 && !picked}
+    {#if mode.kind === 'boss' && index === 0 && !resolved}
       <p class="boss-title">Bosskampf · {mode.stage.title}</p>
     {/if}
 
@@ -207,6 +297,20 @@
           question={task.mode === 'self' ? 'Wie sagst du „ich“?' : 'Wie sagst du „du“?'}
           tone="sea"
           options={options(task)}
+          answerId={answer!}
+          {picked}
+          onpick={pick}
+        />
+      {:else if task.kind === 'pairs'}
+        <PairsView {task} onresult={onPairs} />
+      {:else if task.kind === 'build'}
+        <BuildView {task} done={resolved !== null} onresult={onBuild} />
+      {:else if task.kind === 'tone'}
+        <ListenView
+          kicker="Ton-Ninja: Was hörst du?"
+          audioId={task.word.id}
+          reveal={task.word.vn}
+          options={toneOptions(task)}
           answerId={answer!}
           {picked}
           onpick={pick}
@@ -242,13 +346,13 @@
       </div>
     {/key}
 
-    {#if picked}
+    {#if resolved}
       <footer class="feedback" class:ok={correct} role="status">
         <div class="verdict-row">
-          <Buffalo size={64} mood={correct ? 'happy' : 'sad'} />
+          <Trau size={64} mood={correct ? 'happy' : 'sad'} />
           <div>
             <p class="verdict">{correct ? 'Richtig!' : 'Nicht ganz.'}</p>
-            <p class="solution" lang="vi">{solution(task)}</p>
+            <p class="solution" lang={resolved.vi ? 'vi' : 'de'}>{resolved.text}</p>
           </div>
         </div>
         <Button variant={correct ? 'secondary' : 'primary'} onclick={next}>Weiter</Button>
@@ -396,6 +500,8 @@
     animation: pop-in 520ms var(--ease-spring) 240ms both;
   }
   .result > .badge,
+  .result > :global(.chest-card),
+  .result > :global(.news),
   .result > .actions {
     animation: rise-in 480ms var(--ease-out) 420ms both;
   }

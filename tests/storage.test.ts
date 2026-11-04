@@ -49,7 +49,7 @@ describe('Export/Import', () => {
     const p = await freshPersist();
     const s = newSave(new Date('2026-11-02T08:00:00'));
     s.xp = 777;
-    s.streak = { count: 4, lastDate: '2026-11-01', shields: 1 };
+    s.streak = { count: 4, lastDate: '2026-11-01', shields: 1, best: 4 };
     s.settings.morning = '07:15';
     expect(p.importSave(p.exportSave(s))).toEqual(s);
   });
@@ -69,5 +69,27 @@ describe('Export/Import', () => {
     const s = normalizeSave(old);
     expect(s.challenges).toEqual({ week: null, list: [] });
     expect(s.settings).toEqual({ ...newSave().settings, morning: '06:30' });
+  });
+
+  it('trägt bei Ständen ohne Zähler ab, was der Fortschritt hergibt (Phase-3-Update)', () => {
+    const old = newSave() as unknown as Record<string, unknown> & ReturnType<typeof newSave>;
+    old.items = {
+      w001: { box: 2, due: '2026-11-05', seen: 4, right: 3, wrong: 1 },
+      w002: { box: 1, due: '2026-11-05', seen: 1, right: 0, wrong: 0 },
+      s001: { box: 1, due: '2026-11-05', seen: 2, right: 2, wrong: 0 },
+      'em:self': { box: 1, due: '2026-11-05', seen: 1, right: 1, wrong: 0 },
+    };
+    old.stages = { e01: { done: true, bossBest: 3 }, e02: { done: true, bossBest: 1 }, e03: { done: false, bossBest: 0 } };
+    old.streak = { count: 5, lastDate: '2026-11-04', shields: 0 } as typeof old.streak;
+    delete (old as Record<string, unknown>).stats;
+    const s = normalizeSave(old);
+    expect(s.stats).toMatchObject({ correct: 6, newWords: 2, bossWins: 2, perfectBosses: 1, rounds: 0, chests: 0 });
+    expect(s.streak.best).toBe(5);
+    expect(s.inventory.perfectChests).toBe(0);
+
+    // Stände mit Zählern bleiben unangetastet.
+    const fresh = newSave();
+    fresh.items = old.items;
+    expect(normalizeSave(fresh).stats.correct).toBe(0);
   });
 });

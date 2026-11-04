@@ -1,5 +1,17 @@
 import { describe, expect, it } from 'vitest';
-import { addXp, currentStreak, goalReached, levelInfo, levelStart, rollDay } from '../src/lib/logic/rewards';
+import {
+  activateBoost,
+  addXp,
+  applyShields,
+  boostActive,
+  currentStreak,
+  goalReached,
+  growthOf,
+  levelInfo,
+  levelStart,
+  rollDay,
+  xpMultiplier,
+} from '../src/lib/logic/rewards';
 import { newSave } from '../src/lib/storage/state';
 
 /** Lokales Datum (Konstruktor ohne Zeitzone), damit newSave() das Tagesdatum sicher trifft. */
@@ -90,7 +102,7 @@ describe('addXp', () => {
 
   it('erhöht die Serie um 1, wenn gestern das Tagesziel erreicht wurde', () => {
     const save = newSaveOn('2026-11-03');
-    save.streak = { count: 4, lastDate: '2026-11-02', shields: 0 };
+    save.streak = { count: 4, lastDate: '2026-11-02', shields: 0, best: 0 };
     save.today = { date: '2026-11-03', xp: 45 };
     addXp(save, 5, '2026-11-03');
     expect(save.streak.count).toBe(5);
@@ -99,7 +111,7 @@ describe('addXp', () => {
 
   it('startet die Serie neu nach einem verpassten Tag', () => {
     const save = newSaveOn('2026-11-03');
-    save.streak = { count: 4, lastDate: '2026-11-01', shields: 0 };
+    save.streak = { count: 4, lastDate: '2026-11-01', shields: 0, best: 0 };
     save.today = { date: '2026-11-03', xp: 45 };
     addXp(save, 5, '2026-11-03');
     expect(save.streak.count).toBe(1);
@@ -107,7 +119,7 @@ describe('addXp', () => {
 
   it('zählt die Serie an einem Tag nur einmal', () => {
     const save = newSaveOn('2026-11-03');
-    save.streak = { count: 4, lastDate: '2026-11-02', shields: 0 };
+    save.streak = { count: 4, lastDate: '2026-11-02', shields: 0, best: 0 };
     save.today = { date: '2026-11-03', xp: 45 };
     addXp(save, 5, '2026-11-03');
     addXp(save, 30, '2026-11-03');
@@ -118,7 +130,7 @@ describe('addXp', () => {
 describe('currentStreak und goalReached', () => {
   it('gilt, wenn zuletzt heute oder gestern erreicht wurde', () => {
     const save = newSaveOn('2026-11-03');
-    save.streak = { count: 7, lastDate: '2026-11-03', shields: 0 };
+    save.streak = { count: 7, lastDate: '2026-11-03', shields: 0, best: 0 };
     expect(currentStreak(save, '2026-11-03')).toBe(7);
     save.streak.lastDate = '2026-11-02';
     expect(currentStreak(save, '2026-11-03')).toBe(7);
@@ -126,7 +138,7 @@ describe('currentStreak und goalReached', () => {
 
   it('gibt 0, wenn lastDate älter als gestern ist', () => {
     const save = newSaveOn('2026-11-03');
-    save.streak = { count: 7, lastDate: '2026-11-01', shields: 0 };
+    save.streak = { count: 7, lastDate: '2026-11-01', shields: 0, best: 0 };
     expect(currentStreak(save, '2026-11-03')).toBe(0);
     save.streak.lastDate = null;
     expect(currentStreak(save, '2026-11-03')).toBe(0);
@@ -134,9 +146,9 @@ describe('currentStreak und goalReached', () => {
 
   it('rechnet „gestern“ über Monatsgrenze und Sommerzeit-Umstellung', () => {
     const save = newSaveOn('2026-12-01');
-    save.streak = { count: 3, lastDate: '2026-11-30', shields: 0 };
+    save.streak = { count: 3, lastDate: '2026-11-30', shields: 0, best: 0 };
     expect(currentStreak(save, '2026-12-01')).toBe(3);
-    save.streak = { count: 3, lastDate: '2026-03-28', shields: 0 };
+    save.streak = { count: 3, lastDate: '2026-03-28', shields: 0, best: 0 };
     expect(currentStreak(save, '2026-03-29')).toBe(3);
   });
 
@@ -148,5 +160,54 @@ describe('currentStreak und goalReached', () => {
     expect(goalReached(save, '2026-11-03')).toBe(false);
     save.today = { date: '2026-11-02', xp: 60 };
     expect(goalReached(save, '2026-11-03')).toBe(false);
+  });
+});
+
+describe('Streak-Schutz, XP-Boost, Wachstum', () => {
+  it('überbrückt verpasste Tage, wenn der Vorrat reicht – sonst nichts', () => {
+    const save = newSaveOn('2026-11-04');
+    save.streak = { count: 6, lastDate: '2026-11-01', shields: 2, best: 6 };
+    expect(applyShields(save, '2026-11-04')).toBe(2);
+    expect(save.streak).toMatchObject({ count: 6, lastDate: '2026-11-03', shields: 0 });
+    expect(currentStreak(save, '2026-11-04')).toBe(6);
+
+    save.streak = { count: 6, lastDate: '2026-11-01', shields: 1, best: 6 };
+    expect(applyShields(save, '2026-11-04')).toBe(0);
+    expect(save.streak.shields).toBe(1);
+    expect(currentStreak(save, '2026-11-04')).toBe(0);
+  });
+
+  it('verbraucht keinen Schutz ohne verpassten Tag oder ohne Serie', () => {
+    const save = newSaveOn('2026-11-04');
+    save.streak = { count: 3, lastDate: '2026-11-03', shields: 1, best: 3 };
+    expect(applyShields(save, '2026-11-04')).toBe(0);
+    save.streak = { count: 0, lastDate: '2026-10-01', shields: 1, best: 3 };
+    expect(applyShields(save, '2026-11-04')).toBe(0);
+    expect(save.streak.shields).toBe(1);
+  });
+
+  it('merkt die längste Serie', () => {
+    const save = newSaveOn('2026-11-03');
+    save.streak = { count: 4, lastDate: '2026-11-02', shields: 0, best: 4 };
+    save.today = { date: '2026-11-03', xp: 45 };
+    addXp(save, 5, '2026-11-03');
+    expect(save.streak.best).toBe(5);
+  });
+
+  it('XP-Boost: verbraucht einen aus dem Vorrat, wirkt 15 Minuten, nicht doppelt', () => {
+    const save = newSaveOn('2026-11-04');
+    const now = new Date('2026-11-04T10:00:00Z');
+    expect(activateBoost(save, now)).toBe(false);
+    save.inventory.xpBoosts = 2;
+    expect(activateBoost(save, now)).toBe(true);
+    expect(activateBoost(save, now)).toBe(false);
+    expect(save.inventory.xpBoosts).toBe(1);
+    expect(xpMultiplier(save, new Date('2026-11-04T10:14:59Z'))).toBe(2);
+    expect(xpMultiplier(save, new Date('2026-11-04T10:15:00Z'))).toBe(1);
+    expect(boostActive(save, new Date('2026-11-04T10:15:00Z'))).toBe(false);
+  });
+
+  it('Trâu wächst mit dem Level: Kalb, jung, ausgewachsen', () => {
+    expect([1, 4, 5, 9, 10, 30].map(growthOf)).toEqual([0, 0, 1, 1, 2, 2]);
   });
 });

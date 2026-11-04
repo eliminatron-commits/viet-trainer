@@ -2,13 +2,16 @@
   import { onMount } from 'svelte';
   import Button from '../lib/components/Button.svelte';
   import { onAudioStatus, play, type AudioStatus } from '../lib/audio/player';
+  import { hapticsSupported } from '../lib/feedback';
   import { flushed, game, replaceSave, today, updateSettings } from '../lib/game.svelte';
   import { disablePush, enablePush, push, refreshPushStatus, reportToWorker, sendTestPush } from '../lib/push.svelte';
   import type { ThemeMode } from '../lib/logic/theme';
   import { exportSave, importSave } from '../lib/storage/persist';
   import { setThemeMode, theme } from '../lib/theme.svelte';
 
-  let { onback }: { onback: () => void } = $props();
+  let { onback, onreview }: { onback: () => void; onreview: () => void } = $props();
+
+  const haptics = hapticsSupported();
 
   // Darstellung: „Automatisch“ stellt jederzeit die Standardzeiten wieder her (Nacht 20–9 Uhr).
   const themeOptions: { mode: ThemeMode; label: string }[] = [
@@ -164,6 +167,31 @@
   </section>
 
   <section class="group">
+    <h2>Rückmeldung</h2>
+    <button class="switch" role="switch" aria-checked={game.save.settings.sound} onclick={() => updateSettings({ sound: !game.save.settings.sound })}>
+      <span class="label">
+        <strong>Effekt-Klänge</strong>
+        <span>Kurze Töne bei Antworten, Truhe und Level-up. Wörter und Sätze bleiben immer hörbar.</span>
+      </span>
+      <span class="track" aria-hidden="true"><span class="thumb"></span></span>
+    </button>
+    <button
+      class="switch"
+      role="switch"
+      aria-checked={haptics && game.save.settings.haptics}
+      disabled={!haptics}
+      onclick={() => updateSettings({ haptics: !game.save.settings.haptics })}
+    >
+      <span class="label">
+        <strong>Haptik</strong>
+        <span>Ein leichtes Ticken bei Antworten.</span>
+      </span>
+      <span class="track" aria-hidden="true"><span class="thumb"></span></span>
+    </button>
+    {#if !haptics}<p class="status" data-haptics="unsupported">Auf diesem Gerät nicht verfügbar (iPhone ab iOS 18).</p>{/if}
+  </section>
+
+  <section class="group">
     <h2>Darstellung</h2>
     <div class="segments" role="radiogroup" aria-label="Darstellung">
       {#each themeOptions as o (o.mode)}
@@ -184,6 +212,14 @@
       <input bind:this={fileInput} type="file" accept="application/json,.json" hidden onchange={doImport} />
     </div>
     {#if dataMessage}<p class="message" role="status">{dataMessage}</p>{/if}
+  </section>
+
+  <section class="group">
+    <h2>Prüfmodus</h2>
+    <p class="status">Für die Muttersprachlerin: noch ungeprüfte Wörter und Sätze anhören und beurteilen – passt oder unnatürlich, mit Notiz. Das Ergebnis lässt sich als Datei weitergeben.</p>
+    <div class="buttons">
+      <Button variant="secondary" onclick={onreview}>Prüfmodus öffnen</Button>
+    </div>
   </section>
 </main>
 
@@ -256,6 +292,64 @@
   .diag {
     font-size: var(--fs-small);
     color: var(--ink-2);
+  }
+  /* Schalter: ganze Zeile tippbar (≥ 44 px), flache Pille – Gelb = an. */
+  .switch {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 16px;
+    min-height: 56px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--ink);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+  .switch:disabled {
+    cursor: default;
+    opacity: 0.55;
+  }
+  .switch .label {
+    display: grid;
+    gap: 2px;
+  }
+  .switch .label span {
+    color: var(--ink-2);
+    font-size: var(--fs-small);
+  }
+  .track {
+    width: 56px;
+    height: 32px;
+    padding: 4px;
+    border-radius: var(--radius-pill);
+    background: var(--ink-3);
+    transition: background-color var(--dur) var(--ease-out);
+  }
+  .thumb {
+    display: block;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--paper);
+    transition:
+      transform var(--dur) var(--ease-spring),
+      background-color var(--dur) var(--ease-out);
+  }
+  .switch[aria-checked='true'] .track {
+    background: var(--yellow);
+  }
+  .switch[aria-checked='true'] .thumb {
+    transform: translateX(24px);
+    background: var(--on-yellow);
+  }
+  .switch:active:not(:disabled) .thumb {
+    transform: scale(0.9);
+  }
+  .switch[aria-checked='true']:active:not(:disabled) .thumb {
+    transform: translateX(24px) scale(0.9);
   }
   /* Umschalter Automatisch / Tag / Nacht: die gelbe Pille gleitet zur Wahl. */
   .segments {

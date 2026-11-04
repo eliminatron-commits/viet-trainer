@@ -100,3 +100,24 @@ describe('Lernpfad', () => {
     for (const s of sentences) if (s.ctx) expect(ctxIds.has(s.ctx), s.id).toBe(true);
   });
 });
+
+describe('Phase 3: Aussprache und Situations-Tags', () => {
+  it('hat für jedes Wort eine Aussprachehilfe; die 288 neuen (w251–w538) sind als KI-erstellt markiert', () => {
+    const isNew = (id: string) => Number(id.slice(1)) >= 251;
+    for (const w of words) {
+      expect(w.pron?.trim(), w.id).toBeTruthy();
+      expect(w.pron, w.id).toMatch(/^[a-zäöü][a-zäöü -]*$/);
+      expect(w.pronAi === true, w.id).toBe(isNew(w.id));
+    }
+    expect(words.filter((w) => w.pronAi)).toHaveLength(288);
+  });
+
+  it('ordnet jedes Wort und jeden Satz 1–3 verschiedenen bekannten Situationen zu', () => {
+    for (const item of [...words, ...sentences]) {
+      expect(item.tags.length, item.id).toBeGreaterThanOrEqual(1);
+      expect(item.tags.length, item.id).toBeLessThanOrEqual(3);
+      expect(new Set(item.tags).size, item.id).toBe(item.tags.length);
+      for (const t of item.tags) expect(Object.keys(SITUATION_TAGS), item.id).toContain(t);
+    }
+  });
+});

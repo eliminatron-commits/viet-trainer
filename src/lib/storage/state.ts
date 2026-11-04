@@ -39,6 +39,39 @@ export interface Settings {
   theme: ThemeMode;
 }
 
+/** Zähler für Achievements und Wochen-Challenges. */
+export interface Stats {
+  /** Richtig gelöste Aufgaben insgesamt. */
+  correct: number;
+  /** Richtige Aufgaben in Folge: aktuell und Bestwert. */
+  combo: number;
+  bestCombo: number;
+  /** Beendete Runden (Etappe, Training, Bosskampf). */
+  rounds: number;
+  bossWins: number;
+  /** Bosse ohne verlorenes Leben. */
+  perfectBosses: number;
+  /** Vorgestellte neue Wörter. */
+  newWords: number;
+  /** Tage, an denen das Tagesziel erreicht wurde. */
+  goals: number;
+  /** Geöffnete Truhen. */
+  chests: number;
+  /** Richtig gelöste Aufgaben der Spielmodi aus Phase 3. */
+  pairs: number;
+  builds: number;
+  dictations: number;
+  tones: number;
+}
+export type StatKey = keyof Stats;
+
+/** Wochen-Challenge: Fortschritt = Zählerstand minus Stand zu Wochenbeginn (base). */
+export interface ChallengeState {
+  id: string;
+  base: number;
+  done: boolean;
+}
+
 /** Gesamter Spielstand; liegt als ein Datensatz in IndexedDB und wird bei jeder Aktion sofort geschrieben. */
 export interface SaveState {
   version: 1;
@@ -49,11 +82,25 @@ export interface SaveState {
   /** XP des heutigen Tages; Tagesziel erreicht ⇒ Streak +1. */
   today: { date: DateKey; xp: number };
   dailyGoal: number;
-  streak: { count: number; lastDate: DateKey | null; shields: number };
-  inventory: { xpBoosts: number; accessories: string[]; equipped: string[] };
+  /** Serie; best = längste Serie, shields = Streak-Schutz (überbrückt verpasste Tage automatisch). */
+  streak: { count: number; lastDate: DateKey | null; shields: number; best: number };
+  /**
+   * Ungeöffnete Truhen (davon perfectChests aus makellosen Bossen: garantiertes Accessoire),
+   * XP-Boosts (aktiv bis boostUntil, ISO-Zeit), Accessoires des Büffels.
+   */
+  inventory: {
+    chests: number;
+    perfectChests: number;
+    xpBoosts: number;
+    boostUntil: string | null;
+    accessories: string[];
+    equipped: string[];
+  };
+  stats: Stats;
   /** Achievement-ID → Datum der Vergabe. */
   achievements: Record<string, DateKey>;
-  challenges: { week: DateKey | null; list: { id: string; progress: number; done: boolean }[] };
+  /** Montag der laufenden Woche und ihre drei Challenges. */
+  challenges: { week: DateKey | null; list: ChallengeState[] };
   favorites: ItemId[];
   /** Prüfmodus-Urteile der Muttersprachlerin. */
   review: Partial<Record<ItemId, ReviewVerdict>>;
@@ -76,8 +123,23 @@ export function newSave(now: Date = new Date()): SaveState {
     xp: 0,
     today: { date: dateKey(now), xp: 0 },
     dailyGoal: 50,
-    streak: { count: 0, lastDate: null, shields: 0 },
-    inventory: { xpBoosts: 0, accessories: [], equipped: [] },
+    streak: { count: 0, lastDate: null, shields: 0, best: 0 },
+    inventory: { chests: 0, perfectChests: 0, xpBoosts: 0, boostUntil: null, accessories: [], equipped: [] },
+    stats: {
+      correct: 0,
+      combo: 0,
+      bestCombo: 0,
+      rounds: 0,
+      bossWins: 0,
+      perfectBosses: 0,
+      newWords: 0,
+      goals: 0,
+      chests: 0,
+      pairs: 0,
+      builds: 0,
+      dictations: 0,
+      tones: 0,
+    },
     achievements: {},
     challenges: { week: null, list: [] },
     favorites: [],
@@ -105,5 +167,16 @@ export function normalizeSave(raw: unknown): SaveState {
     }
     out[key] = isObject(def) && isObject(v) ? { ...def, ...v } : v;
   }
-  return out as unknown as SaveState;
+  const save = out as unknown as SaveState;
+  // Stände von vor den Zählern: was sich aus dem Fortschritt ablesen lässt, nachtragen.
+  if (raw.stats === undefined) {
+    const items = Object.values(save.items);
+    const stages = Object.values(save.stages);
+    save.stats.correct = items.reduce((n, p) => n + (p?.right ?? 0), 0);
+    save.stats.newWords = Object.keys(save.items).filter((k) => k.startsWith('w')).length;
+    save.stats.bossWins = stages.filter((s) => s?.done).length;
+    save.stats.perfectBosses = stages.filter((s) => s?.bossBest === 3).length;
+  }
+  save.streak.best = Math.max(save.streak.best, save.streak.count);
+  return save;
 }

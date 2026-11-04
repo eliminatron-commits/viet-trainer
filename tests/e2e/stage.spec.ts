@@ -11,18 +11,39 @@ test.beforeEach(async ({ page }) => {
   });
 });
 
-/** Spielt die laufende Runde mit lauter richtigen Antworten zu Ende (Lösung steht als data-answer am Screen). */
+/**
+ * Löst die laufende Aufgabe richtig. Die Lösung steht als data-answer am Screen: Options-ID bei Auswahl, Rolle und
+ * Ton-Ninja; Kachel-IDs der Zielfolge bei Satzbau und Diktat (danach „Prüfen“); Wort-IDs bei Paaren (Kacheln vn:/de:).
+ * Gibt die Aufgabenart zurück.
+ */
+async function solveTask(page: Page): Promise<string> {
+  const play = page.locator('main.play');
+  const kind = (await play.getAttribute('data-task-kind')) ?? '';
+  if (kind === 'intro') return kind;
+  const answer = (await play.getAttribute('data-answer')) ?? '';
+  if (kind === 'pairs') {
+    for (const id of answer.split(' ')) {
+      await play.locator(`[data-id="vn:${id}"]`).click();
+      await play.locator(`[data-id="de:${id}"]`).click();
+    }
+  } else if (kind === 'build') {
+    for (const id of answer.split(' ')) await play.locator(`[data-id="${id}"]`).click();
+    await page.getByRole('button', { name: 'Prüfen', exact: true }).click();
+  } else {
+    await play.locator(`[data-id="${answer}"]`).click();
+  }
+  await expect(page.getByRole('status').filter({ hasText: 'Richtig!' })).toBeVisible();
+  return kind;
+}
+
+/** Spielt die laufende Runde mit lauter richtigen Antworten zu Ende. */
 async function playRound(page: Page): Promise<string> {
   const play = page.locator('main.play');
   for (let i = 0; i < 40; i++) {
     const outcome = await play.getAttribute('data-outcome');
     if (outcome) return outcome;
     const progress = await page.getByRole('progressbar').getAttribute('aria-valuenow');
-    if ((await play.getAttribute('data-task-kind')) !== 'intro') {
-      const answer = await play.getAttribute('data-answer');
-      await play.locator(`[data-id="${answer}"]`).click();
-      await expect(page.getByRole('status').filter({ hasText: 'Richtig!' })).toBeVisible();
-    }
+    await solveTask(page);
     await page.getByRole('button', { name: 'Weiter', exact: true }).click();
     await page.waitForFunction(
       (prev) =>
@@ -58,11 +79,67 @@ test('Etappe 1 ist von Start bis Boss spielbar und schaltet Etappe 2 frei', asyn
   expect(await playRound(page)).toBe('won');
   await expect(page.getByRole('heading', { name: 'Etappe geschafft!' })).toBeVisible();
 
+  // Erster Sieg ohne verlorenes Leben: eine Truhe mit garantiertem Accessoire; anlegen.
+  await page.getByRole('button', { name: 'Truhe öffnen' }).click();
+  await page.getByRole('button', { name: 'Öffnen', exact: true }).click();
+  await expect(page.locator('[data-prize]')).toHaveAttribute('data-prize', 'accessory');
+  await page.getByRole('button', { name: 'Gleich anlegen' }).click();
+  await page.getByRole('button', { name: 'Weiter', exact: true }).click();
+  await expect(page.getByText('Truhe geöffnet')).toBeVisible();
+  await expect(page.getByText('Erster Boss')).toBeVisible();
+
   await page.getByRole('button', { name: 'Fertig' }).click();
   await expect(page.getByRole('button', { name: /Etappe 1: Ich & du – geschafft/ })).toBeVisible();
   await expect(page.getByRole('button', { name: /Etappe 2: .* – offen/ })).toBeEnabled();
 
-  // Fortschritt übersteht einen Neustart.
+  // Fortschritt, Truhe und Accessoire überstehen einen Neustart.
   await page.reload();
   await expect(page.getByRole('button', { name: /Etappe 2: .* – offen/ })).toBeEnabled();
+  await page.getByRole('button', { name: 'Profil' }).click();
+  await expect(page.locator('.garment[aria-pressed="true"]')).toHaveCount(1);
+  await expect(page.getByRole('button', { name: 'Truhe öffnen' })).toHaveCount(0);
+});
+
+test('Training: jeder Modus ist wählbar und lässt sich lösen', async ({ page }) => {
+  // Spielstand mit gelernten Einheiten: Etappe 1 komplett (Runden bis Boss, Boss gewonnen).
+  await page.goto('/viet-trainer/');
+  await page.getByRole('button', { name: /Etappe 1: Ich & du/ }).click();
+  await page.getByRole('button', { name: 'Etappe starten' }).click();
+  while (true) {
+    expect(await playRound(page)).toBe('done');
+    if (await page.getByRole('button', { name: 'Zum Bosskampf' }).isVisible()) break;
+    await page.getByRole('button', { name: 'Weiterspielen' }).click();
+  }
+  await page.getByRole('button', { name: 'Fertig' }).click();
+
+  const modes: { focus: string; kind: string }[] = [
+    { focus: 'pairs', kind: 'pairs' },
+    { focus: 'build', kind: 'build' },
+    { focus: 'dictation', kind: 'build' },
+    { focus: 'tone', kind: 'tone' },
+  ];
+  for (const m of modes) {
+    await page.getByRole('button', { name: 'Training', exact: true }).click();
+    const card = page.locator(`[data-focus="${m.focus}"]`);
+    await expect(card).toBeVisible();
+    if (await card.isDisabled()) continue; // dafür ist in Etappe 1 noch zu wenig gelernt
+    await card.click();
+    const play = page.locator('main.play');
+    for (let i = 0; i < 2; i++) {
+      await expect(play).toHaveAttribute('data-task-kind', m.kind);
+      await solveTask(page);
+      await page.getByRole('button', { name: 'Weiter', exact: true }).click();
+    }
+    await page.getByRole('button', { name: 'Training beenden' }).click();
+    await expect(page.getByRole('heading', { name: /\d+ von \d+ richtig/ })).toBeVisible();
+    await page.getByRole('button', { name: 'Fertig' }).click();
+  }
+
+  // Gemischt: eine Runde Aufgaben beliebiger Art.
+  await page.getByRole('button', { name: 'Training', exact: true }).click();
+  await page.getByRole('button', { name: 'Training starten' }).click();
+  for (let i = 0; i < 12; i++) {
+    await solveTask(page);
+    await page.getByRole('button', { name: 'Weiter', exact: true }).click();
+  }
 });

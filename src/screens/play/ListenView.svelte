@@ -6,6 +6,7 @@
   import type { Opt } from './ChoiceView.svelte';
 
   let {
+    kicker = 'Was hörst du?',
     audioId,
     reveal,
     options,
@@ -13,6 +14,7 @@
     picked,
     onpick,
   }: {
+    kicker?: string;
     audioId: string;
     /** Vietnamesischer Text, der nach der Antwort erscheint. */
     reveal: string;
@@ -48,7 +50,7 @@
   });
 </script>
 
-<p class="kicker">Was hörst du?</p>
+<p class="kicker">{kicker}</p>
 <div class="prompt">
   <button class="disc" onclick={listen} aria-label="Noch einmal anhören">
     <SoundDisc size={170} />

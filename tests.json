@@ -31,12 +31,12 @@
       "phase": 3,
       "name": "Spielmodi, Belohnungen und Sprachführer",
       "tests": [
-        { "id": "P3-01", "desc": "Jeder Modus erzeugt nur lösbare Aufgaben (über alle Inhalte)", "check": "npm test", "status": "open" },
-        { "id": "P3-02", "desc": "Ton-Ninja-Ablenker unterscheiden sich nur im Ton (über alle Inhalte)", "check": "npm test", "status": "open" },
-        { "id": "P3-03", "desc": "Truhen, Achievements und Challenges werden korrekt vergeben und gespeichert", "check": "npm test", "status": "open" },
-        { "id": "P3-04", "desc": "Playwright: Sprachführer-Suche, Favorit setzen, Prüfmodus-Export", "check": "npx playwright test", "status": "open" },
-        { "id": "P3-05", "desc": "pron für alle 288 neuen Wörter ergänzt und als KI-erstellt markiert", "check": "npm test", "status": "open" },
-        { "id": "P3-06", "desc": "pruefer-Review ohne offene Mängel", "check": "Subagent pruefer", "status": "open" }
+        { "id": "P3-01", "desc": "Jeder Modus erzeugt nur lösbare Aufgaben (über alle Inhalte)", "check": "npm test (tests/modes.test.ts: Satzbau/Diktat für jeden baubaren Satz, Paare über 200 Seeds, Ablenker nie Anredewörter)", "status": "pass" },
+        { "id": "P3-02", "desc": "Ton-Ninja-Ablenker unterscheiden sich nur im Ton (über alle Inhalte)", "check": "npm test (tests/modes.test.ts: Ton-Ninja für jedes Wort, 3 Seeds)", "status": "pass" },
+        { "id": "P3-03", "desc": "Truhen, Achievements und Challenges werden korrekt vergeben und gespeichert", "check": "npm test (tests/chest, achievements, challenges, rewards, game.test.ts gegen fake-indexeddb) + Playwright stage.spec (Truhe nach Boss, Accessoire übersteht Neuladen)", "status": "pass" },
+        { "id": "P3-04", "desc": "Playwright: Sprachführer-Suche, Favorit setzen, Prüfmodus-Export", "check": "npx playwright test (tests/e2e/phrasebook.spec.ts)", "status": "pass" },
+        { "id": "P3-05", "desc": "pron für alle 288 neuen Wörter ergänzt und als KI-erstellt markiert", "check": "npm test (tests/content.test.ts)", "status": "pass" },
+        { "id": "P3-06", "desc": "pruefer-Review ohne offene Mängel", "check": "Subagent pruefer (Opus): 1 Mangel + 5 Kleinigkeiten behoben, Nachprüfung ohne offene Mängel; danach Check, 197 Tests, Playwright 4/4", "status": "pass" }
       ]
     },
     {

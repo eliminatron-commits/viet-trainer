@@ -41,6 +41,7 @@
   --bad-ink: #a8170f;
   --disabled-bg: rgb(255 255 255 / 0.45);
   --disabled-ink: rgb(35 26 21 / 0.55);
+  --scrim: rgb(35 26 21 / 0.45); /* abgedunkelter Grund hinter Blättern (Truhe) */
 
   /* Klangscheibe (Hör-Aufgaben): Sonnenhof wie in den Illustrationen */
   --sun-halo: #ffe58a;
@@ -115,6 +116,7 @@
   --bad-ink: #ff9a8e;
   --disabled-bg: rgb(255 255 255 / 0.1);
   --disabled-ink: rgb(246 235 221 / 0.5);
+  --scrim: rgb(5 8 18 / 0.6);
 
   --shadow-card: 0 10px 30px -12px rgb(0 0 0 / 0.6);
   --shadow-float: 0 14px 40px -10px rgb(0 0 0 / 0.7);

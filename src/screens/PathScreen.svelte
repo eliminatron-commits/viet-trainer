@@ -14,7 +14,7 @@
   import RegionScene from '../lib/illustrations/RegionScene.svelte';
   import { currentStage, regionDone, stageLearned, stageStatus, stageWords } from '../lib/logic/path';
   import { currentStreak, levelInfo } from '../lib/logic/rewards';
-  import Buffalo from '../lib/mascot/Buffalo.svelte';
+  import Trau from '../lib/mascot/Trau.svelte';
   import { arrivingByTab } from '../lib/motion';
 
   let { onopen }: { onopen: (stage: Stage) => void } = $props();
@@ -60,7 +60,7 @@
       <h1>Weiter geht's<br />in {regionOf.name}.</h1>
     </div>
     <ProgressRing value={xpToday / save.dailyGoal} size={84} stroke={9} label="Tagesziel {xpToday} von {save.dailyGoal} XP">
-      <Buffalo size={58} mood={xpToday >= save.dailyGoal ? 'happy' : 'idle'} />
+      <Trau size={58} mood={xpToday >= save.dailyGoal ? 'happy' : 'idle'} />
     </ProgressRing>
   </header>
 

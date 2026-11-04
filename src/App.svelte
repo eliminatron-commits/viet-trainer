@@ -2,20 +2,22 @@
   import { onMount } from 'svelte';
   import type { Stage } from './content/types';
   import { onAudioStatus, retry } from './lib/audio/player';
-  import Card from './lib/components/Card.svelte';
+  import NewsToast from './lib/components/NewsToast.svelte';
   import PillNav, { type Tab } from './lib/components/PillNav.svelte';
   import { game, initGame } from './lib/game.svelte';
   import { transitionTo, type Motion } from './lib/motion';
   import { applyUpdate, pwa } from './lib/pwa.svelte';
   import { setThemeMode } from './lib/theme.svelte';
   import PathScreen from './screens/PathScreen.svelte';
+  import PhrasebookScreen from './screens/PhrasebookScreen.svelte';
   import Play, { type PlayMode } from './screens/play/Play.svelte';
   import ProfileScreen from './screens/ProfileScreen.svelte';
+  import ReviewScreen from './screens/ReviewScreen.svelte';
   import SettingsScreen from './screens/SettingsScreen.svelte';
   import StageScreen from './screens/StageScreen.svelte';
   import TrainingScreen from './screens/TrainingScreen.svelte';
 
-  type Screen = { name: 'tabs' } | { name: 'stage'; stage: Stage } | { name: 'play'; mode: PlayMode } | { name: 'settings' };
+  type Screen = { name: 'tabs' } | { name: 'stage'; stage: Stage } | { name: 'play'; mode: PlayMode } | { name: 'settings' } | { name: 'review' };
 
   let tab = $state<Tab>('path');
   let screen = $state<Screen>({ name: 'tabs' });
@@ -61,16 +63,11 @@
   {#if tab === 'path'}
     <PathScreen onopen={(stage) => go({ name: 'stage', stage }, 'morph-open')} />
   {:else if tab === 'training'}
-    <TrainingScreen onstart={(verbsOnly) => start({ kind: 'training', verbsOnly })} />
+    <TrainingScreen onstart={(verbsOnly, focus) => start({ kind: 'training', verbsOnly, focus })} />
   {:else if tab === 'profile'}
     <ProfileScreen onsettings={() => go({ name: 'settings' }, 'push')} />
   {:else}
-    <main class="placeholder">
-      <Card tone="lotus">
-        <h1>Sprachführer</h1>
-        <p>Kommt mit dem nächsten Update.</p>
-      </Card>
-    </main>
+    <PhrasebookScreen />
   {/if}
   <PillNav active={tab} onselect={selectTab} />
 {:else if screen.name === 'stage'}
@@ -89,8 +86,10 @@
       onboss={(stage) => start({ kind: 'boss', stage })}
     />
   {/key}
+{:else if screen.name === 'settings'}
+  <SettingsScreen onback={() => go({ name: 'tabs' }, 'pop')} onreview={() => go({ name: 'review' }, 'push')} />
 {:else}
-  <SettingsScreen onback={() => go({ name: 'tabs' }, 'pop')} />
+  <ReviewScreen onback={() => go({ name: 'settings' }, 'pop')} />
 {/if}
 
 <!-- Fläche unter Uhr/Dynamic Island: gescrollter Inhalt verschwindet darunter statt die Statusleiste zu überlagern.
@@ -98,6 +97,8 @@
 {#if screen.name !== 'stage'}
   <div class="statusbar" aria-hidden="true"></div>
 {/if}
+
+<NewsToast active={game.ready && screen.name !== 'play'} />
 
 {#if game.error}
   <div class="toast error" role="alert">{game.error}</div>
@@ -121,13 +122,6 @@
   .loading {
     min-height: 100dvh;
     background: var(--paper);
-  }
-  .placeholder {
-    padding: calc(var(--safe-top) + 20px) var(--gutter);
-  }
-  .placeholder h1 {
-    font-size: var(--fs-h1);
-    font-weight: 800;
   }
   .statusbar {
     position: fixed;

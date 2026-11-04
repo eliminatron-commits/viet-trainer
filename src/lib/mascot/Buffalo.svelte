@@ -8,8 +8,31 @@
    * happy = Hüpfer mit ^^-Augen, sad = Kopf und Ohren hängen, cheer = Doppelhüpfer, Lotus dreht sich.
    * Reaktionen spielen beim Einhängen bzw. Stimmungswechsel; `tappable` lässt ihn beim Antippen hüpfen.
    * Alles CSS an SVG-Gruppen (transform-box: view-box, Ursprünge in viewBox-Einheiten).
+   * Er wächst mit dem Level (growth: 0 Kalb mit Hornstummeln und kleinem Körper, 1 jung, 2 ausgewachsen)
+   * und trägt Accessoires (wear, je Platz eines). Wachstum und Accessoires sitzen in inneren Gruppen mit
+   * SVG-transform, damit sie die CSS-Bewegungen der äußeren Gruppen nicht überschreiben.
    */
-  let { size = 160, mood = 'idle', tappable = false }: { size?: number; mood?: Mood; tappable?: boolean } = $props();
+  import { accessory, type AccessoryId, type AccessorySlot } from '../logic/accessories';
+  import type { Growth } from '../logic/rewards';
+  import Accessory from './Accessory.svelte';
+
+  let {
+    size = 160,
+    mood = 'idle',
+    tappable = false,
+    growth = 2,
+    wear = [],
+  }: { size?: number; mood?: Mood; tappable?: boolean; growth?: Growth; wear?: readonly string[] } = $props();
+
+  const HORN = [0.42, 0.72, 1] as const;
+  const BODY = [0.86, 0.94, 1] as const;
+  /** Getragenes Accessoire je Platz. */
+  const on = $derived(
+    Object.fromEntries(wear.flatMap((id) => (accessory(id) ? [[accessory(id)!.slot, id as AccessoryId]] : []))) as Partial<
+      Record<AccessorySlot, AccessoryId>
+    >,
+  );
+  const scaleAt = (x: number, y: number, k: number) => `translate(${x} ${y}) scale(${k}) translate(${-x} ${-y})`;
 
   let tapHop = $state(false);
   const joyful = $derived(mood === 'happy' || mood === 'cheer' || tapHop);
@@ -52,18 +75,25 @@
   <g class="whole">
     <!-- Körper & Beine -->
     <g class="body">
-      <ellipse cx="100" cy="150" rx="52" ry="36" fill={C.shade} />
-      {#each [70, 88, 112, 130] as x (x)}
-        <rect x={x - 8} y="164" width="16" height="26" rx="7" fill={C.body} />
-        <rect x={x - 8} y="182" width="16" height="9" rx="4" fill={C.dark} />
-      {/each}
+      <g transform={scaleAt(100, 191, BODY[growth])}>
+        <ellipse cx="100" cy="150" rx="52" ry="36" fill={C.shade} />
+        {#each [70, 88, 112, 130] as x (x)}
+          <rect x={x - 8} y="164" width="16" height="26" rx="7" fill={C.body} />
+          <rect x={x - 8} y="182" width="16" height="9" rx="4" fill={C.dark} />
+        {/each}
+      </g>
     </g>
 
     <g class="head">
       <!-- Hörner (Schattenseite links) -->
-      <path d="M64 80 C28 74 18 44 38 28 C36 48 50 64 76 66 Z" fill={C.horn} />
-      <path d="M64 80 C28 74 18 44 38 28 C30 50 40 66 66 72 Z" fill={C.hornShade} />
-      <path d="M136 80 C172 74 182 44 162 28 C164 48 150 64 124 66 Z" fill={C.horn} />
+      <g transform={scaleAt(70, 74, HORN[growth])}>
+        <path d="M64 80 C28 74 18 44 38 28 C36 48 50 64 76 66 Z" fill={C.horn} />
+        <path d="M64 80 C28 74 18 44 38 28 C30 50 40 66 66 72 Z" fill={C.hornShade} />
+      </g>
+      <g transform={scaleAt(130, 74, HORN[growth])}>
+        <path d="M136 80 C172 74 182 44 162 28 C164 48 150 64 124 66 Z" fill={C.horn} />
+        {#if on.horn}<Accessory id={on.horn} />{/if}
+      </g>
       <!-- Ohren -->
       <g class="ear ear-l">
         <ellipse cx="52" cy="96" rx="15" ry="8" fill={C.body} transform="rotate(-20 52 96)" />
@@ -76,12 +106,16 @@
       <!-- Kopf -->
       <ellipse cx="100" cy="96" rx="46" ry="42" fill={C.body} />
       <path d="M86 58 C92 66 108 66 114 58 C110 70 90 70 86 58 Z" fill={C.shade} />
-      <!-- Lotus auf dem Kopf -->
-      <g class="lotus">
-        <ellipse cx="100" cy="50" rx="6" ry="13" fill={C.lotus} />
-        <ellipse cx="91" cy="55" rx="5" ry="11" fill={C.lotusDeep} transform="rotate(-30 91 55)" />
-        <ellipse cx="109" cy="55" rx="5" ry="11" fill={C.lotusDeep} transform="rotate(30 109 55)" />
-      </g>
+      <!-- Lotus auf dem Kopf – oder, was er dort trägt -->
+      {#if on.head}
+        <Accessory id={on.head} />
+      {:else}
+        <g class="lotus">
+          <ellipse cx="100" cy="50" rx="6" ry="13" fill={C.lotus} />
+          <ellipse cx="91" cy="55" rx="5" ry="11" fill={C.lotusDeep} transform="rotate(-30 91 55)" />
+          <ellipse cx="109" cy="55" rx="5" ry="11" fill={C.lotusDeep} transform="rotate(30 109 55)" />
+        </g>
+      {/if}
       <!-- Augen -->
       {#if joyful}
         <path d="M71 93 Q82 77 93 93 Q82 85 71 93 Z" fill={C.dark} />
@@ -105,6 +139,7 @@
           <path d="M130 77.5 L110 71 L109 74.5 L128.5 81 Z" fill={C.dark} />
         </g>
       {/if}
+      {#if on.face}<Accessory id={on.face} />{/if}
       <!-- Schnauze -->
       <ellipse cx="100" cy="116" rx="30" ry="20" fill={C.muzzle} />
       <ellipse cx="90" cy="114" rx="4" ry="5.5" fill={C.dark} />
@@ -115,10 +150,15 @@
       {:else}
         <path d="M92 126 Q100 132 108 126 Q100 129 92 126 Z" fill={C.dark} />
       {/if}
-      <!-- Halstuch -->
-      <path d="M62 128 Q100 146 138 128 L139 137 Q100 156 61 137 Z" fill={C.scarf} />
-      <path d="M116 140 L130 162 L115 157 Z" fill={C.scarf} />
-      <path d="M121 146 l1.6 3.4 3.7.4-2.8 2.5.8 3.6-3.3-1.9-3.3 1.9.8-3.6-2.8-2.5 3.7-.4Z" fill={C.star} />
+      <!-- Halstuch (das karierte Khăn rằn ersetzt es, Glöckchen und Blumenkette kommen darüber) -->
+      {#if on.neck === 'khan-ran'}
+        <Accessory id="khan-ran" />
+      {:else}
+        <path d="M62 128 Q100 146 138 128 L139 137 Q100 156 61 137 Z" fill={C.scarf} />
+        <path d="M116 140 L130 162 L115 157 Z" fill={C.scarf} />
+        <path d="M121 146 l1.6 3.4 3.7.4-2.8 2.5.8 3.6-3.3-1.9-3.3 1.9.8-3.6-2.8-2.5 3.7-.4Z" fill={C.star} />
+        {#if on.neck}<Accessory id={on.neck} />{/if}
+      {/if}
     </g>
   </g>
 </svg>
