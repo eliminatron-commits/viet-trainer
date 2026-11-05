@@ -47,7 +47,8 @@ src/
     game.svelte.ts globaler Spielstand + Aktionen (recordTask, Boss/Truhe, Favoriten, Prüfurteile, Neuigkeiten);
                   push.svelte.ts Push-Client; theme.svelte.ts Tag/Nacht (data-theme, Wechsel-Timer)
     feedback.ts   UI-Klänge (WebAudio-Synthese über den Kontext aus player.ts) und Haptik-Tick (iOS-18-switch-Trick)
-    pwa.svelte.ts SW-Registrierung, „Neue Version“-Hinweis
+    pwa.svelte.ts SW-Registrierung, „Neue Version“-Hinweis, Update-Suche bei Rückkehr in die App;
+                  update.ts (Update-Suche mit Mindestabstand), build.ts (Versionszeile aus __APP_BUILD__)
   screens/        Lernpfad, Etappe, Training (Modus-Wahl), Sprachführer, Profil, Einstellungen, Prüfmodus; play/ = Session/Boss/Training mit allen Modi
   styles/         tokens.css (Design-Tokens), base.css (Übergänge, Tipp-Welle, Ankunft), scene.css (Bewegung der Szenen)
   sw.ts           Service Worker (→ /viet-trainer/sw.js) inkl. push/notificationclick
@@ -102,7 +103,7 @@ prepared/         vorbereitete Inhalte (w251–w538, s151–s270) – nur Migrat
 - UI-Klänge nur per WebAudio-Synthese über `uiContext()` aus player.ts (kein eigener Kontext – sonst greift die Selbstheilung nicht), abschaltbar (`settings.sound`). Haptik nur per Feature-Detection (`'switch' in HTMLInputElement.prototype`), abschaltbar (`settings.haptics`).
 - Spielstand = ein Datensatz in IndexedDB (`viet-trainer`/`state`, Schlüssel `save`), bei **jeder** Aktion sofort komplett geschrieben. Neue Felder: nur in `newSave()` ergänzen – `normalizeSave` füllt alte Stände auf. Inkompatible Änderung: `SAVE_VERSION` erhöhen und migrieren.
 - Svelte-`$state` liefert Proxies: Inhaltsobjekte nie per Identität (`indexOf`, `===`) vergleichen, sondern per `id`.
-- Service Worker liegt unter `/viet-trainer/sw.js` (gleicher Pfad wie v13), löscht alle Caches `viet-trainer-v*` und übernimmt sofort, wenn solche Caches existieren; offene Fenster der alten App lädt er danach einmal neu (`WindowClient.navigate`, **außerhalb** von `waitUntil` – sonst wartet die Navigation auf den aktivierenden SW und umgekehrt). Lokal nachgestellt: v13 aus `main` installieren, Server auf `dist/` umstellen, Update auslösen. Sonst: „Neue Version“-Hinweis, Update erst auf Tippen. Startbilder sind vom Precache ausgenommen (iOS holt sie selbst).
+- Service Worker liegt unter `/viet-trainer/sw.js` (gleicher Pfad wie v13), löscht alle Caches `viet-trainer-v*` und übernimmt sofort, wenn solche Caches existieren; offene Fenster der alten App lädt er danach einmal neu (`WindowClient.navigate`, **außerhalb** von `waitUntil` – sonst wartet die Navigation auf den aktivierenden SW und umgekehrt). Lokal nachgestellt: v13 aus `main` installieren, Server auf `dist/` umstellen, Update auslösen. Sonst: „Neue Version“-Hinweis, Update erst auf Tippen. iOS holt die installierte App aus dem Hintergrund, ohne sie neu zu laden – dann fragt der Browser nie nach einem neuen `sw.js`. Deshalb sucht die App bei jeder Rückkehr selbst (`visibilitychange`, höchstens einmal pro Minute, `lib/update.ts`); in den Einstellungen stehen die Versionszeile (Version · Build-Zeit · Commit, `__APP_BUILD__` aus `vite.config.ts`) und „Nach Updates suchen“. Weil die Build-Zeit im Bundle steckt, ist jeder Deploy eine neue Version. „Aktualisieren“ lädt selbst neu, sobald die neue Version übernimmt (`controllerchange`) – workbox-window tut das nach einer Erstinstallation nicht. Startbilder sind vom Precache ausgenommen (iOS holt sie selbst).
 - Secrets (VAPID-Keys, Push-Token) nur als wrangler-Secrets bzw. Build-Env – nie in eine Datei im Repo.
 
 ## Verbotene Ansätze

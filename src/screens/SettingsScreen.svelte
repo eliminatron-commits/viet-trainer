@@ -2,10 +2,12 @@
   import { onMount } from 'svelte';
   import Button from '../lib/components/Button.svelte';
   import { onAudioStatus, play, type AudioStatus } from '../lib/audio/player';
+  import { BUILD, buildLabel } from '../lib/build';
   import { hapticsSupported } from '../lib/feedback';
   import { flushed, game, replaceSave, today, updateSettings } from '../lib/game.svelte';
   import { disablePush, enablePush, push, refreshPushStatus, reportToWorker, sendTestPush } from '../lib/push.svelte';
   import type { ThemeMode } from '../lib/logic/theme';
+  import { checkForUpdate, pwa } from '../lib/pwa.svelte';
   import { exportSave, importSave } from '../lib/storage/persist';
   import { setThemeMode, theme } from '../lib/theme.svelte';
 
@@ -104,6 +106,24 @@
     setTimeout(() => URL.revokeObjectURL(url), 10_000);
     dataMessage = 'Export gespeichert.';
   }
+
+  // Versionszeile und Update-Suche: zeigt, welcher Stand läuft, und holt eine neue Version sofort.
+  let updateBusy = $state(false);
+  let updateMessage = $state('');
+  const updateText: Record<string, string> = {
+    found: 'Neue Version gefunden – sobald sie geladen ist, erscheint oben „Aktualisieren“.',
+    current: 'Das ist die neueste Version.',
+    offline: 'Keine Verbindung – später noch einmal suchen.',
+    unavailable: 'Updates gibt es nur in der veröffentlichten App.',
+  };
+  async function searchUpdate() {
+    updateBusy = true;
+    updateMessage = 'Sucht …';
+    updateMessage = updateText[await checkForUpdate()] ?? '';
+    updateBusy = false;
+  }
+  // Liegt eine neue Version bereit (auch aus der Suche bei Rückkehr), gilt keine ältere Meldung mehr.
+  const shownUpdateMessage = $derived(pwa.needRefresh ? 'Neue Version bereit – oben auf „Aktualisieren“ tippen.' : updateMessage);
 
   async function doImport(e: Event) {
     const input = e.currentTarget as HTMLInputElement;
@@ -220,6 +240,15 @@
     <div class="buttons">
       <Button variant="secondary" onclick={onreview}>Prüfmodus öffnen</Button>
     </div>
+  </section>
+
+  <section class="group">
+    <h2>App</h2>
+    <p class="status" data-build={BUILD.commit}>{buildLabel(BUILD)}</p>
+    <div class="buttons">
+      <Button variant="secondary" disabled={updateBusy} onclick={searchUpdate}>Nach Updates suchen</Button>
+    </div>
+    {#if shownUpdateMessage}<p class="message" role="status">{shownUpdateMessage}</p>{/if}
   </section>
 </main>
 

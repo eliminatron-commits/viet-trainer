@@ -56,6 +56,21 @@
     - Alle 842 Precache- und Startbild-URLs antworten mit 200.
     - Push-URL und Token stecken im Bundle. Die Einstellungen zeigen „Nur aus der installierten App“ statt „nicht eingerichtet“.
     - In Edge mit 440×956 startet die App mit sich aufbauender Szene. Der SW installiert alle 826 Dateien, wird aktiv und kontrolliert die Seite.
+- **Update-Hinweis und Versionszeile (2026-11-05, Alex: „ich sehe nirgends die app version. und ich habe keine update benachrichtigung bekommen“):**
+  - Ursache: iOS holt die installierte App aus dem Hintergrund, ohne sie neu zu laden. Der Browser sucht dann nie nach einem neuen `sw.js`, der Hinweis kam nur nach komplettem Schließen und Neustart.
+  - Behoben:
+    - Die App sucht bei jeder Rückkehr selbst (`visibilitychange`, höchstens einmal pro Minute, `lib/update.ts`).
+    - Neuer Abschnitt „App“ in den Einstellungen: Versionszeile (Version · Build-Zeit · Commit, `__APP_BUILD__`) und „Nach Updates suchen“. Liegt schon eine neue Version bereit, ersetzt „Neue Version bereit – oben auf „Aktualisieren“ tippen.“ jede ältere Meldung.
+    - „Aktualisieren“ lädt jetzt selbst neu, sobald die neue Version übernimmt. workbox-window tut das nur, wenn beim Öffnen schon ein SW die Seite steuerte, also nicht nach der allerersten Installation.
+  - Geprüft:
+    - check grün, 212 Vitest grün (neu: `tests/update.test.ts`).
+    - 5 Mutationen machen die neuen Tests rot: kein Mindestabstand, Knopf ohne Vorrang, `waiting` ignoriert, kein offline-Fang, kein Zeitstempel.
+    - Produktions-Vorschau in Edge mit 440×956:
+      - Erstinstallation und neuer Build im Hintergrund: der Knopf findet ihn, Hinweis oben, „Aktualisieren“ lädt das neue Bundle.
+      - Gesteuert geöffnet: simulierte Rückkehr → ein Update-Aufruf → Hinweis → Neuladen.
+      - Innerhalb einer Minute nach der Suche per Knopf überspringt die Rückkehr die Suche.
+      - Tag und Nacht ohne Konsolenfehler.
+  - Für Alex einmalig: Die zuletzt live gegangene Version (`7ed930e`) kennt die Suche bei Rückkehr noch nicht. Nach dem nächsten Deploy die App einmal ganz schließen und neu öffnen; ab dann reicht die Rückkehr in die App.
 - **Nächste Schritte:**
   1. Alex' iPhone-Abnahme, danach `tests.json` nachführen:
      - P4-01: Qualität.
