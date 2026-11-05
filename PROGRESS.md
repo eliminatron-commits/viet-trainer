@@ -41,6 +41,10 @@
   - Tests: 204 Vitest (neu: Vignetten, Startbilder, Nachtskript), 7 Playwright WebKit (neu: App-Kill mitten in der Session, Export/Import, Offline mit allen 808 Audios); neue Tests per Mutation gegengeprüft.
   - Deploy: `.github/workflows/pages.yml` (check, test, build → Pages). README und SESSION.md auf v2.
   - Subagenten: pruefer (Opus). Befunde: Release-Voraussetzungen in GitHub fehlen noch (siehe unten), PROGRESS nicht nachgeführt, Titel gesperrter Vignetten unter AA-Kontrast bei Tag → behoben (`--ink-muted`).
+  - Nachprüfung nach dem Release (2026-11-05): Befund 1 und 2 erledigt. Befund 3 war nur in offenen Regionen behoben, denn `.region.locked { opacity: 0.6 }` drückte in gesperrten Regionen alle Texte unter AA: Vignetten-Titel tags ~2,8 : 1 und nachts ~4,1 : 1, Kicker und Untertitel der Regionskarte ebenso.
+    - Behoben: Gedämpft werden nur noch Szene und Knoten. Die Kartenfläche verblasst über eine Papier-Lasur (`color-mix`, entspricht 60 % Deckkraft), die Schrift bleibt voll deckend.
+    - Gemessen: alle 39 Texte in gesperrten Regionen, tags mindestens 5,6 : 1 und nachts mindestens 5,64 : 1.
+    - Die Nachprüfung durch den pruefer ergab keine offenen Mängel mehr → P4-06 bestanden.
 - **Release (2026-11-05, Alex: „Ja, Release“):**
   - Repo-Secret `VITE_PUSH_TOKEN` per Pipe gesetzt.
   - Pages-Quelle von „Branch main“ (legacy) auf „GitHub Actions“ umgestellt, vor dem Push.
@@ -58,8 +62,7 @@
      - P4-02: Die installierte v13 wird von selbst zu v2. Das neue Icon kommt erst nach erneutem „Zum Home-Bildschirm“.
      - P4-03: Flugmodus.
      - P4-04: Definition of Done inklusive Push morgens und abends.
-  2. pruefer erneut für P4-06.
-  3. Optional, nur nach Rückfrage: Test-Worker `viet-trainer-v2` löschen. Er wird nicht mehr gebraucht.
+  2. Optional, nur nach Rückfrage: Test-Worker `viet-trainer-v2` löschen. Er wird nicht mehr gebraucht.
 
 ## Phase 2 – Ergebnis
 

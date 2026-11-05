@@ -233,7 +233,13 @@
     display: grid;
     gap: 20px;
   }
-  .region.locked {
+  /* Gesperrte Region: Fläche, Szene und Knoten verblassen, die Schrift nicht (AA bei Tag und Nacht).
+     Die Papier-Lasur auf .region-card entspricht der Kartenfläche bei 60 % Deckkraft. */
+  .region.locked .region-card {
+    background: color-mix(in srgb, var(--paper) 40%, transparent);
+  }
+  .region.locked .scene,
+  .region.locked .node {
     opacity: 0.6;
   }
   .region-card {

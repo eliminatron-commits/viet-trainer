@@ -48,7 +48,7 @@
         { "id": "P4-03", "desc": "Im Flugmodus sind alle Audios abspielbar", "check": "manuell (iPhone) + Playwright offline", "status": "open" },
         { "id": "P4-04", "desc": "Definition of Done erfüllt (alte URL, Homescreen, offline, alle Inhalte/Modi/Belohnungen/Sprachführer, Push morgens+abends, Fortschritt übersteht Neustart/Update)", "check": "manuell", "status": "open" },
         { "id": "P4-05", "desc": "Playwright: Kern-Flows (Etappe, Boss, Truhe, Sprachführer, Export/Import)", "check": "npx playwright test", "status": "pass" },
-        { "id": "P4-06", "desc": "pruefer-Review ohne offene Mängel", "check": "Subagent pruefer", "status": "open" }
+        { "id": "P4-06", "desc": "pruefer-Review ohne offene Mängel", "check": "Subagent pruefer", "status": "pass" }
       ]
     }
   ]
