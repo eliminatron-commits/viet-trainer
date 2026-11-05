@@ -7,8 +7,8 @@ Punkte: `PROGRESS.md`; Akzeptanztests: `tests.json`.
 ## Live & Deployment
 
 - **Live:** https://eliminatron-commits.github.io/viet-trainer/ — Repo `eliminatron-commits/viet-trainer` (öffentlich).
-- **Deploy:** GitHub Actions (`.github/workflows/pages.yml`), Pages-Quelle muss „GitHub Actions“ sein (bis zum
-  Release noch „Branch main“ – Umstellung und Secret siehe `PROGRESS.md`, Nächste Schritte). Jeder Push auf `main`:
+- **Deploy:** GitHub Actions (`.github/workflows/pages.yml`), Pages-Quelle ist „GitHub Actions“ (seit dem Release
+  2026-11-05). Jeder Push auf `main`:
   `npm ci` → `npm run check` → `npm test` → `npm run build` → Pages. Kein Cache-Hochzählen mehr nötig: der
   Precache-Manifest im SW ändert sich mit jedem Build, installierte Apps zeigen dann „Neue Version“.
 - **Secret:** `VITE_PUSH_TOKEN` (Repo-Secret, gleiches Token wie `PUSH_TOKEN` im Worker). Fehlt es, zeigt die App

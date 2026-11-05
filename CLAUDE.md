@@ -1,8 +1,8 @@
 # CLAUDE.md – Việt-Trainer v2
 
-PWA zum Vietnamesisch-Lernen für Alex (deutschsprachig, männlicher Lerner, Verlobte aus Đà Nẵng prüft die Natürlichkeit). Soll sich auf dem iPhone wie eine native App anfühlen: Homescreen, Vollbild, offline, Push-Erinnerungen. Live: https://eliminatron-commits.github.io/viet-trainer/ (bis Phase 4 noch die alte v13 aus `main`).
+PWA zum Vietnamesisch-Lernen für Alex (deutschsprachig, männlicher Lerner, Verlobte aus Đà Nẵng prüft die Natürlichkeit). Soll sich auf dem iPhone wie eine native App anfühlen: Homescreen, Vollbild, offline, Push-Erinnerungen. Live: https://eliminatron-commits.github.io/viet-trainer/ (v2 seit 2026-11-05).
 
-Re-Entry: `PROGRESS.md` (Phase, offene Punkte), `tests.json` (Akzeptanztests aller Phasen), `git log`. Arbeit auf Branch `v2`, Merge nach `main` erst in Phase 4.
+Re-Entry: `PROGRESS.md` (Phase, offene Punkte), `tests.json` (Akzeptanztests aller Phasen), `git log`. Arbeit auf Branch `v2` (nur lokal); Release = `main` per Fast-Forward auf `v2` und `git push origin main` – der Workflow `.github/workflows/pages.yml` prüft, baut und deployt.
 
 ## Befehle
 
@@ -19,9 +19,9 @@ Node liegt in `C:\Program Files\nodejs` und ist **nicht** auf dem PATH der Sitzu
 | `npm run migrate` | Einmal-Migration legacy/prepared → `src/content/*.json` + `public/audio/` (überschreibt!) |
 | `node scripts/icons.ts` | App-Icons (`public/icons/*.png`, inkl. maskierbar) und iOS-Startbilder (`public/splash/*.png`) aus dem Büffel-SVG über den installierten Edge; `--preview` = Vorschaubogen. Neues Gerät: Liste im Skript **und** Link in `index.html` ergänzen (Test prüft Maße) |
 
-Push-Worker: in `worker/` `npx wrangler deploy` (Alex ist angemeldet; Konto Free-Plan). Secrets `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `PUSH_TOKEN` nur per `wrangler secret put/bulk` über Pipe. Die App braucht beim Build `VITE_PUSH_URL` (`https://viet-trainer-push.alex-rettig.workers.dev`) und `VITE_PUSH_TOKEN` aus der Umgebung – fehlen sie, zeigt die App „nicht eingerichtet“. Achtung: `npx playwright test` baut `dist/` ohne diese Variablen neu.
+Push-Worker: in `worker/` `npx wrangler deploy` (Alex ist angemeldet; Konto Free-Plan). Secrets `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `PUSH_TOKEN` nur per `wrangler secret put/bulk` über Pipe. Die App braucht beim Build `VITE_PUSH_URL` (`https://viet-trainer-push.alex-rettig.workers.dev`) und `VITE_PUSH_TOKEN` aus der Umgebung – fehlen sie, zeigt die App „nicht eingerichtet“. Im Workflow kommt das Token aus dem Repo-Secret `VITE_PUSH_TOKEN` (gleicher Wert wie `PUSH_TOKEN`; neu setzen nur per Pipe an `gh secret set`). Achtung: `npx playwright test` baut `dist/` ohne diese Variablen neu.
 
-Testkopie bis Phase 4: Worker `viet-trainer-v2` (nur statische Assets) unter `https://viet-trainer-v2.alex-rettig.workers.dev/viet-trainer/`. Deploy-Ordner außerhalb des Repos mit `wrangler.jsonc` (`assets.directory` → Ordner mit `viet-trainer/` = `dist/` und `_redirects`). `wrangler pages project create` legt seit wrangler 4.15x stattdessen einen Worker an – nicht verwenden.
+Testkopie (erledigt – nur bis zum Release gebraucht): Worker `viet-trainer-v2` (nur statische Assets) unter `https://viet-trainer-v2.alex-rettig.workers.dev/viet-trainer/`. Deploy-Ordner außerhalb des Repos mit `wrangler.jsonc` (`assets.directory` → Ordner mit `viet-trainer/` = `dist/` und `_redirects`). `wrangler pages project create` legt seit wrangler 4.15x stattdessen einen Worker an – nicht verwenden.
 
 Kein `python` im Bash-Tool aufrufen: Auf diesem Rechner ist `python` ein Microsoft-Store-Stub, der hängt. Die Python-Skripte in `scripts/` (ElevenLabs/Trim) sind Altbestand; neue Audios gibt es nicht (Abo gekündigt).
 

@@ -33,7 +33,7 @@
   - UI-Klänge (WebAudio-Synthese über den Player-Kontext) und Haptik-Tick (iOS-18-switch, Feature-Detection), beide in den Einstellungen abschaltbar. Alte Spielstände bekommen Zähler aus dem Fortschritt nachgetragen.
   - Subagenten: fliessband ×4 (Haiku: pron ×2, Tags Wörter, Tags Sätze), builder ×2 (Sonnet: Spielmodi; Sprachführer + Prüfmodus), pruefer (Opus).
   - pruefer-Review: 1 Mangel (Satzbau bot Synonyme als Ablenker an, z. B. chờ/đợi „warten“, bố/cha „Vater“) und 5 Kleinigkeiten (Garantie der makellosen Truhe ging beim späteren Öffnen verloren; Challenge-XP zählten nicht fürs Tagesziel; erste Aufgabe einer neuen Woche fiel in die Basis; Haptik bei Paaren außerhalb der Geste; Test fürs Nachtragen alter Stände fehlte) – alle behoben, mit Tests (je per Mutation gegengeprüft), Nachprüfung ohne offene Mängel. Eigener Fund vorher: Anrede-Wörter als Satzbau-Ablenker (Hallo. = Chào bà./Chào ông.).
-- **Phase 4/4 – Illustrationen, Animationen und Release: gebaut und geprüft, Release ausstehend** (2026-11-04, Opus 5.5 hoch). Icon, Übergänge und Regionsszenen waren vorgezogen.
+- **Phase 4/4 – Illustrationen, Animationen und Release: live seit 2026-11-05, iPhone-Abnahme ausstehend** (2026-11-04, Opus 5.5 hoch). Icon, Übergänge und Regionsszenen waren vorgezogen.
   - Etappen-Vignetten: 33 flache Motive (`StageVignette.svelte`) neben den Pfad-Knoten mit Titel; gesperrt grau, die aktuelle wiegt sich. Alle Motive bei Tag und Nacht groß und in Pfadgröße angesehen, Pfad in Pro-Max- und SE-Maßen.
   - Splash: 12 iOS-Startbilder (gleiche Komposition wie das Icon, `scripts/icons.ts`), nicht im Precache. Inline-Skript setzt nachts vor dem ersten Bild das Nachtthema.
   - Ablösung v13: Der SW lädt offene Fenster der alten App nach dem Übernehmen einmal neu. Lokal nachgestellt (v13 aus `main` installiert → Server auf `dist/` → Update): v2 erscheint nach ~3 s von selbst, `viet-trainer-v13` gelöscht, alte start_url und Audios offline. Dabei gefunden und behoben: Neuladen innerhalb von `waitUntil` blockierte sich selbst.
@@ -41,11 +41,25 @@
   - Tests: 204 Vitest (neu: Vignetten, Startbilder, Nachtskript), 7 Playwright WebKit (neu: App-Kill mitten in der Session, Export/Import, Offline mit allen 808 Audios); neue Tests per Mutation gegengeprüft.
   - Deploy: `.github/workflows/pages.yml` (check, test, build → Pages). README und SESSION.md auf v2.
   - Subagenten: pruefer (Opus). Befunde: Release-Voraussetzungen in GitHub fehlen noch (siehe unten), PROGRESS nicht nachgeführt, Titel gesperrter Vignetten unter AA-Kontrast bei Tag → behoben (`--ink-muted`).
-- **Nächste Schritte (Release, nur mit Alex' Freigabe):**
-  1. Repo-Secret `VITE_PUSH_TOKEN` setzen (Wert aus `push.env`, per Pipe).
-  2. Pages-Quelle auf „GitHub Actions“ umstellen – **vor** dem Push, sonst veröffentlicht Pages das rohe `main` (lädt `/src/main.ts`).
-  3. Commit „Phase 4“, `main` per Fast-Forward auf `v2`, Push → Workflow baut und deployt.
-  4. Live prüfen (sw.js, Precache, App), dann Alex' iPhone-Abnahme: P4-01 (Qualität), P4-02 (installierte v13 wird v2), P4-03 (Flugmodus), P4-04 (Definition of Done inkl. Push morgens/abends).
+- **Release (2026-11-05, Alex: „Ja, Release“):**
+  - Repo-Secret `VITE_PUSH_TOKEN` per Pipe gesetzt.
+  - Pages-Quelle von „Branch main“ (legacy) auf „GitHub Actions“ umgestellt, vor dem Push.
+  - `main` per Fast-Forward auf `v2` (`47e803e`) gesetzt und gepusht. `v2` liegt weiter nur lokal.
+  - Workflow `Pages` grün: check, test, build, deploy.
+  - Live geprüft:
+    - `index.html` ist gebaut, mit 12 Startbild-Links und Nachtskript.
+    - `sw.js` hat 830 Precache-Einträge, davon 826 eindeutig: Icons und Manifest stehen doppelt, workbox legt sie trotzdem nur einmal ab. Darunter sind 808 Audios.
+    - Alle 842 Precache- und Startbild-URLs antworten mit 200.
+    - Push-URL und Token stecken im Bundle. Die Einstellungen zeigen „Nur aus der installierten App“ statt „nicht eingerichtet“.
+    - In Edge mit 440×956 startet die App mit sich aufbauender Szene. Der SW installiert alle 826 Dateien, wird aktiv und kontrolliert die Seite.
+- **Nächste Schritte:**
+  1. Alex' iPhone-Abnahme, danach `tests.json` nachführen:
+     - P4-01: Qualität.
+     - P4-02: Die installierte v13 wird von selbst zu v2. Das neue Icon kommt erst nach erneutem „Zum Home-Bildschirm“.
+     - P4-03: Flugmodus.
+     - P4-04: Definition of Done inklusive Push morgens und abends.
+  2. pruefer erneut für P4-06.
+  3. Optional, nur nach Rückfrage: Test-Worker `viet-trainer-v2` löschen. Er wird nicht mehr gebraucht.
 
 ## Phase 2 – Ergebnis
 
