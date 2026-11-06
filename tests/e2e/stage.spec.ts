@@ -60,16 +60,18 @@ test('Training: jeder Modus ist wählbar und lässt sich lösen', async ({ page 
   }
   await page.getByRole('button', { name: 'Fertig' }).click();
 
-  const modes: { focus: string; kind: string }[] = [
-    { focus: 'pairs', kind: 'pairs' },
-    { focus: 'build', kind: 'build' },
-    { focus: 'dictation', kind: 'build' },
-    { focus: 'tone', kind: 'tone' },
+  const modes: { focus: string; title: string; kind: string }[] = [
+    { focus: 'pairs', title: 'Paare gegen die Uhr', kind: 'pairs' },
+    { focus: 'build', title: 'Satzbau', kind: 'build' },
+    { focus: 'dictation', title: 'Hör-Diktat', kind: 'build' },
+    { focus: 'tone', title: 'Ton-Ninja', kind: 'tone' },
   ];
   for (const m of modes) {
     await page.getByRole('button', { name: 'Training', exact: true }).click();
+    // Karussell: erst die Karte in die Mitte holen (Punkt darunter), dann antippen
+    await page.getByRole('button', { name: `Zu ${m.title}` }).click();
     const card = page.locator(`[data-focus="${m.focus}"]`);
-    await expect(card).toBeVisible();
+    await expect(card).toHaveClass(/current/);
     if (await card.isDisabled()) continue; // dafür ist in Etappe 1 noch zu wenig gelernt
     await card.click();
     const play = page.locator('main.play');

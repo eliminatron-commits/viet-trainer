@@ -2,13 +2,13 @@
   import Button from '../lib/components/Button.svelte';
   import { arrivingByTab } from '../lib/motion';
   import { game, today } from '../lib/game.svelte';
-  import { focusInfo, learnedKeys, PAIR_COUNT, PAIRS_SECONDS, type TrainingFocus } from '../lib/logic/session';
+  import { learnedKeys, type TrainingFocus } from '../lib/logic/session';
   import type { PlantInfo } from '../lib/logic/field';
   import { isDue } from '../lib/logic/srs';
-  import { ripple } from '../lib/ripple';
+  import ModeCarousel, { type CardTone } from './training/ModeCarousel.svelte';
   import RiceField from './training/RiceField.svelte';
 
-  let { onstart }: { onstart: (verbsOnly: boolean, focus: TrainingFocus) => void } = $props();
+  let { onstart }: { onstart: (verbsOnly: boolean, focus: TrainingFocus, card?: CardTone) => void } = $props();
 
   let verbsOnly = $state(false);
   const day = today();
@@ -24,46 +24,6 @@
   let info = $state<PlantInfo | null>(null);
   /** was sich seit dem letzten Blick aufs Feld getan hat */
   let report = $state<string | null>(null);
-
-  type Focus = Exclude<TrainingFocus, 'mixed'>;
-  interface Mode {
-    focus: Focus;
-    title: string;
-    text: string;
-    need: string;
-    tone: 'lantern' | 'yellow' | 'sea' | 'lotus';
-  }
-  const modes: Mode[] = [
-    {
-      focus: 'pairs',
-      title: 'Paare gegen die Uhr',
-      text: `${PAIR_COUNT} Wörter, ${PAIRS_SECONDS} Sekunden: finde die Paare, bevor die Zeit abläuft.`,
-      need: `Dafür brauchst du mindestens ${PAIR_COUNT} gelernte Wörter.`,
-      tone: 'lantern',
-    },
-    {
-      focus: 'build',
-      title: 'Satzbau',
-      text: 'Lege den vietnamesischen Satz aus Wortkacheln.',
-      need: 'Dafür brauchst du mindestens einen gelernten Satz.',
-      tone: 'yellow',
-    },
-    {
-      focus: 'dictation',
-      title: 'Hör-Diktat',
-      text: 'Hör den Satz und lege ihn aus Wortkacheln.',
-      need: 'Dafür brauchst du mindestens einen gelernten Satz.',
-      tone: 'sea',
-    },
-    {
-      focus: 'tone',
-      title: 'Ton-Ninja',
-      text: 'Welche Schreibweise hast du gehört? Die Möglichkeiten unterscheiden sich nur im Ton.',
-      need: 'Dafür brauchst du gelernte Wörter.',
-      tone: 'lotus',
-    },
-  ];
-  const available = $derived(Object.fromEntries(modes.map((m) => [m.focus, focusInfo(game.save, m.focus).available])) as Record<Focus, boolean>);
 </script>
 
 <main class="training" class:arrive={arrivingByTab()}>
@@ -100,32 +60,7 @@
     </div>
   </section>
 
-  {#each modes as m (m.focus)}
-    <button class="mode {m.tone} pick" data-focus={m.focus} disabled={!available[m.focus]} onclick={() => onstart(false, m.focus)} use:ripple>
-      <svg viewBox="0 0 40 40" width="40" height="40" aria-hidden="true">
-        {#if m.focus === 'pairs'}
-          <rect x="3" y="9" width="17" height="22" rx="5" fill="var(--surface)" />
-          <rect x="20" y="9" width="17" height="22" rx="5" fill="var(--yellow)" />
-        {:else if m.focus === 'build'}
-          <rect x="2" y="6" width="14" height="12" rx="4" fill="var(--surface)" />
-          <rect x="18" y="6" width="20" height="12" rx="4" fill="var(--red)" />
-          <rect x="2" y="22" width="22" height="12" rx="4" fill="var(--yellow)" />
-          <rect x="26" y="22" width="12" height="12" rx="4" fill="var(--surface)" />
-        {:else if m.focus === 'dictation'}
-          <circle cx="20" cy="20" r="18" fill="var(--sun-halo)" />
-          <circle cx="20" cy="20" r="12" fill="var(--yellow)" />
-          <circle cx="20" cy="20" r="4.5" fill="var(--red)" />
-        {:else}
-          <rect x="4" y="12" width="32" height="24" rx="8" fill="var(--surface)" />
-          <path d="M14 8 24 2l-2.5 9z" fill="var(--red)" />
-          <circle cx="20" cy="24" r="5" fill="var(--yellow)" />
-        {/if}
-      </svg>
-      <h2>{m.title}</h2>
-      <p>{m.text}</p>
-      {#if !available[m.focus]}<p class="hint">{m.need}</p>{/if}
-    </button>
-  {/each}
+  <ModeCarousel onstart={(focus, tone) => onstart(false, focus, tone)} />
 </main>
 
 <style>
@@ -194,58 +129,6 @@
     margin-top: 6px;
   }
 
-  /* Modus-Karten: flache Flächen aus den Tokens */
-  .mode {
-    display: grid;
-    justify-items: start;
-    gap: 6px;
-    width: 100%;
-    padding: 22px;
-    border: 0;
-    border-radius: var(--radius-card);
-    box-shadow: var(--shadow-card);
-    color: var(--ink);
-    text-align: left;
-    font: inherit;
-    position: relative;
-    overflow: hidden;
-  }
-  .mode h2 {
-    font-size: var(--fs-h2);
-    font-weight: 800;
-    line-height: 1.15;
-  }
-  .lotus {
-    background: var(--lotus);
-  }
-  .lantern {
-    background: var(--lantern);
-  }
-  .sea {
-    background: var(--sea);
-  }
-  .yellow {
-    background: var(--tone-yellow);
-  }
-  .pick {
-    cursor: pointer;
-    transition: transform var(--dur-fast) var(--ease-out);
-  }
-  .pick:active:not(:disabled) {
-    transform: scale(0.97);
-  }
-  .pick:disabled {
-    background: var(--disabled-bg);
-    color: var(--disabled-ink);
-    box-shadow: inset 0 0 0 2px var(--paper-2);
-    cursor: default;
-  }
-  .pick:disabled svg {
-    opacity: 0.45;
-  }
-  .mode :global(.btn) {
-    margin-top: 6px;
-  }
   .hint {
     font-weight: 600;
     font-size: var(--fs-small);

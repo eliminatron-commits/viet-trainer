@@ -16,8 +16,9 @@
   import SettingsScreen from './screens/SettingsScreen.svelte';
   import StageScreen from './screens/StageScreen.svelte';
   import TrainingScreen from './screens/TrainingScreen.svelte';
+  import type { CardTone } from './screens/training/ModeCarousel.svelte';
 
-  type Screen = { name: 'tabs' } | { name: 'stage'; stage: Stage } | { name: 'play'; mode: PlayMode } | { name: 'settings' } | { name: 'review' };
+  type Screen = { name: 'tabs' } | { name: 'stage'; stage: Stage } | { name: 'play'; mode: PlayMode; card?: CardTone } | { name: 'settings' } | { name: 'review' };
 
   let tab = $state<Tab>('path');
   let screen = $state<Screen>({ name: 'tabs' });
@@ -31,9 +32,10 @@
       scrollTo(0, 0);
       screen = next;
     }, motion);
-  const start = (mode: PlayMode) => {
+  /** Startet eine Runde – als Kreis vom Tippunkt, oder aus einer Modus-Karte, die in ihrer Farbe zur Übung wächst (morph). */
+  const start = (mode: PlayMode, card?: CardTone) => {
     playRun++;
-    go({ name: 'play', mode }, 'reveal');
+    go({ name: 'play', mode, card }, card ? 'morph-open' : 'reveal');
   };
 
   // Tabs gleiten in Richtung des gewählten Tabs (Reihenfolge wie in der Pill-Navigation).
@@ -63,7 +65,7 @@
   {#if tab === 'path'}
     <PathScreen onopen={(stage) => go({ name: 'stage', stage }, 'morph-open')} />
   {:else if tab === 'training'}
-    <TrainingScreen onstart={(verbsOnly, focus) => start({ kind: 'training', verbsOnly, focus })} />
+    <TrainingScreen onstart={(verbsOnly, focus, card) => start({ kind: 'training', verbsOnly, focus }, card)} />
   {:else if tab === 'profile'}
     <ProfileScreen onsettings={() => go({ name: 'settings' }, 'push')} />
   {:else}
@@ -82,6 +84,7 @@
   {#key playRun}
     <Play
       mode={screen.mode}
+      card={screen.card}
       onexit={() => go({ name: 'tabs' }, 'sheet-down')}
       onboss={(stage) => start({ kind: 'boss', stage })}
     />

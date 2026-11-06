@@ -50,8 +50,14 @@
   import ListenView from './ListenView.svelte';
   import PairsView, { type PairsResult } from './PairsView.svelte';
   import RoundRewards from './RoundRewards.svelte';
+  import type { CardTone } from '../training/ModeCarousel.svelte';
 
-  let { mode, onexit, onboss }: { mode: PlayMode; onexit: () => void; onboss: (stage: Stage) => void } = $props();
+  /**
+   * `card`: aus dieser Modus-Karte gestartet – die Ansicht ist das Gegenstück der wachsenden Karte (stage-card) und
+   * geht in deren Farbe auf: ein Schleier in der Kartenfarbe blendet aus und gibt die Übung frei.
+   */
+  let { mode, card, onexit, onboss }: { mode: PlayMode; card?: CardTone; onexit: () => void; onboss: (stage: Stage) => void } = $props();
+  const CARD_COLOR: Record<CardTone, string> = { lantern: 'var(--lantern)', yellow: 'var(--tone-yellow)', sea: 'var(--sea)', lotus: 'var(--lotus)' };
 
   function build(): Task[] {
     if (mode.kind === 'stage') return buildStageSession(mode.stage, game.save, today());
@@ -216,7 +222,12 @@
   }
 </script>
 
-<main class="play" data-task-kind={task?.kind} data-answer={answer} data-outcome={outcome}>
+<main
+  class="play"
+  class:grown={!!card}
+  style:view-transition-name={card ? 'stage-card' : undefined}
+  style:--from={card ? CARD_COLOR[card] : undefined}
+  data-task-kind={task?.kind} data-answer={answer} data-outcome={outcome}>
   {#if outcome}
     <section class="result">
       <div class="result-scene">
@@ -385,6 +396,29 @@
     flex-direction: column;
     gap: 16px;
     background: var(--paper);
+    position: relative;
+    isolation: isolate;
+  }
+  /* Aus einer Modus-Karte gestartet: Schleier in der Kartenfarbe, der im wachsenden Fenster ausblendet */
+  .play.grown::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 30;
+    background: var(--from);
+    pointer-events: none;
+    animation: grow-veil 420ms ease-out 160ms both;
+  }
+  @keyframes grow-veil {
+    to {
+      opacity: 0;
+      visibility: hidden;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .play.grown::before {
+      display: none;
+    }
   }
   .bar {
     position: relative;

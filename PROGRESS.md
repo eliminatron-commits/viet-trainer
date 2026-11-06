@@ -150,7 +150,16 @@
     - Antippen: die Pflanze hüpft, das Info-Feld zeigt Wort, Übersetzung und Zustand („durstig seit gestern“, „reif · in 6 Tagen wieder gießen“); Wasser zieht Ringe. Leben: Böen laufen als Welle (`loop-gust`), Wasser glitzert, nachts Glühwürmchen.
     - Geprüft in Edge bei 440×956 (Tag und Nacht) und 375×667: Ruhe, Aufbau, Antippen, Nur Verben, Gießen in Echtzeit per CDP-Screencast; reduzierte Bewegung zeigt sofort den Endstand ohne Tropfen, die Meldung bleibt. Keine Konsolenfehler, kein seitliches Scrollen. Bei 375×667 liegt der Knopf unter der Falz (Seite scrollt), bei 440×956 nicht.
     - check grün, 230 Vitest grün (neu: `tests/field.test.ts`, 6 Mutationen machen ihn rot), Playwright 7/7 grün.
-- **Nächste Schritte:** Alex das Reisfeld zeigen, danach Phase 5 Punkt 7 (Modus-Karussell im Training). Sonst offen: P1-06 (Prototyp im LAN, `pending-alex`).
+  - Live seit `321aad4`.
+  - **Punkt 7 erledigt (2026-11-06), Modus-Karussell** (`training/ModeCarousel.svelte`, `training/ModeMotif.svelte`, `training/motion-loop.ts`, `logic/carousel.ts`), ersetzt die vier Modus-Karten:
+    - Karten zum Wischen mit Einrasten in der Mitte, Nachbarn lugen hervor, Punkte darunter. Nur die mittlere Karte lebt; Antippen einer Nachbarkarte holt sie in die Mitte, Antippen der mittleren startet. Nach der Übung steht das Karussell wieder auf derselben Karte.
+    - Motive: Paare leuchten auf, schnappen zusammen und verblassen, unten läuft die Zeit ab. Satzbau-Kacheln springen aus der Streuung in die Satzleiste. Beim Hör-Diktat pulsiert die Klangscheibe, die Wörter erscheinen einzeln. Beim Ton-Ninja fliegen Tonzeichen kreiselnd aufs a.
+    - Die Motive zeigen nur Gelerntes (kurze Wörter, zwei verschiedene kurze Sätze); ohne passenden Inhalt bleiben die Kacheln leer. Gesperrte Karten und reduzierte Bewegung zeigen eine ruhige Pose.
+    - Start: Die Karte wächst per `morph-open` zum Vollbild, die Übung geht in der Kartenfarbe auf (Schleier blendet aus). Der erste Versuch ohne Schleier wirkte matschig (halbdurchsichtige orange Karte über heller Session).
+    - Gefunden und behoben: Beim Wechsel lagen zwei Tonzeichen kurz übereinander und bildeten ein rotes X (wie „falsch“). Jetzt fliegt das vorige los, sobald das nächste startet; gemessen über die ganze Schleife keine Überdeckung, die alte Zeitfolge fällt bei derselben Messung durch.
+    - Geprüft in Edge bei 440×956 (Tag und Nacht) und 375×667: jede Karte Bild für Bild (Web-Animations-Zeit fest gesetzt), Wachsen in Echtzeit per CDP-Screencast, Rückkehr, Einrasten beim Wischen, leerer Spielstand, reduzierte Bewegung (Motive stehen, kein Übergang, kein Schleier). Keine Konsolenfehler, kein seitliches Scrollen.
+    - check grün, 233 Vitest grün (neu: `tests/carousel.test.ts`, 6 Mutationen machen ihn rot), Playwright 7/7 grün (Trainingstest holt die Karte erst per Punkt in die Mitte).
+- **Nächste Schritte:** Alex das Modus-Karussell zeigen, danach Phase 5 Punkt 8 (Sprachführer „Orte statt Kacheln“). Sonst offen: P1-06 (Prototyp im LAN, `pending-alex`).
 
 ## Phase 2 – Ergebnis
 
