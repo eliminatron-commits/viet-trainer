@@ -33,7 +33,7 @@
   - UI-Klänge (WebAudio-Synthese über den Player-Kontext) und Haptik-Tick (iOS-18-switch, Feature-Detection), beide in den Einstellungen abschaltbar. Alte Spielstände bekommen Zähler aus dem Fortschritt nachgetragen.
   - Subagenten: fliessband ×4 (Haiku: pron ×2, Tags Wörter, Tags Sätze), builder ×2 (Sonnet: Spielmodi; Sprachführer + Prüfmodus), pruefer (Opus).
   - pruefer-Review: 1 Mangel (Satzbau bot Synonyme als Ablenker an, z. B. chờ/đợi „warten“, bố/cha „Vater“) und 5 Kleinigkeiten (Garantie der makellosen Truhe ging beim späteren Öffnen verloren; Challenge-XP zählten nicht fürs Tagesziel; erste Aufgabe einer neuen Woche fiel in die Basis; Haptik bei Paaren außerhalb der Geste; Test fürs Nachtragen alter Stände fehlte) – alle behoben, mit Tests (je per Mutation gegengeprüft), Nachprüfung ohne offene Mängel. Eigener Fund vorher: Anrede-Wörter als Satzbau-Ablenker (Hallo. = Chào bà./Chào ông.).
-- **Phase 4/4 – Illustrationen, Animationen und Release: live seit 2026-11-05, iPhone-Abnahme ausstehend** (2026-11-04, Opus 5.5 hoch). Icon, Übergänge und Regionsszenen waren vorgezogen.
+- **Phase 4/4 – Illustrationen, Animationen und Release: abgeschlossen** (2026-11-06, Opus 5.5 hoch; live seit 2026-11-05). Icon, Übergänge und Regionsszenen waren vorgezogen. Von Alex auf dem iPhone abgenommen (2026-11-06: „Alles geprüft, passt“).
   - Etappen-Vignetten: 33 flache Motive (`StageVignette.svelte`) neben den Pfad-Knoten mit Titel; gesperrt grau, die aktuelle wiegt sich. Alle Motive bei Tag und Nacht groß und in Pfadgröße angesehen, Pfad in Pro-Max- und SE-Maßen.
   - Splash: 12 iOS-Startbilder (gleiche Komposition wie das Icon, `scripts/icons.ts`), nicht im Precache. Inline-Skript setzt nachts vor dem ersten Bild das Nachtthema.
   - Ablösung v13: Der SW lädt offene Fenster der alten App nach dem Übernehmen einmal neu. Lokal nachgestellt (v13 aus `main` installiert → Server auf `dist/` → Update): v2 erscheint nach ~3 s von selbst, `viet-trainer-v13` gelöscht, alte start_url und Audios offline. Dabei gefunden und behoben: Neuladen innerhalb von `waitUntil` blockierte sich selbst.
@@ -79,20 +79,18 @@
   - **Eigentliche Ursache:** Auf Alex' iPhone läuft die installierte **Testkopie** (`viet-trainer-v2.alex-rettig.workers.dev`, siehe P2-06 und „Offene Punkte“). Releases gehen nur nach GitHub Pages, die Testkopie bekommt seit dem Release keine Updates mehr. Der Hinweis kam früher, weil damals auf die Testkopie deployt wurde.
   - Weg für Alex: In der Testkopie „Exportieren (JSON)“ und in „Dateien“ sichern. Dann in Safari `https://eliminatron-commits.github.io/viet-trainer/` öffnen → „Zum Home-Bildschirm“. In der neuen App „Importieren …“ und Erinnerungen neu einschalten. Danach das Testkopie-Icon löschen; ihr Push-Abo verwirft der Worker beim nächsten 404/410 selbst.
   - Erledigt (2026-11-06): Alex hat umgezogen und läuft jetzt auf der echten App. Test-Worker `viet-trainer-v2` auf seinen Wunsch gelöscht (404). Push-Worker und Live-App antworten weiter.
+  - Auf dem iPhone bestätigt (2026-11-06, erstes echtes Update auf `beb4f25`): „Neue Version verfügbar“ kam bei der Rückkehr in die App, nach „Aktualisieren“ zeigt die Versionszeile „06.11.2026, 15:19 · beb4f25“.
 - **Lernpfad ohne Vignetten (2026-11-06, Alex: „die kleinen symbole und text neben den levels wirkt unausgereift … nicht mehr so clean“):**
   - Der Knoten ist das Symbol, der Titel steht darunter (12 px, beim aktuellen 18 px wegen des Rings). Die Etappen stehen jetzt 28 statt 18 px auseinander, damit jeder Titel klar zu seinem Knoten gehört.
-  - `StageVignette.svelte` ist damit ungenutzt (Test `vignette.test.ts` bleibt grün). Löschen nur nach Rückfrage.
+  - `StageVignette.svelte` und `tests/vignette.test.ts` auf Alex' Wunsch gelöscht (2026-11-06). In der Git-Historie bis `beb4f25` erhalten.
   - Geprüft in Edge bei 440×956, Tag und Nacht, offene und gesperrte Region:
     - Alle 33 Titel sind voll deckend. Kontrast mindestens 6,9 : 1 bei Tag und etwa 9 : 1 bei Nacht.
     - Etappe öffnen und schließen klappt, ohne neue Konsolenfehler.
     - check grün, 212 Vitest grün.
-- **Nächste Schritte:**
-  1. Alex' iPhone-Abnahme, danach `tests.json` nachführen:
-     - P4-01: Qualität.
-     - P4-02: Die installierte v13 wird von selbst zu v2. Das neue Icon kommt erst nach erneutem „Zum Home-Bildschirm“.
-     - P4-03: Flugmodus.
-     - P4-04: Definition of Done inklusive Push morgens und abends.
-  2. Beim nächsten Deploy auf dem iPhone prüfen, dass der Hinweis „Neue Version verfügbar“ schon bei der Rückkehr in die App kommt.
+- **iPhone-Abnahme (2026-11-06):**
+  - P4-01, P4-03 und P4-04 bestanden. Alex hat Qualität, Flugmodus, Erinnerungen morgens und abends und den Fortschritt nach dem Update geprüft: „Alles geprüft, passt“.
+  - P4-02 bestanden ohne iPhone-Prüfung. Alex hat kein Icon der alten App mehr. Der Wechsel v13 → v2 ist lokal nachgestellt (siehe oben).
+- **Nächste Schritte:** Alle vier Phasen sind abgeschlossen. Offen ist nur noch P1-06 (Prototyp im LAN, `pending-alex`). Neue Wünsche kommen nach „Ideen außerhalb des Umfangs“.
 
 ## Phase 2 – Ergebnis
 

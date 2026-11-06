@@ -43,10 +43,10 @@
       "phase": 4,
       "name": "Illustrationen, Animationen und Release",
       "tests": [
-        { "id": "P4-01", "desc": "Alle Qualitätskriterien auf dem iPhone geprüft (kein Safari-Chrome, keine Layout-Sprünge, 60 fps, Tap-Ziele ≥ 44 px, Start < 1,5 s warm, App-Kill verliert höchstens die laufende Aufgabe)", "check": "manuell (iPhone)", "status": "open" },
-        { "id": "P4-02", "desc": "Alte installierte App aktualisiert sich nach dem Deploy auf v2, alte Caches viet-trainer-v* sind entfernt", "check": "manuell (iPhone)", "status": "open" },
-        { "id": "P4-03", "desc": "Im Flugmodus sind alle Audios abspielbar", "check": "manuell (iPhone) + Playwright offline", "status": "open" },
-        { "id": "P4-04", "desc": "Definition of Done erfüllt (alte URL, Homescreen, offline, alle Inhalte/Modi/Belohnungen/Sprachführer, Push morgens+abends, Fortschritt übersteht Neustart/Update)", "check": "manuell", "status": "open" },
+        { "id": "P4-01", "desc": "Alle Qualitätskriterien auf dem iPhone geprüft (kein Safari-Chrome, keine Layout-Sprünge, 60 fps, Tap-Ziele ≥ 44 px, Start < 1,5 s warm, App-Kill verliert höchstens die laufende Aufgabe)", "check": "manuell (iPhone, 2026-11-06: Alex „Alles geprüft, passt“) + Edge-Messung im Produktions-Build", "status": "pass" },
+        { "id": "P4-02", "desc": "Alte installierte App aktualisiert sich nach dem Deploy auf v2, alte Caches viet-trainer-v* sind entfernt", "check": "auf dem iPhone nicht prüfbar (2026-11-06: kein Icon der alten App mehr); lokal nachgestellt: v13 aus main installiert → Server auf dist/ → v2 nach ~3 s, viet-trainer-v13 gelöscht, alte start_url und Audios offline", "status": "pass" },
+        { "id": "P4-03", "desc": "Im Flugmodus sind alle Audios abspielbar", "check": "manuell (iPhone, 2026-11-06: Stichprobe passt) + Playwright offline (alle 808 Audios)", "status": "pass" },
+        { "id": "P4-04", "desc": "Definition of Done erfüllt (alte URL, Homescreen, offline, alle Inhalte/Modi/Belohnungen/Sprachführer, Push morgens+abends, Fortschritt übersteht Neustart/Update)", "check": "manuell (2026-11-06: Alex „Alles geprüft, passt“, inkl. Push morgens und abends und Fortschritt nach dem Update auf beb4f25)", "status": "pass" },
         { "id": "P4-05", "desc": "Playwright: Kern-Flows (Etappe, Boss, Truhe, Sprachführer, Export/Import)", "check": "npx playwright test", "status": "pass" },
         { "id": "P4-06", "desc": "pruefer-Review ohne offene Mängel", "check": "Subagent pruefer", "status": "pass" }
       ]

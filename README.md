@@ -7,8 +7,8 @@ mit Erinnerungen am Morgen und am Abend. Deutschsprachige Oberfläche, Alltagssp
 
 ## Was drin ist
 
-- **Lernpfad als Reise durch Vietnam:** 5 Regionen (Đà Nẵng → Hội An → Huế → Hà Nội → Sài Gòn), 33 Etappen mit
-  eigener Vignette, jede endet mit einem Bosskampf. 538 Wörter, 270 Sätze, Anrede-Rollen – alle mit Audio.
+- **Lernpfad als Reise durch Vietnam:** 5 Regionen (Đà Nẵng → Hội An → Huế → Hà Nội → Sài Gòn), 33 Etappen,
+  jede endet mit einem Bosskampf. 538 Wörter, 270 Sätze, Anrede-Rollen – alle mit Audio.
 - **Wiederholung:** Leitner-System mit 5 Boxen (1/2/4/8/16 Tage), fällige Einheiten mischen sich in jede Runde.
 - **Spielmodi:** Übersetzen in beide Richtungen, Hören, Anreden, Paare gegen die Uhr, Satzbau, Hör-Diktat,
   Ton-Ninja; freies Training mit Moduswahl.
