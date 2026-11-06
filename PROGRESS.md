@@ -71,18 +71,26 @@
       - Innerhalb einer Minute nach der Suche per Knopf überspringt die Rückkehr die Suche.
       - Tag und Nacht ohne Konsolenfehler.
   - Für Alex einmalig: Die zuletzt live gegangene Version (`7ed930e`) kennt die Suche bei Rückkehr noch nicht. Nach dem nächsten Deploy die App einmal ganz schließen und neu öffnen; ab dann reicht die Rückkehr in die App.
+  - Live seit `ae5840c`. Alex sah danach weiter keinen Hinweis. In Playwright-WebKit nachgestellt, mit GitHub-Pages-Headern (`max-age=600`) und Build `7ed930e` als installierter Version:
+    - Rückkehr in die offene App: keine Suche, kein Hinweis.
+    - Echter Neustart: WebKit holt `sw.js` frisch (ca. 1 s nach dem Start, trotz `max-age`), und der Hinweis erscheint. Der Cache-Verdacht und ein Wettlauf mit workbox-window sind damit widerlegt.
+    - Mit `ae5840c` installiert findet schon die Rückkehr die neue Version. Wird die App geschlossen statt aktualisiert, übernimmt die wartende Version beim nächsten Start von selbst.
+    - Erste Folgerung „kein echter Neustart“ war falsch: Auch nach iPhone-Neustart kam kein Hinweis (2026-11-06).
+  - **Eigentliche Ursache:** Auf Alex' iPhone läuft die installierte **Testkopie** (`viet-trainer-v2.alex-rettig.workers.dev`, siehe P2-06 und „Offene Punkte“). Releases gehen nur nach GitHub Pages, die Testkopie bekommt seit dem Release keine Updates mehr. Der Hinweis kam früher, weil damals auf die Testkopie deployt wurde.
+  - Weg für Alex: In der Testkopie „Exportieren (JSON)“ und in „Dateien“ sichern. Dann in Safari `https://eliminatron-commits.github.io/viet-trainer/` öffnen → „Zum Home-Bildschirm“. In der neuen App „Importieren …“ und Erinnerungen neu einschalten. Danach das Testkopie-Icon löschen; ihr Push-Abo verwirft der Worker beim nächsten 404/410 selbst.
+  - Erledigt (2026-11-06): Alex hat umgezogen und läuft jetzt auf der echten App. Test-Worker `viet-trainer-v2` auf seinen Wunsch gelöscht (404). Push-Worker und Live-App antworten weiter.
 - **Nächste Schritte:**
   1. Alex' iPhone-Abnahme, danach `tests.json` nachführen:
      - P4-01: Qualität.
      - P4-02: Die installierte v13 wird von selbst zu v2. Das neue Icon kommt erst nach erneutem „Zum Home-Bildschirm“.
      - P4-03: Flugmodus.
      - P4-04: Definition of Done inklusive Push morgens und abends.
-  2. Optional, nur nach Rückfrage: Test-Worker `viet-trainer-v2` löschen. Er wird nicht mehr gebraucht.
+  2. Beim nächsten Deploy auf dem iPhone prüfen, dass der Hinweis „Neue Version verfügbar“ schon bei der Rückkehr in die App kommt.
 
 ## Phase 2 – Ergebnis
 
 - Logik in `src/lib/logic/` (srs, path, session, rewards), Screens in `src/screens/` (Lernpfad, Etappe, Play mit Intro/Quiz/Hören/Rollen/Boss/Training, Training, Profil, Einstellungen mit Push-Status, Zeiten, Test-Push, Export/Import).
-- Push: Worker `viet-trainer-push` (Cloudflare Free-Plan, KV `STATE`, Cron alle 5 min, VAPID/Token als Secrets), Client `src/lib/push.svelte.ts`, SW-Handler. Testkopie unter `https://viet-trainer-v2.alex-rettig.workers.dev/viet-trainer/` (Workers Static Assets statt Pages, weil wrangler Pages-Projekte nicht mehr anlegt).
+- Push: Worker `viet-trainer-push` (Cloudflare Free-Plan, KV `STATE`, Cron alle 5 min, VAPID/Token als Secrets), Client `src/lib/push.svelte.ts`, SW-Handler. Die Testkopie (`viet-trainer-v2`, Workers Static Assets) ist seit 2026-11-06 gelöscht.
 - Stil (Alex): durchgehend hell, Hör-Aufgaben mit flacher Klangscheibe (CLAUDE.md). Prototyp und Gecko gelöscht.
 - iPhone-Befunde behoben: Audio stumm (iOS-Stummschalter → Audio Session `playback`; Unlock bei touchend/click statt nur pointerdown), Lernpfad sprang nach Übergängen und lag unter der Statusleiste (Weiter-Karte nach oben, kein Auto-Scroll, Statusleisten-Fläche, Shared-Element-Morph nur Lernpfad ↔ Etappe).
 
@@ -104,7 +112,7 @@
 - Satz-Verteilung je Etappe ungleich (1–22), weil Sätze automatisch in die Etappe ihres letzten Wortes fallen. Für Sessions unkritisch (Wiederholungen mischen ein).
 - Altes Homescreen-Icon: iOS übernimmt ein neues Icon erst, wenn die App neu zum Home-Bildschirm hinzugefügt wird.
 - Playwright-WebKit unter Windows (WinCairo) stürzt bei View Transitions auf Quiz-Aufgaben ab → E2E läuft ohne View Transitions; Übergänge per Edge-Playwright in iPhone-Maßen prüfen (CLAUDE.md) und auf dem iPhone bestätigen lassen.
-- P1-06 (LAN-Dev-Server auf dem iPhone) nie separat bestätigt; die installierte Testkopie läuft auf Alex' iPhone (Push, Audio, Vollbild) – der LAN-Weg selbst ist ungeprüft.
+- P1-06 (LAN-Dev-Server auf dem iPhone) nie separat bestätigt; die installierte Testkopie lief bis 2026-11-06 auf Alex' iPhone (Push, Audio, Vollbild) – der LAN-Weg selbst ist ungeprüft.
 - Push-Token und VAPID-Keys existieren nur als wrangler-Secrets; für spätere Builds liegt das Token außerhalb des Repos in der Sitzungs-Scratchpad-Datei `push.env`. Geht es verloren: neues Token erzeugen, per `wrangler secret put PUSH_TOKEN` setzen, App neu bauen.
 - npm audit: 11 Meldungen (low/moderate) in Build-Abhängigkeiten von vite-plugin-pwa/workbox-build, nicht in der ausgelieferten App.
 - Push-Token steckt im ausgelieferten JS (Build-Env) – schützt nur gegen Zufallszugriffe.

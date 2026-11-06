@@ -21,7 +21,7 @@ Node liegt in `C:\Program Files\nodejs` und ist **nicht** auf dem PATH der Sitzu
 
 Push-Worker: in `worker/` `npx wrangler deploy` (Alex ist angemeldet; Konto Free-Plan). Secrets `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `PUSH_TOKEN` nur per `wrangler secret put/bulk` über Pipe. Die App braucht beim Build `VITE_PUSH_URL` (`https://viet-trainer-push.alex-rettig.workers.dev`) und `VITE_PUSH_TOKEN` aus der Umgebung – fehlen sie, zeigt die App „nicht eingerichtet“. Im Workflow kommt das Token aus dem Repo-Secret `VITE_PUSH_TOKEN` (gleicher Wert wie `PUSH_TOKEN`; neu setzen nur per Pipe an `gh secret set`). Achtung: `npx playwright test` baut `dist/` ohne diese Variablen neu.
 
-Testkopie (erledigt – nur bis zum Release gebraucht): Worker `viet-trainer-v2` (nur statische Assets) unter `https://viet-trainer-v2.alex-rettig.workers.dev/viet-trainer/`. Deploy-Ordner außerhalb des Repos mit `wrangler.jsonc` (`assets.directory` → Ordner mit `viet-trainer/` = `dist/` und `_redirects`). `wrangler pages project create` legt seit wrangler 4.15x stattdessen einen Worker an – nicht verwenden.
+Testkopie: Worker `viet-trainer-v2` am 2026-11-06 gelöscht (Alex lief versehentlich noch auf ihr und bekam darum keine Updates). Die einzige App ist die Live-Adresse; Alex' Homescreen-Icon zeigt seit 2026-11-06 dorthin. `wrangler pages project create` legt seit wrangler 4.15x statt eines Pages-Projekts einen Worker an – nicht verwenden.
 
 Kein `python` im Bash-Tool aufrufen: Auf diesem Rechner ist `python` ein Microsoft-Store-Stub, der hängt. Die Python-Skripte in `scripts/` (ElevenLabs/Trim) sind Altbestand; neue Audios gibt es nicht (Abo gekündigt).
 
