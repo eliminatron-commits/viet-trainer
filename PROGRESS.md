@@ -79,6 +79,13 @@
   - **Eigentliche Ursache:** Auf Alex' iPhone läuft die installierte **Testkopie** (`viet-trainer-v2.alex-rettig.workers.dev`, siehe P2-06 und „Offene Punkte“). Releases gehen nur nach GitHub Pages, die Testkopie bekommt seit dem Release keine Updates mehr. Der Hinweis kam früher, weil damals auf die Testkopie deployt wurde.
   - Weg für Alex: In der Testkopie „Exportieren (JSON)“ und in „Dateien“ sichern. Dann in Safari `https://eliminatron-commits.github.io/viet-trainer/` öffnen → „Zum Home-Bildschirm“. In der neuen App „Importieren …“ und Erinnerungen neu einschalten. Danach das Testkopie-Icon löschen; ihr Push-Abo verwirft der Worker beim nächsten 404/410 selbst.
   - Erledigt (2026-11-06): Alex hat umgezogen und läuft jetzt auf der echten App. Test-Worker `viet-trainer-v2` auf seinen Wunsch gelöscht (404). Push-Worker und Live-App antworten weiter.
+- **Lernpfad ohne Vignetten (2026-11-06, Alex: „die kleinen symbole und text neben den levels wirkt unausgereift … nicht mehr so clean“):**
+  - Der Knoten ist das Symbol, der Titel steht darunter (12 px, beim aktuellen 18 px wegen des Rings). Die Etappen stehen jetzt 28 statt 18 px auseinander, damit jeder Titel klar zu seinem Knoten gehört.
+  - `StageVignette.svelte` ist damit ungenutzt (Test `vignette.test.ts` bleibt grün). Löschen nur nach Rückfrage.
+  - Geprüft in Edge bei 440×956, Tag und Nacht, offene und gesperrte Region:
+    - Alle 33 Titel sind voll deckend. Kontrast mindestens 6,9 : 1 bei Tag und etwa 9 : 1 bei Nacht.
+    - Etappe öffnen und schließen klappt, ohne neue Konsolenfehler.
+    - check grün, 212 Vitest grün.
 - **Nächste Schritte:**
   1. Alex' iPhone-Abnahme, danach `tests.json` nachführen:
      - P4-01: Qualität.

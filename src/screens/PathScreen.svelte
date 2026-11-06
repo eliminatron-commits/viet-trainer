@@ -12,7 +12,6 @@
   import { game, today } from '../lib/game.svelte';
   import RegionHero, { REGION_TONE } from '../lib/illustrations/RegionHero.svelte';
   import RegionScene from '../lib/illustrations/RegionScene.svelte';
-  import StageVignette from '../lib/illustrations/StageVignette.svelte';
   import { currentStage, regionDone, stageLearned, stageStatus, stageWords } from '../lib/logic/path';
   import { currentStreak, levelInfo } from '../lib/logic/rewards';
   import Trau from '../lib/mascot/Trau.svelte';
@@ -131,11 +130,8 @@
                 <span>{n}</span>
               {/if}
             </button>
-            <!-- Vignette der Etappe auf der freien Seite des Knotens; gesperrte noch blass. -->
-            <div class="vig {x >= 0 ? 'left' : 'right'} {isCurrent ? 'current' : status}" aria-hidden="true">
-              <div class="vig-img"><StageVignette stage={stage.id} tone={REGION_TONE[region.id]} /></div>
-              <span>{stage.title}</span>
-            </div>
+            <!-- Der Knoten ist das Symbol, der Titel steht darunter (der Knopf nennt ihn schon für Vorleser). -->
+            <span class="label {isCurrent ? 'current' : status}" aria-hidden="true">{stage.title}</span>
           </li>
         {/each}
       </ol>
@@ -256,50 +252,36 @@
     margin: 0;
     padding: 0;
     display: grid;
-    gap: 18px;
+    gap: 28px;
   }
+  /* Knoten und Titel als eine Spalte: der Titel sitzt dicht unter seinem Knoten, die Etappen stehen weiter auseinander. */
   .node-row {
     position: relative;
     display: grid;
     justify-items: center;
-    gap: 14px;
+    gap: 12px;
     transform: translateX(var(--x));
   }
-  /* Vignette mit Titel neben dem Knoten (Knoten 68 px, Abstand 10 px); höchstens so hoch wie ein Pfad-Schritt. */
-  .vig {
-    position: absolute;
-    top: 50%;
-    width: 112px;
-    display: grid;
-    justify-items: center;
-    gap: 2px;
-    transform: translateY(-50%);
-    pointer-events: none;
-    text-align: center;
+  /* Platz für den pulsierenden Ring (bis 14 px) des aktuellen Knotens. */
+  .label.current {
+    margin-top: 6px;
   }
-  .vig.left {
-    right: calc(50% + 44px);
-  }
-  .vig.right {
-    left: calc(50% + 44px);
-  }
-  .vig span {
-    font-size: 12px;
+  .label {
+    max-width: 140px;
+    font-size: 13px;
     font-weight: 600;
-    line-height: 1.2;
+    line-height: 1.25;
+    text-align: center;
     color: var(--ink-2);
   }
-  .vig.locked .vig-img {
-    filter: grayscale(1);
-    opacity: 0.45;
+  .label.current {
+    color: var(--ink);
+    font-weight: 800;
   }
-  /* Gesperrt: die Vignette verblasst, der Titel bleibt lesbar (AA bei Tag und Nacht). */
-  .vig.locked span {
+  /* Gesperrt: leiser, aber lesbar (AA bei Tag und Nacht). */
+  .label.locked {
     color: var(--ink-muted);
     font-weight: 400;
-  }
-  .vig.current .vig-img {
-    animation: hero-bob 3.2s ease-in-out infinite alternate;
   }
   .node {
     width: 68px;
@@ -353,8 +335,7 @@
   }
   @media (prefers-reduced-motion: reduce) {
     .node.current,
-    .bob,
-    .vig.current .vig-img {
+    .bob {
       animation: none;
     }
   }
