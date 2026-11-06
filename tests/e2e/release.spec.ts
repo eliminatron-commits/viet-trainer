@@ -62,6 +62,8 @@ test('Fortschritt sichern: Export als Datei, Import stellt genau diesen Stand wi
   await first.getByRole('button', { name: 'Favorit', exact: true }).click();
   await expect(first.getByRole('button', { name: 'Favorit', exact: true })).toHaveAttribute('aria-pressed', 'true');
   const exported = await storedSave(page);
+  // Die Situation ist ein Vollbild ohne Navigation (wie die Etappe) – zurück zur Übersicht.
+  await page.getByRole('button', { name: 'Zurück' }).click();
 
   await openSettings(page);
   const [download] = await Promise.all([

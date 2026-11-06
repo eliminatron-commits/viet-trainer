@@ -16,12 +16,19 @@ test('Sprachführer: Situationen, Suche ohne Akzente und Favoriten über Neulade
   await page.goto('/viet-trainer/');
   await openPhrasebook(page);
 
-  // Übersicht: Situationskarten, ein Tipp öffnet die Liste der Situation.
+  // Übersicht: Situationen als Orte; ein Tipp öffnet die Situation als Vollbild mit eigener Suche, „Zurück“ führt zurück.
   await page.getByRole('button', { name: /^Restaurant/ }).click();
-  await expect(page.getByRole('heading', { name: 'Restaurant', level: 2 })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Restaurant', level: 1 })).toBeVisible();
   await expect(page.locator('li.item').first()).toBeVisible();
-  await page.getByRole('button', { name: 'Alle Situationen' }).click();
+  const count = page.locator('p.count');
+  const all = Number((await count.textContent())!.split(' ')[0]);
+  await page.getByRole('searchbox', { name: 'In Restaurant suchen' }).fill('com');
+  await expect(page.locator('li.item').first()).toContainText(/cơm/i);
+  expect(Number((await count.textContent())!.split(' ')[0])).toBeLessThan(all);
+  await page.getByRole('button', { name: 'Zurück' }).click();
+  await expect(page.getByRole('heading', { name: 'Sprachführer', level: 1 })).toBeVisible();
   await expect(page.locator('li.item')).toHaveCount(0);
+  await expect(page.locator('[data-situation]')).toHaveCount(10);
 
   // „cam on“ findet „cảm ơn“ (der genaue Treffer steht vorn).
   await page.getByRole('searchbox', { name: 'Suchen' }).fill('cam on');

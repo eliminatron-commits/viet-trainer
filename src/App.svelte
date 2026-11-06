@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import type { Stage } from './content/types';
+  import type { SituationTag, Stage } from './content/types';
   import { onAudioStatus, retry } from './lib/audio/player';
   import NewsToast from './lib/components/NewsToast.svelte';
   import PillNav, { type Tab } from './lib/components/PillNav.svelte';
@@ -10,6 +10,7 @@
   import { setThemeMode } from './lib/theme.svelte';
   import PathScreen from './screens/PathScreen.svelte';
   import PhrasebookScreen from './screens/PhrasebookScreen.svelte';
+  import SituationScreen from './screens/SituationScreen.svelte';
   import Play, { type PlayMode } from './screens/play/Play.svelte';
   import ProfileScreen from './screens/ProfileScreen.svelte';
   import ReviewScreen from './screens/ReviewScreen.svelte';
@@ -18,7 +19,7 @@
   import TrainingScreen from './screens/TrainingScreen.svelte';
   import type { CardTone } from './screens/training/ModeCarousel.svelte';
 
-  type Screen = { name: 'tabs' } | { name: 'stage'; stage: Stage } | { name: 'play'; mode: PlayMode; card?: CardTone } | { name: 'settings' } | { name: 'review' };
+  type Screen = { name: 'tabs' } | { name: 'stage'; stage: Stage } | { name: 'play'; mode: PlayMode; card?: CardTone } | { name: 'settings' } | { name: 'review' } | { name: 'situation'; tag: SituationTag };
 
   let tab = $state<Tab>('path');
   let screen = $state<Screen>({ name: 'tabs' });
@@ -69,7 +70,7 @@
   {:else if tab === 'profile'}
     <ProfileScreen onsettings={() => go({ name: 'settings' }, 'push')} />
   {:else}
-    <PhrasebookScreen />
+    <PhrasebookScreen onopen={(tag) => go({ name: 'situation', tag }, 'morph-open')} />
   {/if}
   <PillNav active={tab} onselect={selectTab} />
 {:else if screen.name === 'stage'}
@@ -89,6 +90,8 @@
       onboss={(stage) => start({ kind: 'boss', stage })}
     />
   {/key}
+{:else if screen.name === 'situation'}
+  <SituationScreen tag={screen.tag} onback={() => go({ name: 'tabs' }, 'morph-close')} />
 {:else if screen.name === 'settings'}
   <SettingsScreen onback={() => go({ name: 'tabs' }, 'pop')} onreview={() => go({ name: 'review' }, 'push')} />
 {:else}
@@ -96,8 +99,8 @@
 {/if}
 
 <!-- Fläche unter Uhr/Dynamic Island: gescrollter Inhalt verschwindet darunter statt die Statusleiste zu überlagern.
-     Die Etappen-Ansicht ist randlos farbig und braucht sie nicht. -->
-{#if screen.name !== 'stage'}
+     Etappe und Situation sind randlos farbig und brauchen sie nicht. -->
+{#if screen.name !== 'stage' && screen.name !== 'situation'}
   <div class="statusbar" aria-hidden="true"></div>
 {/if}
 

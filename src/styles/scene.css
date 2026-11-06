@@ -145,6 +145,74 @@
 .scene .loop-drip {
   animation: l-drip var(--t, 1.6s) ease-in var(--d, 0s) infinite;
 }
+/* Durchfahrt (Zug): von links ganz hinaus nach rechts ganz hinaus; ruhend steht das Element an seinem Platz im Bild */
+.scene .loop-pass {
+  animation: l-pass var(--t, 9s) linear var(--d, 0s) infinite;
+}
+@keyframes l-pass {
+  from {
+    transform: translateX(calc(var(--dist, 840px) / -2));
+  }
+  to {
+    transform: translateX(calc(var(--dist, 840px) / 2));
+  }
+}
+/* Dampf (Suppe, Tee): steigt auf, wird breiter und verweht */
+.scene .loop-steam {
+  animation: l-steam var(--t, 3.2s) ease-out var(--d, 0s) infinite;
+}
+/* Sprechblase: ploppt auf, bleibt, verschwindet – zwei um die halbe Dauer versetzte Blasen = Gespräch */
+.scene .loop-talk {
+  animation: l-talk var(--t, 4.4s) ease-out var(--d, 0s) infinite;
+}
+/* Zeile tippt sich von links ein, steht und verblasst (mit .origin-left) */
+.scene .loop-type {
+  animation: l-type var(--t, 6s) ease-out var(--d, 0s) infinite;
+}
+@keyframes l-steam {
+  from {
+    transform: translateY(0) scaleX(0.7);
+    opacity: 0;
+  }
+  30% {
+    opacity: 0.9;
+  }
+  to {
+    transform: translateY(calc(var(--rise, 26) * -1px)) scaleX(1.2);
+    opacity: 0;
+  }
+}
+@keyframes l-talk {
+  0%,
+  52%,
+  100% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  7% {
+    transform: scale(1.12);
+    opacity: 1;
+  }
+  11%,
+  44% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+@keyframes l-type {
+  0% {
+    transform: scaleX(0);
+  }
+  14%,
+  86% {
+    transform: scaleX(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scaleX(1);
+    opacity: 0;
+  }
+}
 @keyframes l-bob {
   from {
     transform: translateY(0) rotate(calc(var(--rot, 3) * -1deg));
