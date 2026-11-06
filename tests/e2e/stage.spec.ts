@@ -85,7 +85,7 @@ test('Training: jeder Modus ist wählbar und lässt sich lösen', async ({ page 
 
   // Gemischt: eine Runde Aufgaben beliebiger Art.
   await page.getByRole('button', { name: 'Training', exact: true }).click();
-  await page.getByRole('button', { name: 'Training starten' }).click();
+  await page.getByRole('button', { name: /^(Training starten|Feld gießen)$/ }).click();
   for (let i = 0; i < 12; i++) {
     await solveTask(page);
     await page.getByRole('button', { name: 'Weiter', exact: true }).click();

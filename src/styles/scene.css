@@ -128,6 +128,10 @@
 .scene .loop-ring {
   animation: l-ring var(--t, 2.6s) ease-out var(--d, 0s) infinite;
 }
+/* Böe: kurzer Windstoß (Scherung ab dem Fuß, mit .origin-bottom), dann Ruhe – Reihen versetzt = Welle übers Feld */
+.scene .loop-gust {
+  animation: l-gust var(--t, 8s) ease-in-out var(--d, 0s) infinite;
+}
 .scene .loop-twinkle {
   animation: l-twinkle var(--t, 2.2s) ease-in-out var(--d, 0s) infinite alternate;
 }
@@ -199,6 +203,19 @@
   }
   to {
     transform: skewY(calc(var(--rot, 6) * 1deg));
+  }
+}
+@keyframes l-gust {
+  0%,
+  32%,
+  100% {
+    transform: skewX(0deg);
+  }
+  10% {
+    transform: skewX(calc(var(--rot, 9) * -1deg));
+  }
+  21% {
+    transform: skewX(calc(var(--rot, 9) * 0.3deg));
   }
 }
 @keyframes l-twinkle {

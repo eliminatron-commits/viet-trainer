@@ -142,7 +142,15 @@
     - Pass: Einband, Blättern Bild für Bild, Wischen, Stempel antippen.
     - Keine Konsolenfehler, kein seitliches Scrollen.
     - check grün, 223 Vitest grün (neu: `tests/yard.test.ts` mit 3 Mutationen, `tests/passport.test.ts`).
-- **Nächste Schritte:** Alex Profil zeigen, danach Phase 5 Punkt 6 (Reisfeld im Training). Sonst offen: P1-06 (Prototyp im LAN, `pending-alex`).
+  - Alex hat Hof und Reisepass auf dem iPhone abgenommen (2026-11-06: „Passt so, weiter“).
+  - **Punkt 6 erledigt (2026-11-06), Reisfeld** (`training/RiceField.svelte`, `logic/field.ts`). Zählkarte und „Gemischt“ sind jetzt eine Karte „Dein Reisfeld“: Szene, Zahl, „x durstig · y reif“, Info-Feld, „Nur Verben“, Knopf („Feld gießen“, solange etwas fällig ist, sonst „Training starten“).
+    - Je gelernter Einheit eine Reispflanze, Wuchs nach SRS-Box (Setzling bis reif mit goldener Rispe). Fällige Pflanzen sind fahl und lassen Blätter und Rispen hängen.
+    - Die Pflanzen sind nach Wuchs sortiert (vorne Setzlinge, hinten das goldene Band) und stehen immer über das ganze Feld in vollen, versetzten Reihen; die Dichte passt sich der Anzahl an, auch wenn alles gelernt ist. Dadurch ziehen Pflanzen zwischen Besuchen um – bewusst, der erste Entwurf in Lernreihenfolge wirkte halb leer und bunt durcheinander.
+    - Kommt man zurück, zieht das Gießen als Welle von links nach rechts übers Feld: Tropfen fallen als Striche in jede gegossene Pflanze, sie richtet sich federnd auf und wächst, neue Setzlinge sprießen; das Info-Feld meldet „Seit deinem letzten Blick: n neu gepflanzt · n gegossen · n gewachsen“. Der Vergleichsstand liegt nur im Speicher (nach einem Neustart keine Animation).
+    - Antippen: die Pflanze hüpft, das Info-Feld zeigt Wort, Übersetzung und Zustand („durstig seit gestern“, „reif · in 6 Tagen wieder gießen“); Wasser zieht Ringe. Leben: Böen laufen als Welle (`loop-gust`), Wasser glitzert, nachts Glühwürmchen.
+    - Geprüft in Edge bei 440×956 (Tag und Nacht) und 375×667: Ruhe, Aufbau, Antippen, Nur Verben, Gießen in Echtzeit per CDP-Screencast; reduzierte Bewegung zeigt sofort den Endstand ohne Tropfen, die Meldung bleibt. Keine Konsolenfehler, kein seitliches Scrollen. Bei 375×667 liegt der Knopf unter der Falz (Seite scrollt), bei 440×956 nicht.
+    - check grün, 230 Vitest grün (neu: `tests/field.test.ts`, 6 Mutationen machen ihn rot), Playwright 7/7 grün.
+- **Nächste Schritte:** Alex das Reisfeld zeigen, danach Phase 5 Punkt 7 (Modus-Karussell im Training). Sonst offen: P1-06 (Prototyp im LAN, `pending-alex`).
 
 ## Phase 2 – Ergebnis
 
