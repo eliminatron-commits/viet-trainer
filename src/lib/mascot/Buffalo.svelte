@@ -1,11 +1,12 @@
 <script lang="ts" module>
-  export type Mood = 'idle' | 'happy' | 'sad' | 'cheer';
+  export type Mood = 'idle' | 'happy' | 'sad' | 'cheer' | 'sleep' | 'eat';
 </script>
 
 <script lang="ts">
   /**
    * Maskottchen Trâu (Wasserbüffel). Lebt dauerhaft (Atmen, Blinzeln, Ohren, Blick, Lotus) und reagiert:
-   * happy = Hüpfer mit ^^-Augen, sad = Kopf und Ohren hängen, cheer = Doppelhüpfer, Lotus dreht sich.
+   * happy = Hüpfer mit ^^-Augen, sad = Kopf und Ohren hängen, cheer = Doppelhüpfer, Lotus dreht sich,
+   * sleep = Augen zu, langsamer Atem, Kopf nickt, Ohren ruhen (Hof bei Nacht), eat = ^^-Augen, die Schnauze kaut.
    * Reaktionen spielen beim Einhängen bzw. Stimmungswechsel; `tappable` lässt ihn beim Antippen hüpfen.
    * Alles CSS an SVG-Gruppen (transform-box: view-box, Ursprünge in viewBox-Einheiten).
    * Er wächst mit dem Level (growth: 0 Kalb mit Hornstummeln und kleinem Körper, 1 jung, 2 ausgewachsen)
@@ -35,7 +36,7 @@
   const scaleAt = (x: number, y: number, k: number) => `translate(${x} ${y}) scale(${k}) translate(${-x} ${-y})`;
 
   let tapHop = $state(false);
-  const joyful = $derived(mood === 'happy' || mood === 'cheer' || tapHop);
+  const joyful = $derived(mood === 'happy' || mood === 'cheer' || mood === 'eat' || tapHop);
 
   function tap() {
     if (!tappable) return;
@@ -117,7 +118,10 @@
         </g>
       {/if}
       <!-- Augen -->
-      {#if joyful}
+      {#if mood === 'sleep' && !tapHop}
+        <path d="M71 88 Q82 99 93 88 Q82 94 71 88 Z" fill={C.dark} />
+        <path d="M107 88 Q118 99 129 88 Q118 94 107 88 Z" fill={C.dark} />
+      {:else if joyful}
         <path d="M71 93 Q82 77 93 93 Q82 85 71 93 Z" fill={C.dark} />
         <path d="M107 93 Q118 77 129 93 Q118 85 107 93 Z" fill={C.dark} />
       {:else}
@@ -140,16 +144,18 @@
         </g>
       {/if}
       {#if on.face}<Accessory id={on.face} />{/if}
-      <!-- Schnauze -->
-      <ellipse cx="100" cy="116" rx="30" ry="20" fill={C.muzzle} />
-      <ellipse cx="90" cy="114" rx="4" ry="5.5" fill={C.dark} />
-      <ellipse cx="110" cy="114" rx="4" ry="5.5" fill={C.dark} />
-      {#if joyful}
-        <path d="M88 123 Q100 140 112 123 Q100 129 88 123 Z" fill={C.dark} />
-        <path d="M95 129.5 Q100 135 105 129.5 Q100 131 95 129.5 Z" fill={C.ear} />
-      {:else}
-        <path d="M92 126 Q100 132 108 126 Q100 129 92 126 Z" fill={C.dark} />
-      {/if}
+      <!-- Schnauze (kaut beim Fressen) -->
+      <g class="muzzle">
+        <ellipse cx="100" cy="116" rx="30" ry="20" fill={C.muzzle} />
+        <ellipse cx="90" cy="114" rx="4" ry="5.5" fill={C.dark} />
+        <ellipse cx="110" cy="114" rx="4" ry="5.5" fill={C.dark} />
+        {#if joyful && mood !== 'eat'}
+          <path d="M88 123 Q100 140 112 123 Q100 129 88 123 Z" fill={C.dark} />
+          <path d="M95 129.5 Q100 135 105 129.5 Q100 131 95 129.5 Z" fill={C.ear} />
+        {:else}
+          <path d="M92 126 Q100 132 108 126 Q100 129 92 126 Z" fill={C.dark} />
+        {/if}
+      </g>
       <!-- Halstuch (das karierte Khăn rằn ersetzt es, Glöckchen und Blumenkette kommen darüber) -->
       {#if on.neck === 'khan-ran'}
         <Accessory id="khan-ran" />
@@ -231,6 +237,53 @@
   .sad .pupils {
     transform: translateY(2.5px);
     animation: none;
+  }
+  /* Schlafen: langsamer Atem, der Kopf nickt gesenkt, die Ohren ruhen. Antippen weckt ihn kurz (tap-hop). */
+  .sleep:not(.tap-hop) .body {
+    animation-duration: 6s;
+  }
+  .sleep:not(.tap-hop) .head {
+    animation: doze 6s ease-in-out infinite;
+  }
+  .sleep:not(.tap-hop) .ear-l {
+    animation: ear-rest-l 900ms var(--ease-out) forwards;
+  }
+  .sleep:not(.tap-hop) .ear-r {
+    animation: ear-rest-r 900ms var(--ease-out) forwards;
+  }
+  .sleep .lotus {
+    animation-duration: 9s;
+  }
+  /* Fressen: die Schnauze kaut. */
+  .muzzle {
+    transform-origin: 100px 104px;
+  }
+  .eat .muzzle {
+    animation: chew 420ms ease-in-out infinite;
+  }
+  @keyframes doze {
+    0%,
+    100% {
+      transform: translateY(4px) rotate(3deg);
+    }
+    50% {
+      transform: translateY(6.5px) rotate(3deg);
+    }
+  }
+  @keyframes ear-rest-l {
+    to {
+      transform: rotate(-26deg);
+    }
+  }
+  @keyframes ear-rest-r {
+    to {
+      transform: rotate(26deg);
+    }
+  }
+  @keyframes chew {
+    50% {
+      transform: scale(1.04, 0.9) translateY(1.5px);
+    }
   }
 
   @keyframes breathe {

@@ -8,6 +8,7 @@ import { completeStage, isDone } from './logic/path';
 import { activateBoost, addXp, applyShields, rollDay, XP_PER_CORRECT, xpMultiplier, type XpResult } from './logic/rewards';
 import { answerItem, markSeen } from './logic/srs';
 import { countTask, type TaskResult } from './logic/stats';
+import { feed } from './logic/yard';
 import { loadSave, openSaveStore, writeSave } from './storage/persist';
 import { dateKey, newSave, type ProgressKey, type ReviewVerdict, type SaveState, type Settings } from './storage/state';
 
@@ -170,6 +171,13 @@ export function useBoost(): boolean {
 export function toggleEquip(id: string): void {
   equip(game.save, id);
   persist();
+}
+
+/** Trâus Hof: füttern (einmal am Tag nach erreichtem Tagesziel). */
+export function feedTrau(): boolean {
+  const ok = feed(game.save, today());
+  if (ok) persist();
+  return ok;
 }
 
 export function toggleFavorite(id: ItemId): void {

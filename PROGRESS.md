@@ -124,7 +124,25 @@
       - Session in Edge Bild für Bild; reduzierte Bewegung zeigt direkt die Rückseite.
       - check grün, 216 Vitest grün (neu: `tests/tones.test.ts`, 2 Mutationen machen ihn rot).
       - Playwright 7/7 grün. Ein Lauf vorher war „Fortschritt sichern“ einmal rot; die Meldung ist nicht erhalten. Danach war der Test viermal grün, darunter ein ganzer Lauf. Ursache unbekannt: Bei erneutem Rot zuerst die Fehlermeldung sichern.
-- **Nächste Schritte:** Alex die Session zeigen (Reise und Lebendige Wörter), danach Phase 5 Punkt 4 (Trâus Hof). Sonst offen: P1-06 (Prototyp im LAN, `pending-alex`).
+  - Live seit `f7c4319`. Alex hat Route, Reise und Lebendige Wörter auf dem iPhone abgenommen (2026-11-06: „sieht gut aus“).
+  - **Punkt 4 erledigt (2026-11-06), Trâus Hof** (`profile/TrauYard.svelte`, `illustrations/YardScene.svelte`, `logic/yard.ts`):
+    - Szene mit Stelzenhaus, Reisterrassen, Bananenstaude und Heuhaufen. Nachts leuchten die Fenster, Glühwürmchen fliegen.
+    - Neue Stimmungen für Trâu: `sleep` und `eat`.
+    - Streicheln bringt Herzen. Nachts schläft Trâu (Zzz) und wacht beim Antippen kurz auf.
+    - Füttern: Gras gibt es einmal am Tag nach erreichtem Tagesziel, im neuen Spielstandfeld `yard` (alte Stände werden ergänzt).
+    - Die Kleiderkiste liegt jetzt direkt unter dem Hof, damit man Trâu beim Anziehen sieht; darunter folgt das Level.
+  - **Punkt 5 erledigt (2026-11-06), Reisepass** (`profile/Passport.svelte`, `logic/passport.ts`), ersetzt die Erfolgsliste:
+    - Einband, dann Personalien und Souvenirs, dann vier Stempelseiten.
+    - Blättern dreht die Seiten um den Rücken. Stempel knallen beim Aufschlagen aufs Papier; angetippt erklären sie sich.
+    - Alex' Einwand (2026-11-06): „das hast du gut lesbar genannt?? … so dass es in der form sitzt“. „LOSGEFAHREN“ ragte über den Ring, und ich hatte das nachts trotzdem lesbar genannt.
+      - Behoben: Titel und Datum sitzen als Block mittig, die Schrift folgt dem längsten Wort und der Stempelbreite, Titel aus drei Wörtern werden kleiner, das Rechteck ist höher.
+      - Gemessen: alle 22 Stempel bei 440 und 375 px, Tag und Nacht, gerade gestellt gegen die innerste Fläche jeder Form, mit 4 Einheiten Luft. Die Gegenprobe mit zu großer Schrift fällt durch.
+  - Geprüft in Edge bei 440×956 und 375×667, Tag und Nacht:
+    - Hof: Gras, Füttern, Streicheln, Schlafen, Wecken, Anziehen.
+    - Pass: Einband, Blättern Bild für Bild, Wischen, Stempel antippen.
+    - Keine Konsolenfehler, kein seitliches Scrollen.
+    - check grün, 223 Vitest grün (neu: `tests/yard.test.ts` mit 3 Mutationen, `tests/passport.test.ts`).
+- **Nächste Schritte:** Alex Profil zeigen, danach Phase 5 Punkt 6 (Reisfeld im Training). Sonst offen: P1-06 (Prototyp im LAN, `pending-alex`).
 
 ## Phase 2 – Ergebnis
 

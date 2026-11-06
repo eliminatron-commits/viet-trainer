@@ -105,6 +105,8 @@ export interface SaveState {
   /** Prüfmodus-Urteile der Muttersprachlerin. */
   review: Partial<Record<ItemId, ReviewVerdict>>;
   settings: Settings;
+  /** Trâus Hof: zuletzt gefüttert (einmal am Tag, nach erreichtem Tagesziel) und wie oft insgesamt. */
+  yard: { fedOn: DateKey | null; fed: number };
 }
 
 export const SAVE_VERSION = 1;
@@ -145,6 +147,7 @@ export function newSave(now: Date = new Date()): SaveState {
     favorites: [],
     review: {},
     settings: { morning: '08:00', evening: '20:00', sound: true, haptics: true, theme: 'auto' },
+    yard: { fedOn: null, fed: 0 },
   };
 }
 

@@ -5,13 +5,14 @@
   import RewardIcon from '../lib/components/RewardIcon.svelte';
   import { game, today, toggleEquip, useBoost } from '../lib/game.svelte';
   import { ACCESSORIES } from '../lib/logic/accessories';
-  import { ACHIEVEMENTS, metricValue } from '../lib/logic/achievements';
+  import { ACHIEVEMENTS } from '../lib/logic/achievements';
   import { CHALLENGE_XP, challenge, challengeProgress } from '../lib/logic/challenges';
   import { boostActive, currentStreak, GROWTH_LEVELS, growthOf, levelInfo, MAX_SHIELDS } from '../lib/logic/rewards';
   import { learnedKeys } from '../lib/logic/session';
   import AccessoryIcon from '../lib/mascot/AccessoryIcon.svelte';
-  import Trau from '../lib/mascot/Trau.svelte';
   import { arrivingByTab } from '../lib/motion';
+  import Passport from './profile/Passport.svelte';
+  import TrauYard from './profile/TrauYard.svelte';
 
   let { onsettings }: { onsettings: () => void } = $props();
 
@@ -40,7 +41,12 @@
     'Trâu ist ausgewachsen.',
   ];
 
+  /** Vietnamesische Namen (Nón lá, Khăn rằn) erkennt man an Ton- und Vokalzeichen; die übrigen sind deutsch und werden getrennt. */
+  const isVietnamese = (name: string) => /[̛̣̀́̂̃̆̉]|đ/i.test(name.normalize('NFD'));
+
   let chestOpen = $state(false);
+  /** Kleiderwechsel: Trâu freut sich im Hof. */
+  let dressed = $state(0);
 
   function boost() {
     if (useBoost()) now = new Date();
@@ -48,8 +54,46 @@
 </script>
 
 <main class="profile" class:arrive={arrivingByTab()}>
+  <!-- Trâus Hof: streicheln, füttern, nachts schläft er. Die Kleiderkiste liegt direkt darunter, damit man ihn beim
+       Anziehen sieht; danach Level. -->
+  <TrauYard {dressed} />
+
+  <section class="closet" aria-labelledby="kleider">
+    <h2 id="kleider">Kleiderkiste <span class="count">{owned.size} / {ACCESSORIES.length}</span></h2>
+    <ul class="wardrobe">
+      {#each ACCESSORIES as a (a.id)}
+        <li>
+          {#if owned.has(a.id)}
+            <button
+              class="garment"
+              class:on={save.inventory.equipped.includes(a.id)}
+              aria-pressed={save.inventory.equipped.includes(a.id)}
+              onclick={() => {
+                toggleEquip(a.id);
+                dressed++;
+              }}
+            >
+              <AccessoryIcon id={a.id} size={38} />
+              <span lang={isVietnamese(a.name) ? 'vi' : 'de'}>{a.name}</span>
+            </button>
+          {:else}
+            <div class="garment locked" aria-label="Noch nicht gefunden">
+              <svg viewBox="0 0 46 46" width="38" height="38" aria-hidden="true"
+                ><circle cx="23" cy="23" r="18" fill="var(--paper-2)" /><path
+                  d="M18 18a5 5 0 1 1 7 4.6c-1.3.6-2 1.4-2 2.9V27h-3v-1.7c0-2.5 1.2-4 3-4.9a2 2 0 1 0-2.7-2.4zM20 30h3v3h-3z"
+                  fill="var(--ink-3)"
+                /></svg
+              >
+              <span>Truhe</span>
+            </div>
+          {/if}
+        </li>
+      {/each}
+    </ul>
+    <p class="small">Je Platz eines · antippen zum An- und Ablegen. Neues gibt es in Truhen.</p>
+  </section>
+
   <div class="hero">
-    <Trau size={[124, 146, 168][growth]} tappable />
     <h1>Level {info.level}</h1>
     <p class="growth">{GROWTH_TEXT[growth]}</p>
     <div class="meter" role="progressbar" aria-label="Fortschritt bis Level {info.level + 1}" aria-valuemin="0" aria-valuemax={info.span} aria-valuenow={info.into}>
@@ -100,38 +144,6 @@
     {/if}
   </section>
 
-  <section aria-labelledby="kleider">
-    <h2 id="kleider">Trâu einkleiden</h2>
-    <p class="small">{owned.size} von {ACCESSORIES.length} gesammelt · je Platz eines</p>
-    <ul class="wardrobe">
-      {#each ACCESSORIES as a (a.id)}
-        <li>
-          {#if owned.has(a.id)}
-            <button
-              class="garment"
-              class:on={save.inventory.equipped.includes(a.id)}
-              aria-pressed={save.inventory.equipped.includes(a.id)}
-              onclick={() => toggleEquip(a.id)}
-            >
-              <AccessoryIcon id={a.id} size={46} />
-              <span lang="vi">{a.name}</span>
-            </button>
-          {:else}
-            <div class="garment locked" aria-label="Noch nicht gefunden">
-              <svg viewBox="0 0 46 46" width="46" height="46" aria-hidden="true"
-                ><circle cx="23" cy="23" r="18" fill="var(--paper-2)" /><path
-                  d="M18 18a5 5 0 1 1 7 4.6c-1.3.6-2 1.4-2 2.9V27h-3v-1.7c0-2.5 1.2-4 3-4.9a2 2 0 1 0-2.7-2.4zM20 30h3v3h-3z"
-                  fill="var(--ink-3)"
-                /></svg
-              >
-              <span>Truhe</span>
-            </div>
-          {/if}
-        </li>
-      {/each}
-    </ul>
-  </section>
-
   <section aria-labelledby="woche">
     <h2 id="woche">Diese Woche</h2>
     <p class="small">Je Challenge +{CHALLENGE_XP} XP · neue ab Montag</p>
@@ -154,22 +166,11 @@
     </ul>
   </section>
 
+  <!-- Erfolge als Stempel im Reisepass, Souvenirs je geschaffter Region -->
   <section aria-labelledby="erfolge">
-    <h2 id="erfolge">Erfolge</h2>
-    <p class="small">{unlocked} von {ACHIEVEMENTS.length}</p>
-    <ul class="medals">
-      {#each ACHIEVEMENTS as a (a.id)}
-        {@const got = Boolean(save.achievements[a.id])}
-        <li class:got data-achievement={a.id}>
-          <RewardIcon kind="medal" size={40} locked={!got} />
-          <div>
-            <p class="row-title">{a.title}</p>
-            <p class="small">{a.desc}</p>
-            {#if !got}<p class="small count">{Math.min(metricValue(save, a.metric), a.goal)} / {a.goal}</p>{/if}
-          </div>
-        </li>
-      {/each}
-    </ul>
+    <h2 id="erfolge">Reisepass</h2>
+    <p class="small">{unlocked} von {ACHIEVEMENTS.length} Stempeln</p>
+    <Passport />
   </section>
 
   <Button variant="secondary" onclick={onsettings}>Einstellungen</Button>
@@ -190,6 +191,24 @@
     display: grid;
     justify-items: center;
     gap: 8px;
+  }
+  .hero > .meter {
+    justify-self: stretch;
+  }
+  /* Kleiderkiste kompakt unter dem Hof: zwei Reihen à vier. */
+  .closet {
+    gap: 8px;
+    margin-top: -8px;
+  }
+  .closet h2 {
+    font-size: 18px;
+    margin: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+  }
+  .closet h2 .count {
+    font-size: var(--fs-small);
   }
   h1 {
     font-size: var(--fs-h1);
@@ -270,7 +289,6 @@
   }
   .stock,
   .challenges,
-  .medals,
   .wardrobe {
     list-style: none;
     padding: 0;
@@ -302,30 +320,31 @@
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 8px;
   }
-  /* Schmale iPhones (SE): drei Spalten, damit „Sonnenbrille“ nicht bricht */
-  @media (max-width: 399px) {
-    .wardrobe {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-  }
   .garment {
     width: 100%;
-    min-height: 92px;
+    min-height: 74px;
     display: grid;
     justify-items: center;
     align-content: center;
-    gap: 4px;
-    padding: 10px 4px;
+    gap: 2px;
+    padding: 6px 2px;
     border: 3px solid transparent;
-    border-radius: 20px;
+    border-radius: 18px;
     background: var(--surface);
     color: var(--ink);
     font: inherit;
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 600;
+    line-height: 1.15;
     text-align: center;
+    hyphens: auto;
+    overflow-wrap: anywhere;
     box-shadow: var(--shadow-card);
     cursor: pointer;
+    transition: transform var(--dur-fast) var(--ease-out);
+  }
+  .garment:active:not(.locked) {
+    transform: scale(0.94);
   }
   .garment.on {
     border-color: var(--red);
@@ -353,30 +372,5 @@
     display: flex;
     justify-content: space-between;
     gap: 10px;
-  }
-  .medals {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 10px;
-  }
-  .medals li {
-    display: flex;
-    align-items: flex-start;
-    gap: 10px;
-    padding: 12px;
-    border-radius: 20px;
-    background: var(--paper-2);
-  }
-  .medals li.got {
-    background: var(--surface);
-    box-shadow: var(--shadow-card);
-  }
-  .medals .row-title {
-    font-size: 15px;
-    line-height: 1.2;
-  }
-  .medals .small {
-    font-size: 12.5px;
-    line-height: 1.3;
   }
 </style>
