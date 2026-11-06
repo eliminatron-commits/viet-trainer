@@ -130,3 +130,13 @@ export function tonesAllowed(vn: string): boolean {
     return allowedTones(letters).includes(toneOf(letters));
   });
 }
+
+/** Ein Buchstabe für „Lebendige Wörter“: vollständig, ohne Tonzeichen (Vokalzeichen bleiben) und sein Ton. */
+export interface Glyph {
+  full: string;
+  bare: string;
+  tone: Tone;
+}
+
+/** Jeder Buchstabe einzeln, Leerzeichen und Satzzeichen bleiben erhalten: erst ohne Ton zeigen, dann fällt der Ton. */
+export const glyphs = (vn: string): Glyph[] => parse(vn).map((l) => ({ full: build([l]), bare: l.text, tone: l.tone }));

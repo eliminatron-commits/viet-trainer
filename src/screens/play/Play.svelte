@@ -46,6 +46,7 @@
   import BuildView from './BuildView.svelte';
   import ChoiceView, { type Opt } from './ChoiceView.svelte';
   import IntroCard from './IntroCard.svelte';
+  import Journey from './Journey.svelte';
   import ListenView from './ListenView.svelte';
   import PairsView, { type PairsResult } from './PairsView.svelte';
   import RoundRewards from './RoundRewards.svelte';
@@ -261,15 +262,22 @@
       </div>
     </section>
   {:else if task}
+    <!-- Die Runde als Reise; Schließen und Leben liegen als Glasknöpfe auf der Szene. Neuer Trainingsblock = neue Reise. -->
     <header class="bar">
+      {#key blockStart}
+        <Journey
+          region={resultRegion}
+          done={position + (resolved ? 1 : 0)}
+          {position}
+          {total}
+          mood={resolved ? (correct ? 'happy' : 'sad') : 'idle'}
+        />
+      {/key}
       <button class="close" onclick={close} aria-label={mode.kind === 'training' ? 'Training beenden' : 'Session verlassen'}>
-        <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"
+        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"
           ><path d="m6.4 5 5.6 5.6L17.6 5 19 6.4 13.4 12l5.6 5.6-1.4 1.4-5.6-5.6L6.4 19 5 17.6l5.6-5.6L5 6.4z" fill="currentColor" /></svg
         >
       </button>
-      <div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax={total} aria-valuenow={position}>
-        <div class="fill" style:width="{(position / total) * 100}%"></div>
-      </div>
       {#if mode.kind === 'boss'}
         <div class="lives" role="img" aria-label="{lives} von {BOSS_LIVES} Leben">
           {#each { length: BOSS_LIVES } as _, i (i)}
@@ -379,42 +387,37 @@
     background: var(--paper);
   }
   .bar {
-    display: flex;
-    align-items: center;
-    gap: 10px;
+    position: relative;
   }
+  /* Knöpfe über der Szene: Glasfläche (--glass), Tap-Ziel 44 px. */
   .close {
+    position: absolute;
+    top: 8px;
+    left: 8px;
     width: var(--tap);
     height: var(--tap);
-    margin-left: -10px;
     border: 0;
-    background: transparent;
+    border-radius: 50%;
+    background: var(--glass);
     display: grid;
     place-items: center;
-    color: inherit;
-    opacity: 0.7;
+    color: var(--ink);
     cursor: pointer;
   }
-  .progress {
-    flex: 1;
-    height: 14px;
-    border-radius: 999px;
-    background: var(--paper-2);
-    overflow: hidden;
-  }
-  .fill {
-    height: 100%;
-    background: var(--sea);
-    border-radius: 999px;
-    transition: width var(--dur) var(--ease-out);
-  }
   .lives {
+    position: absolute;
+    top: 10px;
+    right: 10px;
     display: flex;
     gap: 2px;
+    padding: 7px 10px;
+    border-radius: var(--radius-pill);
+    background: var(--glass);
     color: var(--red);
   }
   .lives .lost {
-    color: var(--paper-2);
+    color: var(--ink-3);
+    opacity: 0.45;
   }
   .boss-title {
     font-weight: 800;

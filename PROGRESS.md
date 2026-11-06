@@ -90,7 +90,41 @@
 - **iPhone-Abnahme (2026-11-06):**
   - P4-01, P4-03 und P4-04 bestanden. Alex hat Qualität, Flugmodus, Erinnerungen morgens und abends und den Fortschritt nach dem Update geprüft: „Alles geprüft, passt“.
   - P4-02 bestanden ohne iPhone-Prüfung. Alex hat kein Icon der alten App mehr. Der Wechsel v13 → v2 ist lokal nachgestellt (siehe oben).
-- **Nächste Schritte:** Alle vier Phasen sind abgeschlossen. Offen ist nur noch P1-06 (Prototyp im LAN, `pending-alex`). Neue Wünsche kommen nach „Ideen außerhalb des Umfangs“.
+- **Route im Lernpfad (2026-11-06, Alex wählte die Idee aus der Liste):**
+  - Von Knoten zu Knoten führt eine gestrichelte S-Kurve (`PathRoute.svelte`, `logic/route.ts`). Sie verbindet die Knotenmitten und setzt unter Knoten und Titeln aus.
+  - Der zurückgelegte Weg ist rot, der Weg voraus leise. Jeder Abschnitt setzt sich beim Sichtbarwerden Strich für Strich zusammen. Die Striche zur aktuellen Etappe pulsieren als Welle auf ihren Knoten zu.
+  - Die Etappen stehen jetzt 52 statt 28 px auseinander, damit die Route Platz hat.
+  - Verworfen: Route vom Titel zum nächsten Knoten. In der knappen Höhe lagen die Striche fast waagerecht und wirkten wie Unterstreichungen.
+  - Geprüft in Edge bei 440×956 mit e01–e04 geschafft, Tag und Nacht:
+    - offene und gesperrte Region; Aufbau Bild für Bild;
+    - Etappe vom Knoten öffnen und zurück, ohne Konsolenfehler;
+    - reduzierte Bewegung: alles sofort sichtbar, keine Animation;
+    - kein seitliches Scrollen.
+  - check grün, 214 Vitest grün (neu: `tests/route.test.ts`, 4 Mutationen machen ihn rot).
+- **Phase 5 – Kreativ-Runde (ab 2026-11-06, Opus 5.5 hoch).** Alex: „die anderen Bereiche sind eher langweilig … mehr Kreativität mit Animationen, schönem Design so wie im Lernpfad“, und im Profil gebe es zu wenig zu tun. Er hat diese Ideen gewählt, Akzeptanz siehe `tests.json` Phase 5:
+  1. Lernpfad: Route (erledigt, P5-01).
+  2. Session „Etappe als Reise“: Trâu läuft oben auf einer Route zum Ziel, die Szene der Region baut sich mit dem Fortschritt auf (P5-02).
+  3. Session „Lebendige Wörter“: Buchstabe für Buchstabe, Tonzeichen fallen auf ihre Vokale, die Karte dreht sich (P5-03).
+  4. Profil „Trâus Hof“: streicheln, füttern, einkleiden, nachts schlafen (P5-04).
+  5. Profil „Reisepass“: Erfolge als Stempel, Souvenirs je Region (P5-05).
+  6. Training „Reisfeld“: eine Reispflanze je gelernter Einheit (P5-06).
+  7. Training „Modus-Karussell“ (P5-07).
+  8. Sprachführer „Orte statt Kacheln“ (P5-08).
+  - Reihenfolge: Session, Profil, Training, Sprachführer. Jeder Bereich wird bei 440×956 Tag und Nacht Bild für Bild geprüft und Alex gezeigt, bevor der nächste beginnt.
+  - **Punkt 2 erledigt (2026-11-06):** `play/Journey.svelte` ersetzt den Fortschrittsbalken und ist selbst die `progressbar`.
+    - Szene der Region als Band (84 px, auf kleinen iPhones 64 px) unter flachem Nebel. Der Nebel weicht mit Trâu zurück.
+    - Weg aus 22 Strichen (erreicht rot) zum Hero-Objekt der Region. Trâu (50 px) geht nach jeder gelösten Aufgabe weiter: hüpfend bei richtig, mit hängendem Kopf bei falsch.
+    - Schließen und Boss-Leben als Glasknöpfe auf der Szene. Ein neuer Trainingsblock startet eine neue Reise.
+    - Geprüft in Edge bei 440×956 (Tag und Nacht) und 375×667: Start, richtig, falsch, Boss mit Leben, Öffnen als Kreis. Keine Konsolenfehler, kein seitliches Scrollen. check, 214 Vitest und Playwright 7/7 grün.
+  - **Punkt 3 erledigt (2026-11-06):** `play/IntroCard.svelte` mit `glyphs()` in `logic/tones.ts`. Diese Datei war schon da (Ton-Ninja) und wurde nur ergänzt.
+    - Buchstaben erscheinen im Takt von 55 ms, zuerst ohne Ton. Jedes Tonzeichen fällt als rote Fläche (eigene Formen für sắc, huyền, hỏi, ngã, nặng), liegt 460 ms und verschmilzt mit der Schrift.
+    - Danach dreht sich die Karte: vorn Gelb mit dem Wort, hinten Weiß mit der Übersetzung. Der Dreh-Knopf dreht zurück.
+    - Geprüft:
+      - Temporäres Labor mit allen Tönen zu festen Zeiten, Tag und Nacht. Die Tonzeichen landen auf dem echten Akzent, auch über ê, unter â und bei i (punktloses ı). Das Endbild zeigt die reine Schrift. Das Labor ist danach wieder gelöscht.
+      - Session in Edge Bild für Bild; reduzierte Bewegung zeigt direkt die Rückseite.
+      - check grün, 216 Vitest grün (neu: `tests/tones.test.ts`, 2 Mutationen machen ihn rot).
+      - Playwright 7/7 grün. Ein Lauf vorher war „Fortschritt sichern“ einmal rot; die Meldung ist nicht erhalten. Danach war der Test viermal grün, darunter ein ganzer Lauf. Ursache unbekannt: Bei erneutem Rot zuerst die Fehlermeldung sichern.
+- **Nächste Schritte:** Alex die Session zeigen (Reise und Lebendige Wörter), danach Phase 5 Punkt 4 (Trâus Hof). Sonst offen: P1-06 (Prototyp im LAN, `pending-alex`).
 
 ## Phase 2 – Ergebnis
 
@@ -124,4 +158,4 @@
 
 ## Ideen außerhalb des Umfangs
 
-- Lernpfad mit gezeichneter Route zwischen den Etappen-Knoten.
+- (keine offen)

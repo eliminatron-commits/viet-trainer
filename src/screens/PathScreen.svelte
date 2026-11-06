@@ -8,6 +8,7 @@
   import { content } from '../content';
   import type { Stage } from '../content/types';
   import Card from '../lib/components/Card.svelte';
+  import PathRoute from '../lib/components/PathRoute.svelte';
   import ProgressRing from '../lib/components/ProgressRing.svelte';
   import { game, today } from '../lib/game.svelte';
   import RegionHero, { REGION_TONE } from '../lib/illustrations/RegionHero.svelte';
@@ -94,6 +95,11 @@
     {@const stages = content.stages.filter((s) => s.region === region.id)}
     {@const done = stages.filter((s) => save.stages[s.id]?.done).length}
     {@const firstIndex = content.stages.findIndex((s) => s.region === region.id)}
+    {@const stops = stages.map((s, i) => ({
+      x: offsets[i % offsets.length]!,
+      reached: stageStatus(save, s.id) !== 'locked',
+      current: s.id === current.id && stageStatus(save, s.id) === 'open',
+    }))}
     <section class="region" class:locked={stageStatus(save, stages[0]!.id) === 'locked'}>
       <Card tone={REGION_TONE[region.id]}>
         <div class="region-card">
@@ -106,14 +112,18 @@
         </div>
       </Card>
 
+      <!-- Die Route liegt hinter den Knoten und misst sie hier (data-route-*). -->
+      <div class="route-host">
+      <PathRoute {stops} />
       <ol class="path" aria-label="Lernpfad {region.name}">
         {#each stages as stage, i (stage.id)}
           {@const status = stageStatus(save, stage.id)}
           {@const isCurrent = stage.id === current.id && status === 'open'}
           {@const n = firstIndex + i + 1}
           {@const x = offsets[i % offsets.length]!}
-          <li class="node-row" style:--x="{x}px" data-current={isCurrent ? '' : undefined}>
+          <li class="node-row" style:--x="{x}px" data-current={isCurrent ? '' : undefined} data-route-row>
             <button
+              data-route-node
               class="node {isCurrent ? 'current' : status}"
               style:view-transition-name={!fromCard && opening === stage.id ? 'stage-card' : undefined}
               disabled={status === 'locked'}
@@ -131,10 +141,11 @@
               {/if}
             </button>
             <!-- Der Knoten ist das Symbol, der Titel steht darunter (der Knopf nennt ihn schon für Vorleser). -->
-            <span class="label {isCurrent ? 'current' : status}" aria-hidden="true">{stage.title}</span>
+            <span class="label {isCurrent ? 'current' : status}" aria-hidden="true" data-route-label>{stage.title}</span>
           </li>
         {/each}
       </ol>
+      </div>
     </section>
   {/each}
 </main>
@@ -247,12 +258,16 @@
   .region-text {
     padding: 16px 22px 22px;
   }
+  .route-host {
+    position: relative;
+  }
+  /* Zwischen Titel und nächstem Knoten läuft die Route – genug Raum für mehrere Striche. */
   .path {
     list-style: none;
     margin: 0;
     padding: 0;
     display: grid;
-    gap: 28px;
+    gap: 52px;
   }
   /* Knoten und Titel als eine Spalte: der Titel sitzt dicht unter seinem Knoten, die Etappen stehen weiter auseinander. */
   .node-row {
