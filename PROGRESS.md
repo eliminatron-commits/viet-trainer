@@ -228,7 +228,21 @@
       - Der Knopf unter dem Text ließ beim ersten Antippen alles darunter um 32 px springen. Jetzt sitzt die Lupe rechts, und das Info-Feld hat drei Zeilen Mindesthöhe (gemessen: 440 bleibt bei 81 px; bei 375 wächst es nur bei langen Sätzen um eine Zeile, wie vorher).
     - Geprüft in Edge bei 440×956 (Safe-Area 59) und 375×667, Tag und Nacht: Feld mit angetippter Pflanze, Wortkarte, Aufgabe der Gießrunde, „Feld gegossen“, Rückkehr mit Gießwelle, „Gießen unterbrochen“. Keine Konsolenfehler, kein seitliches Scrollen.
     - check grün, 253 Vitest grün (neu: `tests/diary.test.ts`, Gießrunde in `tests/session.test.ts`; 7 von 8 Mutationen machen sie rot, die achte – Tagebuch-Eintrag nach dem Anlegen nicht neu gelesen – ist in Svelte 5 harmlos und bleibt als Absicherung), Playwright 11/11 grün (neu: `tests/e2e/field.spec.ts`, Gegenprobe ohne Gießrunde rot).
-- **Nächste Schritte:** Alex Punkt 1 zeigen; live erst auf sein Wort (zusammen, damit das Tagebuch früh zählt). Danach Punkt 2 (Lückensatz, P6-03). Sonst offen: P1-06 (Prototyp im LAN, `pending-alex`).
+    - Live seit `d1a89bd` (2026-11-07); das Tagebuch zählt ab diesem Tag.
+  - **Punkt 2 erledigt (2026-11-07), Lückensatz (P6-03):**
+    - Neue Übung `gap`: ein gelernter Satz mit einer Lücke, darunter die Übersetzung und (wie im Satzbau) der Kontext; das fehlende Wort aus vier Kacheln wählen. Nach der Antwort steht das richtige Wort grün in der Lücke, die falsch getippte Kachel ist rot, dann spielt der ganze Satz (vorher kein Audio – geprüft: erst 198 ms nach der Antwort). „Wort für Wort“ öffnet die Satzlupe.
+    - Im Modus-Karussell als zweite Karte (Lotus, zwischen Paaren und Satzbau – vom Schwierigkeitsgrad her zwischen Wort-Quiz und Satzbau). Motiv: in der Satzleiste klafft eine Lücke, die richtige Kachel springt hinein, die anderen treten zurück. Im gemischten Quiz (Etappe, Boss, Training, Gießrunde) kommt der Lückensatz bei schon gelernten Sätzen dazu (Gewicht 2).
+    - Eindeutigkeit: Lücke nur bei echten Wörtern aus `sentence.words`, die im Satz einmal vorkommen; keine Anreden (die Übersetzung verliert, wen man anspricht) und keine Partikel. Ablenker: keine gleiche oder enthaltene Bedeutung, keine Bedeutung in der Übersetzung (auch gebeugt: „warten“ in „Ich warte“), nichts aus dem Satz, und keins aus dem **Wortfeld** der Lücke (`NEAR`, z. B. cần/phải/nên, thấy/xem/nhìn/trông, yêu/thương/thích, sợ/lo). Die Wortfelder sind nur ein Ausschluss, kein angezeigter Inhalt; die Verlobte kann weitere Fälle nennen.
+    - Gefunden und behoben:
+      - Satzleiste des Motivs war gelb (Grundregel des Satzbaus überschrieb die Farbe).
+      - Bei falscher Antwort stand das richtige Wort rot in der Lücke – las sich wie „falsch“; jetzt immer grün.
+      - Motiv zu klein mit leerem Band unten; vergrößert. Gemessen: die Kachel landet auf 0,5 px genau in der Lücke; breitester möglicher Satz 83 von 86 cqw, breiteste Kachelreihe 87,6 von 90 cqw.
+      - Lücke wuchs beim Füllen am Satzanfang (Großschreibung breiter); die Schreibung im Satz zählt jetzt mit – Breite vorher und nachher gleich (gemessen).
+      - Verfügbarkeit kostete beim ersten Öffnen des Trainings 95 ms (alle Sätze gelernt) und hätte den Tab-Wechsel ruckeln lassen; jetzt 23 ms (Prüfung ohne Mischen, Schreibungen vorab).
+    - Bekannt, wie bei allen Auswahl-Aufgaben: Bei 375×667 deckt die Rückmeldungsleiste die untere Kachelreihe; die Lösung steht hier zusätzlich in der Lücke.
+    - Geprüft in Edge bei 440×956 (Safe-Area 59) und 375×667, Tag und Nacht: Motiv Bild für Bild (0–5000 ms), Aufgabe, richtig, falsch; Echtzeit per CDP-Screencast (Motiv, Karte wächst in die Übung, Lücke füllt sich). Keine Konsolenfehler, kein seitliches Scrollen.
+    - check grün, 261 Vitest grün (Lückensatz über alle 270 Sätze und mehrere Seeds; 8 von 8 Mutationen machen die Tests rot), Playwright 12/12 grün (neu: `tests/e2e/gap.spec.ts`, Gegenprobe mit leerer Lücke rot).
+- **Nächste Schritte:** Alex Punkt 2 zeigen; live erst auf sein Wort. Danach Punkt 3 (Roller-Sprint, P6-04). Sonst offen: P1-06 (Prototyp im LAN, `pending-alex`).
 
 ## Phase 2 – Ergebnis
 

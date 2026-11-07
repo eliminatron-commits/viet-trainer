@@ -8,7 +8,7 @@
 <script lang="ts">
   import { onMount, tick } from 'svelte';
   import { game } from '../../lib/game.svelte';
-  import { centeredIndex, motifPairs, motifSentences } from '../../lib/logic/carousel';
+  import { centeredIndex, motifGap, motifPairs, motifSentences } from '../../lib/logic/carousel';
   import { focusInfo, PAIR_COUNT, PAIRS_SECONDS, type TrainingFocus } from '../../lib/logic/session';
   import { reducedMotion } from '../../lib/motion';
   import { ripple } from '../../lib/ripple';
@@ -39,6 +39,13 @@
       tone: 'lantern',
     },
     {
+      focus: 'gap',
+      title: 'Lückensatz',
+      text: 'Ein Wort fehlt im Satz: wähle es aus vier Kacheln.',
+      need: 'Dafür brauchst du mindestens einen gelernten Satz.',
+      tone: 'lotus',
+    },
+    {
       focus: 'build',
       title: 'Satzbau',
       text: 'Lege den vietnamesischen Satz aus Wortkacheln.',
@@ -63,6 +70,7 @@
   const available = $derived(Object.fromEntries(modes.map((m) => [m.focus, focusInfo(game.save, m.focus).available])) as Record<Focus, boolean>);
   const pairs = $derived(motifPairs(game.save));
   const sentences = $derived(motifSentences(game.save));
+  const gap = $derived(motifGap(game.save));
 
   let track: HTMLDivElement;
   const cards: HTMLButtonElement[] = [];
@@ -133,6 +141,7 @@
           playing={!still && visible && i === active && available[m.focus]}
           idle={!available[m.focus]}
           {pairs}
+          {gap}
           tiles={m.focus === 'build' ? sentences.build : m.focus === 'dictation' ? sentences.dictation : null}
         />
         <span class="body">

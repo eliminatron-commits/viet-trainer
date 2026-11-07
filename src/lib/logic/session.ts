@@ -10,9 +10,9 @@ import { baseForm, toneVariants, tonesAllowed, tonesOf } from './tones';
 export type Rng = () => number;
 export type ChoiceMode = 'vn2de' | 'de2vn' | 'listen';
 /** Alle Quiz-Arten, die quizTask erzeugen kann. */
-export type QuizMode = ChoiceMode | 'tone' | 'build' | 'dictation';
+export type QuizMode = ChoiceMode | 'tone' | 'build' | 'dictation' | 'gap';
 /** Training: gemischt oder nur ein Spielmodus. */
-export type TrainingFocus = 'mixed' | 'pairs' | 'build' | 'dictation' | 'tone';
+export type TrainingFocus = 'mixed' | 'pairs' | 'gap' | 'build' | 'dictation' | 'tone';
 export type Item = Word | Sentence;
 
 /** Kachel im Satzbau; `id` ist je Aufgabe eindeutig (Zielkacheln t0…, Ablenker x0…). */
@@ -43,7 +43,20 @@ export type Task =
       /** Satzzeichen am Ende des Satzes (nicht auf Kacheln). */
       closing: string;
     }
-  | { kind: 'tone'; key: WordId; word: Word; options: ToneOption[] };
+  | { kind: 'tone'; key: WordId; word: Word; options: ToneOption[] }
+  | {
+      kind: 'gap';
+      key: Sentence['id'];
+      item: Sentence;
+      /** das fehlende Wort (richtige Option) */
+      answer: Word;
+      /** Antwort und Ablenker, gemischt */
+      options: Word[];
+      /** Satz vor der Lücke, die Lücke (Schreibung wie im Satz) und danach – zusammen genau der Satz. */
+      before: string;
+      fill: string;
+      after: string;
+    };
 
 /** Quiz-Aufgaben je Session; Vorstellkarten neuer Wörter kommen hinzu. */
 export const SESSION_SIZE = 12;
@@ -55,15 +68,16 @@ export const TRAINING_BATCH = 12;
 export const PAIR_COUNT = 5;
 export const PAIRS_SECONDS = 40;
 /** Aufgaben je Trainingsblock, wenn nur ein Modus gespielt wird. */
-export const FOCUS_BATCH: Record<Exclude<TrainingFocus, 'mixed'>, number> = { pairs: 4, build: 8, dictation: 8, tone: 12 };
+export const FOCUS_BATCH: Record<Exclude<TrainingFocus, 'mixed'>, number> = { pairs: 4, gap: 10, build: 8, dictation: 8, tone: 12 };
 const DISTRACTOR_TILES = 2;
 const MAX_TONE_DISTRACTORS = 3;
 const BUILD_TILES = { min: 2, max: 10 };
 const MAX_PAIR_DE = 28;
+const GAP_DISTRACTORS = 3;
 
-/** Gewichte der zufälligen Modi (Wörter ca. 3:3:2:2, Sätze ca. 2:2:2:3:2). */
+/** Gewichte der zufälligen Modi (Wörter ca. 3:3:2:2, Sätze ca. 2:2:2:3:2, bei gelernten Sätzen dazu 2 Lückensatz). */
 const WORD_MODES: [QuizMode, number][] = [['vn2de', 3], ['de2vn', 3], ['listen', 2], ['tone', 2]];
-const SENTENCE_MODES: [QuizMode, number][] = [['vn2de', 2], ['de2vn', 2], ['listen', 2], ['build', 3], ['dictation', 2]];
+const SENTENCE_MODES: [QuizMode, number][] = [['vn2de', 2], ['de2vn', 2], ['listen', 2], ['build', 3], ['dictation', 2], ['gap', 2]];
 const wordById = new Map(content.words.map((w) => [w.id, w]));
 const sentenceById = new Map(content.sentences.map((s) => [s.id, s]));
 const roleById = new Map(content.roles.map((r) => [r.id, r]));
@@ -81,13 +95,14 @@ export function shuffle<T>(list: readonly T[], rng: Rng): T[] {
 const pick = <T>(list: readonly T[], rng: Rng): T => list[Math.floor(rng() * list.length)]!;
 
 /**
- * Lösung einer Aufgabe (null bei Vorstellkarten): Options-ID bei Auswahl, Rolle und Ton-Ninja;
+ * Lösung einer Aufgabe (null bei Vorstellkarten): Options-ID bei Auswahl, Rolle, Ton-Ninja und Lückensatz;
  * Satzbau/Diktat = Kachel-IDs der Zielfolge, Paare = Wort-IDs, jeweils durch Leerzeichen getrennt.
  */
 export function answerOf(task: Task): string | null {
   if (task.kind === 'choice') return task.item.id;
   if (task.kind === 'role') return task.answer.id;
   if (task.kind === 'tone') return task.word.id;
+  if (task.kind === 'gap') return task.answer.id;
   if (task.kind === 'build') return task.target.join(' ');
   if (task.kind === 'pairs') return task.words.map((w) => w.id).join(' ');
   return null;
@@ -216,7 +231,18 @@ const syllablesOf = (vn: string) => vn.trim().split(/\s+/).filter(Boolean);
  */
 export function sentenceTiles(sentence: Sentence): { tiles: string[]; closing: string } {
   const tokens = syllablesOf(sentence.vn);
-  const text = tokens.map((t) => t.replace(EDGE_PUNCT, '')).filter(Boolean);
+  return {
+    tiles: tileSpans(sentence).map((t) => t.text),
+    closing: (tokens[tokens.length - 1] ?? '').match(/[^\p{L}\p{N}]+$/u)?.[0] ?? '',
+  };
+}
+
+/** Kacheln eines Satzes samt Lage: erstes und letztes Token (Index in den durch Leerzeichen getrennten Tokens). */
+function tileSpans(sentence: Sentence): { text: string; from: number; to: number }[] {
+  const tokens = syllablesOf(sentence.vn);
+  // Token, die nur aus Satzzeichen bestehen (z. B. ein Gedankenstrich), sind keine Silben.
+  const at = tokens.flatMap((t, i) => (t.replace(EDGE_PUNCT, '') ? [i] : []));
+  const text = at.map((i) => tokens[i]!.replace(EDGE_PUNCT, ''));
   const lower = text.map((t) => t.toLowerCase());
   const multi = sentence.words
     .map((id) => wordById.get(id))
@@ -224,14 +250,14 @@ export function sentenceTiles(sentence: Sentence): { tiles: string[]; closing: s
     .map((w) => syllablesOf(w.vn.toLowerCase()))
     .filter((syl) => syl.length > 1)
     .sort((a, b) => b.length - a.length);
-  const tiles: string[] = [];
+  const spans: { text: string; from: number; to: number }[] = [];
   for (let i = 0; i < text.length; ) {
     const hit = multi.find((syl) => syl.every((s, k) => lower[i + k] === s));
     const n = hit ? hit.length : 1;
-    tiles.push(text.slice(i, i + n).join(' '));
+    spans.push({ text: text.slice(i, i + n).join(' '), from: at[i]!, to: at[i + n - 1]! });
     i += n;
   }
-  return { tiles, closing: (tokens[tokens.length - 1] ?? '').match(/[^\p{L}\p{N}]+$/u)?.[0] ?? '' };
+  return spans;
 }
 
 /** Baubar: 2–10 Zielkacheln. (Ob der Satz frei ist, prüft der Aufrufer mit isSentenceFree.) */
@@ -295,6 +321,182 @@ export function buildTask(sentence: Sentence, mode: 'build' | 'dictation', rng: 
   };
 }
 
+// --- Lückensatz -----------------------------------------------------------------------------------------------
+
+/** Kleinbuchstaben, Satzzeichen zu Leerzeichen, mit Rand-Leerzeichen – für Wortvergleiche in Übersetzungen. */
+const plain = (text: string) => ` ${text.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim()} `;
+const senseCache = new Map<WordId, string[]>();
+/** Bedeutungen in Vergleichsform (ohne Satzzeichen). */
+const senses = (w: Word): string[] => {
+  let m = senseCache.get(w.id);
+  if (!m) senseCache.set(w.id, (m = meanings(w).map((x) => plain(x).trim()).filter(Boolean)));
+  return m;
+};
+/** Zwei Bedeutungen kollidieren: gleich, oder die eine steckt in der anderen („warten“ / „auf jdn. warten“). */
+const clash = (a: string, b: string) => a === b || (a.length >= 4 && b.includes(a)) || (b.length >= 4 && a.includes(b));
+/**
+ * Steckt die Bedeutung (auch gebeugt) in der Übersetzung? Wörter ab 5 Buchstaben zählen schon mit ihrem Stamm
+ * („warten“ → „wart…“ in „Ich warte auf dich.“).
+ */
+const saidIn = (de: string, sense: string) =>
+  de.includes(` ${sense} `) || sense.split(' ').some((w) => w.length >= 5 && de.includes(` ${w.slice(0, -2)}`));
+
+/**
+ * Wortfelder: Wörter, die sich im Alltag oft vertreten, obwohl ihre Übersetzungen verschieden klingen („Em cần đi bệnh
+ * viện“ – mit „phải“ hieße es genauso „Ich muss ins Krankenhaus“). Sie sind nie Ablenker füreinander – ein
+ * Sicherheitsnetz zur Bedeutungsprüfung, kein Lerninhalt (wird nirgends angezeigt).
+ */
+const NEAR: readonly (readonly string[])[] = [
+  ['thấy', 'xem', 'nhìn', 'trông'],
+  ['nói', 'bảo', 'kể', 'khuyên'],
+  ['đi', 'đến', 'tới', 'về', 'ra', 'vào', 'lên', 'xuống', 'qua', 'rời', 'chạy', 'trở'],
+  ['lấy', 'mang', 'đưa', 'cầm', 'nhận', 'đón', 'chở', 'giữ', 'cho', 'gửi', 'mặc'],
+  ['yêu', 'thương', 'thích'],
+  ['biết', 'hiểu', 'quen', 'nhớ'],
+  ['muốn', 'định', 'thích', 'mong', 'ước', 'thèm'],
+  ['phải', 'cần', 'nên', 'được'],
+  ['làm', 'nấu'],
+  ['mở', 'bật'],
+  ['đóng', 'tắt', 'khóa'],
+  ['sống', 'ở'],
+  ['gặp', 'thăm', 'đón'],
+  ['hết', 'xong', 'thôi'],
+  ['mua', 'đặt', 'thuê'],
+  ['gọi', 'kêu', 'nhắn'],
+  ['nghỉ', 'ngủ', 'nằm'],
+  ['thử', 'cố'],
+  ['rửa', 'tắm', 'dọn'],
+  ['nghĩ', 'tin', 'đoán', 'chắc'],
+  ['trộm', 'cướp'],
+  ['sợ', 'lo'],
+  ['rất', 'lắm', 'quá', 'nhiều', 'khá', 'hơi', 'thật'],
+  ['đây', 'này', 'đó', 'kia'],
+  ['và', 'với', 'cùng'],
+  ['cơm', 'bữa', 'món'],
+  ['không', 'đừng'],
+  ['bây giờ', 'giờ', 'lúc', 'ngay', 'luôn'],
+  ['nhưng', 'hay', 'hoặc'],
+  ['vì', 'bởi', 'nên', 'để'],
+  ['cũng', 'nữa', 'vẫn', 'còn', 'thêm', 'lại'],
+  ['gì', 'sao', 'đâu', 'nào', 'bao nhiêu', 'ai'],
+];
+/** Gehören zwei Schreibungen (klein, Silben mit einem Leerzeichen) zu einem Wortfeld? */
+export const nearWords = (a: string, b: string) => NEAR.some((g) => g.includes(a) && g.includes(b));
+
+/**
+ * Mögliche Lücken eines Satzes: Kacheln (wie im Satzbau), die genau ein Wort aus `sentence.words` sind und im Satz nur
+ * einmal vorkommen. Keine Partikel (ihr „de“ ist eine Erklärung) und keine Anreden – wen man anspricht, verliert die
+ * Übersetzung, die Lücke wäre nicht eindeutig. Je Lücke: Text davor, die Lücke (Schreibung wie im Satz), danach.
+ */
+export function gapSpots(sentence: Sentence): { word: Word; before: string; fill: string; after: string }[] {
+  const tokens = syllablesOf(sentence.vn);
+  const spans = tileSpans(sentence);
+  if (spans.length < 2) return [];
+  const count = new Map<string, number>();
+  for (const t of spans) count.set(t.text.toLowerCase(), (count.get(t.text.toLowerCase()) ?? 0) + 1);
+  const own = sentence.words.map((id) => wordById.get(id)).filter((w): w is Word => !!w);
+  return spans.flatMap((t) => {
+    const lower = t.text.toLowerCase();
+    const word = own.find((w) => syllablesOf(w.vn.toLowerCase()).join(' ') === lower);
+    if (!word || word.kind !== 'word' || ADDRESS_WORDS.has(word.id) || count.get(lower) !== 1) return [];
+    const lead = tokens[t.from]!.match(/^[^\p{L}\p{N}]+/u)?.[0] ?? '';
+    const trail = tokens[t.to]!.match(/[^\p{L}\p{N}]+$/u)?.[0] ?? '';
+    // Satzzeichen mitten in einer mehrsilbigen Kachel gingen verloren – solche Stellen nicht als Lücke.
+    if (lead + t.text + trail !== tokens.slice(t.from, t.to + 1).join(' ')) return [];
+    const before = tokens.slice(0, t.from).join(' ') + (t.from > 0 ? ' ' : '') + lead;
+    const after = trail + (t.to < tokens.length - 1 ? ' ' : '') + tokens.slice(t.to + 1).join(' ');
+    return [{ word, before, fill: t.text, after }];
+  });
+}
+
+/** Schreibung in Vergleichsform (klein, Silben mit einem Leerzeichen) – einmal vorab berechnet. */
+const vnLower = new Map(content.words.map((w) => [w.id, syllablesOf(w.vn).join(' ').toLowerCase()]));
+const lowerVn = (w: Word) => vnLower.get(w.id) ?? syllablesOf(w.vn).join(' ').toLowerCase();
+
+/**
+ * Darf ein Wort Ablenker für diese Lücke sein? Echte Wörter (keine Partikel, keine Anreden), die im Satz nicht
+ * vorkommen und nie ebenso passen – keine Bedeutung gleich der des fehlenden Worts oder eines Satzworts, keine steckt
+ * in der Übersetzung, kein Wort aus dem Wortfeld des fehlenden.
+ */
+function distractorTest(sentence: Sentence, answer: Word): (w: Word) => boolean {
+  const tiles = sentenceTiles(sentence).tiles.map((t) => t.toLowerCase());
+  const inSentence = ` ${tiles.join(' ')} `;
+  const known = new Set(tiles);
+  const said = content.words
+    .filter((w) => w.id === answer.id || sentence.words.includes(w.id) || known.has(lowerVn(w)))
+    .flatMap(senses);
+  const de = plain(sentence.de);
+  const gap = lowerVn(answer);
+  return (w) => {
+    const lower = lowerVn(w);
+    if (w.kind !== 'word' || ADDRESS_WORDS.has(w.id) || lower === gap || inSentence.includes(` ${lower} `)) return false;
+    if (nearWords(gap, lower)) return false;
+    const own = senses(w);
+    return own.length > 0 && !own.some((m) => said.some((x) => clash(m, x)) || saidIn(de, m));
+  };
+}
+
+/** Ablenker für eine Lücke (siehe distractorTest), je Schreibung einer: gesehene Wörter, dann gleiche Wortart (Verb/kein Verb), dann etappennahe zuerst. */
+function gapDistractors(sentence: Sentence, answer: Word, rng: Rng, save?: SaveState): Word[] {
+  const fits = distractorTest(sentence, answer);
+  const home = stagePos.get(sentence.stage)!;
+  const rank = (w: Word) =>
+    (save && !save.items[w.id] ? 1000 : 0) +
+    (w.verb !== answer.verb ? 100 : 0) +
+    Math.abs(stagePos.get(w.stage)! - home) * 2 +
+    (stagePos.get(w.stage)! > home ? 1 : 0);
+  const taken = new Set<string>();
+  const picked: Word[] = [];
+  for (const w of shuffle(content.words, rng).sort((a, b) => rank(a) - rank(b))) {
+    if (picked.length === GAP_DISTRACTORS) break;
+    const lower = lowerVn(w);
+    if (taken.has(lower) || !fits(w)) continue;
+    taken.add(lower);
+    picked.push(w);
+  }
+  return picked;
+}
+
+/**
+ * Lückensatz: ein Satz mit einer Lücke, das fehlende Wort aus vier Kacheln wählen. Die Lücke trifft das schwächste
+ * Wort des Satzes (Gleichstand zufällig). Null, wenn der Satz keine eindeutige Lücke hat.
+ */
+export function gapTask(sentence: Sentence, rng: Rng, save?: SaveState): Task | null {
+  const spots = shuffle(gapSpots(sentence), rng).sort((a, b) => (save ? weakness(save, a.word.id) - weakness(save, b.word.id) : 0));
+  for (const spot of spots) {
+    const distractors = gapDistractors(sentence, spot.word, rng, save);
+    if (distractors.length < GAP_DISTRACTORS) continue;
+    return {
+      kind: 'gap',
+      key: sentence.id,
+      item: sentence,
+      answer: spot.word,
+      options: shuffle([spot.word, ...distractors], rng),
+      before: spot.before,
+      fill: spot.fill,
+      after: spot.after,
+    };
+  }
+  return null;
+}
+
+const gapCache = new Map<Sentence['id'], boolean>();
+/** Hat der Satz eine eindeutige Lücke? (hängt nur vom Inhalt ab, darum zwischengespeichert) */
+export function isGappable(sentence: Sentence): boolean {
+  let ok = gapCache.get(sentence.id);
+  if (ok === undefined) {
+    // wie gapTask, aber ohne Mischen und Sortieren: es reicht, drei verschiedene passende Ablenker zu finden
+    ok = gapSpots(sentence).some((spot) => {
+      const fits = distractorTest(sentence, spot.word);
+      const found = new Set<string>();
+      for (const w of content.words) if (fits(w) && found.add(lowerVn(w)).size === GAP_DISTRACTORS) return true;
+      return false;
+    });
+    gapCache.set(sentence.id, ok);
+  }
+  return ok;
+}
+
 // --- Paare unter Zeitdruck -------------------------------------------------------------------------------------
 
 /** Kachel-tauglich: kein Partikel (dessen „de“ ist eine Erklärung) und eine kurze Übersetzung. */
@@ -336,7 +538,7 @@ const wordsOfKeys = (keys: readonly string[]): Word[] => keys.flatMap((k) => wor
 
 /**
  * Quiz-Aufgabe zu einer Einheit; ohne Modus wird er zufällig gewählt (Wörter vn2de/de2vn/listen/tone,
- * Sätze vn2de/de2vn/listen/build/dictation – Satzbau und Diktat nur bei baubaren Sätzen). Mit `save`
+ * Sätze vn2de/de2vn/listen/build/dictation/gap – Satzbau und Diktat nur bei baubaren, Lückensatz nur bei gelernten Sätzen). Mit `save`
  * stammen Satzbau-Ablenker bevorzugt aus gesehenen Wörtern.
  */
 export function quizTask(key: ProgressKey, rng: Rng, mode?: QuizMode, save?: SaveState): Task {
@@ -348,13 +550,21 @@ export function quizTask(key: ProgressKey, rng: Rng, mode?: QuizMode, save?: Sav
   const item = (wordById.get(key as WordId) ?? sentenceById.get(key as Sentence['id']))!;
   const isWord = item.id.startsWith('w');
   const buildable = !isWord && isBuildable(item as Sentence) && (!save || isSentenceFree(save, item as Sentence));
-  const entries = (isWord ? WORD_MODES : SENTENCE_MODES).filter(([m]) => buildable || (m !== 'build' && m !== 'dictation'));
+  // Lückensatz nur bei schon gelernten Sätzen (ohne Spielstand nie).
+  const gappable =
+    !isWord && !!save && (save.items[item.id]?.right ?? 0) > 0 && isSentenceFree(save, item as Sentence) && isGappable(item as Sentence);
+  const entries = (isWord ? WORD_MODES : SENTENCE_MODES).filter(
+    ([m]) => (buildable || (m !== 'build' && m !== 'dictation')) && (gappable || m !== 'gap'),
+  );
   const m = mode ?? pickWeighted(entries, rng);
   if (m === 'tone' && isWord) {
     const t = toneTask(item as Word, rng);
     if (t) return t;
   } else if ((m === 'build' || m === 'dictation') && !isWord) {
     const t = buildTask(item as Sentence, m, rng, save);
+    if (t) return t;
+  } else if (m === 'gap' && !isWord) {
+    const t = gapTask(item as Sentence, rng, save);
     if (t) return t;
   }
   const choice: ChoiceMode = m === 'de2vn' || m === 'listen' ? m : 'vn2de';
@@ -477,6 +687,13 @@ const buildableLearned = (save: SaveState): Sentence[] =>
     return s && isSentenceFree(save, s) && isBuildable(s) ? [s] : [];
   });
 
+/** Gelernte, freie Sätze mit eindeutiger Lücke. */
+const gapLearned = (save: SaveState): Sentence[] =>
+  learnedKeys(save).flatMap((k) => {
+    const s = sentenceById.get(k as Sentence['id']);
+    return s && isSentenceFree(save, s) && isGappable(s) ? [s] : [];
+  });
+
 /** Gelernte Wörter, für die ein Ton-Ninja möglich ist. */
 const toneLearned = (save: SaveState): Word[] =>
   wordsOfKeys(learnedKeys(save)).filter((w) => toneTask(w, () => 0) !== null);
@@ -490,7 +707,7 @@ export function focusInfo(save: SaveState, focus: TrainingFocus): { available: b
     const ok = pairsTask(words) !== null;
     return { available: ok, count: words.length };
   }
-  const count = focus === 'tone' ? toneLearned(save).length : buildableLearned(save).length;
+  const count = focus === 'tone' ? toneLearned(save).length : focus === 'gap' ? gapLearned(save).length : buildableLearned(save).length;
   return { available: count > 0, count };
 }
 
@@ -519,7 +736,8 @@ function buildFocusBatch(
     return tasks;
   }
 
-  const pool: { id: string }[] = focus === 'tone' ? order(toneLearned(save)) : order(buildableLearned(save));
+  const pool: { id: string }[] =
+    focus === 'tone' ? order(toneLearned(save)) : focus === 'gap' ? order(gapLearned(save)) : order(buildableLearned(save));
   let guard = 0;
   while (pool.length > 0 && tasks.length < size && guard++ < size * 3) {
     const next = tasks.length === 0 || tasks.length % pool.length === 0 ? order(pool) : pool;
@@ -527,7 +745,9 @@ function buildFocusBatch(
     const t =
       focus === 'tone'
         ? toneTask(item as Word, rng)
-        : buildTask(item as Sentence, focus, rng, save);
+        : focus === 'gap'
+          ? gapTask(item as Sentence, rng, save)
+          : buildTask(item as Sentence, focus, rng, save);
     if (t) tasks.push(t);
   }
   return spread(tasks);

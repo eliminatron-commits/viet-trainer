@@ -62,6 +62,7 @@ test('Training: jeder Modus ist wählbar und lässt sich lösen', async ({ page 
 
   const modes: { focus: string; title: string; kind: string }[] = [
     { focus: 'pairs', title: 'Paare gegen die Uhr', kind: 'pairs' },
+    { focus: 'gap', title: 'Lückensatz', kind: 'gap' },
     { focus: 'build', title: 'Satzbau', kind: 'build' },
     { focus: 'dictation', title: 'Hör-Diktat', kind: 'build' },
     { focus: 'tone', title: 'Ton-Ninja', kind: 'tone' },
@@ -80,7 +81,7 @@ test('Training: jeder Modus ist wählbar und lässt sich lösen', async ({ page 
       await solveTask(page);
       if (i === 0 && m.kind !== 'pairs') {
         // Nach der Antwort: Satzlupe bzw. Wortkarte zur Aufgabe; Schließen führt zurück in die Runde.
-        await page.getByRole('button', { name: m.kind === 'build' ? 'Wort für Wort' : 'Zum Wort' }).click();
+        await page.getByRole('button', { name: m.kind === 'build' || m.kind === 'gap' ? 'Wort für Wort' : 'Zum Wort' }).click();
         await expect(page.getByRole('dialog')).toBeVisible();
         await page.getByRole('dialog').getByRole('button', { name: 'Schließen' }).click();
         await expect(page.getByRole('dialog')).toHaveCount(0);

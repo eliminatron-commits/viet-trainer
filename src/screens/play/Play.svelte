@@ -50,6 +50,7 @@
   import { reportToWorker } from '../../lib/push.svelte';
   import BuildView from './BuildView.svelte';
   import ChoiceView, { type Opt } from './ChoiceView.svelte';
+  import GapView from './GapView.svelte';
   import IntroCard from './IntroCard.svelte';
   import Journey from './Journey.svelte';
   import ListenView from './ListenView.svelte';
@@ -96,7 +97,7 @@
   const lens = $derived.by((): LookupView | null => {
     if (!task) return null;
     if (task.kind === 'choice') return 'words' in task.item ? { kind: 'sentence', id: task.item.id } : { kind: 'word', id: task.item.id };
-    if (task.kind === 'build') return { kind: 'sentence', id: task.item.id };
+    if (task.kind === 'build' || task.kind === 'gap') return { kind: 'sentence', id: task.item.id };
     if (task.kind === 'tone') return { kind: 'word', id: task.word.id };
     if (task.kind === 'role') return { kind: 'word', id: task.answer.id };
     return null;
@@ -122,11 +123,11 @@
 
   /** Buchungsart der Aufgabe (Statistik für Achievements und Challenges). */
   const modeOf = (t: Exclude<Task, { kind: 'intro' }>): TaskMode =>
-    t.kind === 'role' ? 'role' : t.kind === 'tone' ? 'tone' : t.kind === 'pairs' ? 'pairs' : t.mode;
+    t.kind === 'role' ? 'role' : t.kind === 'tone' ? 'tone' : t.kind === 'pairs' ? 'pairs' : t.kind === 'gap' ? 'gap' : t.mode;
 
   /** „vn – de“ der Lösung für die Rückmeldung. */
   function solution(t: Task): string {
-    if (t.kind === 'choice' || t.kind === 'build') return `${t.item.vn} – ${t.item.de}`;
+    if (t.kind === 'choice' || t.kind === 'build' || t.kind === 'gap') return `${t.item.vn} – ${t.item.de}`;
     if (t.kind === 'role') return `${t.answer.vn} – ${t.answer.de}`;
     if (t.kind === 'tone') return `${t.word.vn} – ${t.word.de}`;
     return '';
@@ -161,13 +162,15 @@
     }
   }
 
-  /** Auswahl, Rolle und Ton-Ninja: gewählte Option. */
+  /** Auswahl, Rolle, Ton-Ninja und Lückensatz: gewählte Option. */
   function pick(id: string) {
     if (!task || picked || task.kind === 'intro' || task.kind === 'pairs' || task.kind === 'build') return;
     picked = id;
     const ok = id === answer;
     const listens = task.kind === 'tone' || (task.kind === 'choice' && task.mode === 'listen');
-    settle(ok, [{ key: task.key, correct: ok }], solution(task), true, listens ? undefined : answer!);
+    // Lückensatz: danach der ganze Satz; Hör-Aufgaben haben die Lösung schon gespielt.
+    const audio = task.kind === 'gap' ? task.item.id : listens ? undefined : answer!;
+    settle(ok, [{ key: task.key, correct: ok }], solution(task), true, audio);
   }
 
   function onBuild(ok: boolean) {
@@ -360,6 +363,8 @@
         <PairsView {task} onresult={onPairs} />
       {:else if task.kind === 'build'}
         <BuildView {task} done={resolved !== null} onresult={onBuild} />
+      {:else if task.kind === 'gap'}
+        <GapView {task} {picked} onpick={pick} />
       {:else if task.kind === 'tone'}
         <ListenView
           kicker="Ton-Ninja: Was hörst du?"

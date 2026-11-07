@@ -1,32 +1,42 @@
 <script lang="ts">
   import { onMount, tick } from 'svelte';
+  import type { MotifGap } from '../../lib/logic/carousel';
   import { at, loop } from './motion-loop';
 
   /**
    * Lebendes Motiv einer Modus-Karte im Training – flache Flächen aus den Tokens, Maße in cqw (wächst mit der Karte).
    * - Paare: links Vietnamesisch, rechts Deutsch; Paar für Paar leuchtet gelb auf, schnappt zusammen und verblasst,
    *   unten läuft die Zeit ab.
+   * - Lückensatz: in der Satzleiste klafft eine Lücke; die richtige Kachel springt hinein, die anderen treten zurück.
    * - Satzbau: die Kacheln eines gelernten Satzes liegen verstreut und springen der Reihe nach in die Satzleiste.
    * - Hör-Diktat: die Klangscheibe pulsiert wie beim Sprechen, die Kacheln erscheinen Wort für Wort.
    * - Ton-Ninja: Tonzeichen fliegen kreiselnd heran und landen auf dem a; das vorige fliegt davon, sobald das nächste kommt.
    * Steht es still (nicht in der Mitte, nicht sichtbar, reduzierte Bewegung), zeigt es eine erklärende Pose.
    * Ohne passenden gelernten Inhalt bleiben die Kacheln leer – das Motiv zeigt nie etwas Ungelerntes.
    */
-  type Focus = 'pairs' | 'build' | 'dictation' | 'tone';
+  type Focus = 'pairs' | 'gap' | 'build' | 'dictation' | 'tone';
   let {
     focus,
     playing,
     idle = false,
     pairs = [],
     tiles = null,
-  }: { focus: Focus; playing: boolean; idle?: boolean; pairs?: { vn: string; de: string }[]; tiles?: string[] | null } = $props();
+    gap = null,
+  }: {
+    focus: Focus;
+    playing: boolean;
+    idle?: boolean;
+    pairs?: { vn: string; de: string }[];
+    tiles?: string[] | null;
+    gap?: MotifGap | null;
+  } = $props();
 
   const D = 6000;
   const SPRING = 'cubic-bezier(0.34, 1.56, 0.64, 1)';
   const OUT = 'cubic-bezier(0.22, 1, 0.36, 1)';
-  const POSE: Record<Focus, number> = { pairs: 2750, build: 4300, dictation: 4300, tone: 900 };
+  const POSE: Record<Focus, number> = { pairs: 2750, gap: 3000, build: 4300, dictation: 4300, tone: 900 };
   /** gesperrte Karte (`idle`): ruhige Grundstellung statt Spielszene – bei Paaren alle Kacheln weiß */
-  const pose = $derived(idle && focus === 'pairs' ? 0 : POSE[focus]);
+  const pose = $derived(idle && (focus === 'pairs' || focus === 'gap') ? 0 : POSE[focus]);
   const run = (frames: Keyframe[]) => ({ frames, duration: D, pose, playing });
 
   // --- Paare ---------------------------------------------------------------------------------------------------
@@ -65,6 +75,69 @@
     { offset: 1, transform: 'scaleX(1)' },
   ];
 
+  // --- Lückensatz ---------------------------------------------------------------------------------------------
+  /** Platzhalter-Breiten (cqw) ohne gelernten Satz: Kacheln unten, Satzstücke vor und nach der Lücke */
+  const CHOICE_BLANK = [14, 18, 13];
+  const choices = $derived(gap?.options ?? CHOICE_BLANK.map(() => ''));
+  const hit = $derived(gap?.answer ?? 2);
+  let slotEl: HTMLSpanElement | undefined = $state();
+  let choiceEls: HTMLElement[] = $state([]);
+  /** Weg der richtigen Kachel in die Lücke (px) und Breite der Lücke (= Breite der Kachel) */
+  let hop = $state({ dx: 0, dy: 0 });
+  let slotWidth = $state<string | undefined>(undefined);
+
+  /** Lage eines Elements im Motiv (Layout, ohne laufende Transformationen) */
+  function posIn(el: HTMLElement) {
+    let x = el.offsetWidth / 2;
+    let y = el.offsetHeight / 2;
+    for (let n: HTMLElement | null = el; n && n !== box; n = n.offsetParent as HTMLElement | null) {
+      x += n.offsetLeft;
+      y += n.offsetTop;
+    }
+    return { x, y };
+  }
+  async function measureGap() {
+    const tile = choiceEls[hit];
+    if (focus !== 'gap' || !box || !slotEl || !tile) return;
+    slotWidth = `${tile.offsetWidth}px`;
+    await tick();
+    const from = posIn(tile);
+    const to = posIn(slotEl);
+    hop = { dx: to.x - from.x, dy: to.y - from.y };
+  }
+  const PICK = 600;
+  const LAND = 1300;
+  const BACK = 4700;
+  const hopFrames = $derived.by((): Keyframe[] => {
+    const home = 'translate(0px, 0px) scale(1)';
+    const there = `translate(${hop.dx}px, ${hop.dy}px) scale(1)`;
+    return [
+      { offset: 0, transform: home },
+      { offset: at(PICK, D), transform: home },
+      { offset: at(PICK + 160, D), transform: 'translate(0px, 0px) scale(1.12)', easing: SPRING },
+      { offset: at(LAND, D), transform: there },
+      { offset: at(BACK, D), transform: there, easing: OUT },
+      { offset: at(BACK + 620, D), transform: home },
+      { offset: 1, transform: home },
+    ];
+  });
+  /** die übrigen Kacheln treten zurück, sobald die richtige sitzt */
+  const DIM: Keyframe[] = [
+    { offset: 0, opacity: 1 },
+    { offset: at(LAND - 80, D), opacity: 1 },
+    { offset: at(LAND + 220, D), opacity: 0.35 },
+    { offset: at(BACK, D), opacity: 0.35 },
+    { offset: at(BACK + 500, D), opacity: 1 },
+    { offset: 1, opacity: 1 },
+  ];
+  const GAP_STRIP: Keyframe[] = [
+    { offset: 0, transform: 'scale(1)' },
+    { offset: at(LAND - 40, D), transform: 'scale(1)' },
+    { offset: at(LAND + 120, D), transform: 'scale(1.04)' },
+    { offset: at(LAND + 340, D), transform: 'scale(1)' },
+    { offset: 1, transform: 'scale(1)' },
+  ];
+
   // --- Satzbau und Diktat ----------------------------------------------------------------------------------------
   /** Platzhalter-Breiten (cqw), wenn noch kein Satz gelernt ist */
   const BLANK = [11, 17, 9, 14];
@@ -89,10 +162,11 @@
     });
   }
   onMount(() => {
-    if (focus !== 'build') return;
-    const ro = new ResizeObserver(() => measure());
+    if (focus !== 'build' && focus !== 'gap') return;
+    const again = () => (focus === 'gap' ? void measureGap() : measure());
+    const ro = new ResizeObserver(again);
     ro.observe(box);
-    void document.fonts?.ready.then(() => tick().then(measure));
+    void document.fonts?.ready.then(() => tick().then(again));
     return () => ro.disconnect();
   });
   const flyAt = (i: number) => 500 + i * 520;
@@ -182,6 +256,29 @@
       </span>
     {/each}
     <span class="timer"><span class="fill" use:loop={run(TIMER)}></span></span>
+  {:else if focus === 'gap'}
+    <div class="strip gapline" use:loop={run(GAP_STRIP)}>
+      {#if gap}
+        <span class="say" lang="vi">{gap.before}<span class="slot" bind:this={slotEl} style:width={slotWidth}></span>{gap.after}</span>
+      {:else}
+        <span class="tile word blank" style:width="14cqw"></span><span class="slot" bind:this={slotEl} style:width={slotWidth}></span><span
+          class="tile word blank"
+          style:width="9cqw"
+        ></span>
+      {/if}
+    </div>
+    <div class="choices">
+      {#each choices as o, i (i)}
+        <span
+          class="tile word"
+          class:blank={!o}
+          style:width={o ? undefined : `${CHOICE_BLANK[i]}cqw`}
+          bind:this={choiceEls[i]}
+          use:loop={run(i === hit ? hopFrames : DIM)}
+          lang="vi">{o}</span
+        >
+      {/each}
+    </div>
   {:else if focus === 'build'}
     <div class="strip" use:loop={run(stripFrames)}>
       {#each words as w, i (i)}
@@ -287,6 +384,49 @@
     background: var(--yellow);
     border-radius: inherit;
     transform-origin: left center;
+  }
+
+  /* Lückensatz: Satzleiste mit eingelassener Lücke oben, die Kacheln darunter; die richtige springt hinein.
+     Größer als die Satzbau-Kacheln, damit das Motiv seine Fläche füllt (unten bleibt nur der Rand). */
+  .strip.gapline {
+    top: 5cqw;
+    min-height: 21cqw;
+    background: var(--lotus-soft);
+    color: var(--ink);
+    font-size: 5.6cqw;
+    font-weight: 700;
+    line-height: 15cqw;
+  }
+  .gap .tile {
+    height: 13.5cqw;
+    border-radius: 3.6cqw;
+    font-size: 5.6cqw;
+  }
+  .gap .word:not(.blank) {
+    padding: 0 3cqw;
+  }
+  .say {
+    text-align: center;
+    white-space: nowrap;
+  }
+  .slot {
+    display: inline-block;
+    vertical-align: middle;
+    width: 17cqw;
+    height: 13.5cqw;
+    margin: 0 0.8cqw;
+    border-radius: 3.6cqw;
+    background: var(--lotus);
+    box-shadow: inset 0 -0.9cqw 0 var(--ink-3);
+  }
+  .choices {
+    position: absolute;
+    left: 5cqw;
+    right: 5cqw;
+    top: 32cqw;
+    display: flex;
+    justify-content: center;
+    gap: 3.4cqw;
   }
 
   /* Satzbau: Satzleiste oben, die Kacheln springen aus der Streuung unten hinein */

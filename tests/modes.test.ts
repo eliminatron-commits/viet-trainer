@@ -3,6 +3,7 @@ import { content } from '../src/content';
 import type { Sentence } from '../src/content/types';
 import { completeStage, coreKeys, isSentenceFree, stageSentences } from '../src/lib/logic/path';
 import {
+  ADDRESS_WORDS,
   BOSS_LIVES,
   BOSS_SIZE,
   FOCUS_BATCH,
@@ -16,6 +17,11 @@ import {
   buildTask,
   buildTrainingBatch,
   focusInfo,
+  gapSpots,
+  gapTask,
+  isGappable,
+  meanings,
+  nearWords,
   isBuildable,
   pairsTask,
   quizTask,
@@ -397,7 +403,7 @@ describe('Training mit Fokus', () => {
 
   it('leer, solange dafür nichts gelernt ist; focusInfo meldet es', () => {
     const empty = newSave(NOW);
-    for (const focus of ['pairs', 'build', 'dictation', 'tone', 'mixed'] as const) {
+    for (const focus of ['pairs', 'gap', 'build', 'dictation', 'tone', 'mixed'] as const) {
       expect(buildTrainingBatch(empty, TODAY, false, rng(1), focus), focus).toEqual([]);
       expect(focusInfo(empty, focus).available, focus).toBe(false);
       expect(focusInfo(save, focus).available, focus).toBe(true);
@@ -406,6 +412,129 @@ describe('Training mit Fokus', () => {
     onlyWord.items[words[0]!.id] = progress();
     expect(focusInfo(onlyWord, 'build').available).toBe(false);
     expect(focusInfo(onlyWord, 'tone').available).toBe(true);
+  });
+});
+
+describe('Lückensatz', () => {
+  const low = (vn: string) => vn.trim().split(/\s+/).join(' ').toLowerCase();
+  const gaps = (seeds: number[], save?: SaveState) =>
+    sentences.flatMap((sentence) =>
+      seeds.flatMap((seed) => {
+        const t = gapTask(sentence, rng(seed), save);
+        return t && t.kind === 'gap' ? [{ sentence, t }] : [];
+      }),
+    );
+
+  it('jeder Satz hat eine Lücke; Satz vor und nach der Lücke ergeben mit ihr genau den Satz', () => {
+    const all = gaps([1, 2, 3]);
+    expect(new Set(all.map((g) => g.sentence.id)).size).toBe(sentences.length);
+    // die schnelle Prüfung (ohne Mischen) sagt dasselbe wie der Aufbau der Aufgabe
+    for (const s of sentences) expect(isGappable(s), s.id).toBe(gapTask(s, rng(1)) !== null);
+    for (const { sentence, t } of all) {
+      const where = `${sentence.id} ${t.answer.vn}`;
+      expect(t.before + t.fill + t.after, where).toBe(sentence.vn.trim().split(/\s+/).join(' '));
+      expect(low(t.fill), where).toBe(low(t.answer.vn));
+      expect(sentence.words, where).toContain(t.answer.id);
+      expect(answerOf(t), where).toBe(t.answer.id);
+    }
+  });
+
+  it('die Lücke ist ein echtes Wort, keine Anrede, kein Partikel, und steht nur einmal im Satz', () => {
+    for (const { sentence, t } of gaps([4, 5])) {
+      const where = `${sentence.id} ${t.answer.vn}`;
+      expect(t.answer.kind, where).toBe('word');
+      expect(ADDRESS_WORDS.has(t.answer.id), where).toBe(false);
+      const rest = ` ${strip(t.before + ' ' + t.after).toLowerCase()} `;
+      expect(rest.includes(` ${low(t.answer.vn)} `), where).toBe(false);
+    }
+  });
+
+  it('nie mehrdeutig: vier verschiedene Kacheln, kein Ablenker mit gleicher Bedeutung, aus dem Satz, der Übersetzung oder dem Wortfeld', () => {
+    for (const { sentence, t } of gaps([1, 2, 3, 4, 5, 6])) {
+      const where = `${sentence.id} ${t.answer.vn}`;
+      expect(t.options, where).toHaveLength(4);
+      expect(t.options.filter((o) => o.id === t.answer.id), where).toHaveLength(1);
+      expect(new Set(t.options.map((o) => low(o.vn))).size, where).toBe(4);
+      const own = new Set(meanings(t.answer));
+      const inSentence = ` ${strip(sentence.vn).toLowerCase()} `;
+      const de = ` ${strip(sentence.de).toLowerCase()} `;
+      for (const o of t.options) {
+        if (o.id === t.answer.id) continue;
+        const at = `${where} / ${o.vn}`;
+        expect(o.kind, at).toBe('word');
+        expect(ADDRESS_WORDS.has(o.id), at).toBe(false);
+        expect(inSentence.includes(` ${low(o.vn)} `), at).toBe(false);
+        expect(meanings(o).filter((m) => own.has(m)), at).toEqual([]);
+        expect(meanings(o).filter((m) => de.includes(` ${strip(m)} `)), at).toEqual([]);
+        expect(nearWords(low(t.answer.vn), low(o.vn)), at).toBe(false);
+      }
+    }
+  });
+
+  it('Wortfelder: „phải“ ist nie Ablenker für „cần“, „nhìn“ nie für „thấy“', () => {
+    expect(nearWords('cần', 'phải')).toBe(true);
+    expect(nearWords('thấy', 'nhìn')).toBe(true);
+    expect(nearWords('cần', 'sách')).toBe(false);
+    const hits = gaps([1, 2, 3, 4, 5, 6, 7, 8]).filter(({ t }) => ['cần', 'thấy'].includes(low(t.answer.vn)));
+    expect(hits.length).toBeGreaterThan(0);
+    for (const { sentence, t } of hits) {
+      expect(t.options.map((o) => low(o.vn)), sentence.id).not.toContain(low(t.answer.vn) === 'cần' ? 'phải' : 'nhìn');
+    }
+  });
+
+  it('die Lücke trifft das schwächste Wort des Satzes', () => {
+    const seeds = Array.from({ length: 12 }, (_, i) => i + 1);
+    const answers = (sentence: Sentence, save: SaveState) =>
+      new Set(seeds.map((seed) => { const t = gapTask(sentence, rng(seed), save); return t?.kind === 'gap' ? t.answer.id : null; }));
+    // ein Satz, in dem bei gleichem Stand beide Lücken vorkommen (Kontrolle)
+    const sentence = sentences.find((x) => gapSpots(x).length === 2 && answers(x, everythingLearned()).size === 2)!;
+    expect(sentence).toBeDefined();
+    const [weak, strong] = gapSpots(sentence).map((g) => g.word);
+    const save = everythingLearned();
+    save.items[strong!.id] = { box: 5, due: LATER, seen: 9, right: 9, wrong: 0 };
+    save.items[weak!.id] = { box: 1, due: LATER, seen: 2, right: 0, wrong: 2 };
+    expect(answers(sentence, save)).toEqual(new Set([weak!.id]));
+  });
+
+  it('Absicherungen an künstlichen Sätzen: kein Partikel als Ablenker, keine Lücke über ein Satzzeichen hinweg', () => {
+    const byVn = (vn: string) => words.find((w) => w.vn.trim() === vn)!;
+    // Etappe der Partikel, Lücke ohne Verb: ohne die Regel lägen die Partikel als nächste Ablenker vorn
+    const cat: Sentence = { id: 's999', vn: 'Em thích mèo.', de: 'Ich mag Katzen.', words: [byVn('em').id, byVn('thích').id, byVn('mèo').id], stage: 'e16', tags: [], checked: true };
+    const tasks = Array.from({ length: 12 }, (_, i) => gapTask(cat, rng(i + 1))).filter((t) => t?.kind === 'gap' && t.answer.vn === 'mèo');
+    expect(tasks.length).toBeGreaterThan(0);
+    for (const t of tasks) if (t?.kind === 'gap') expect(t.options.filter((o) => o.kind !== 'word')).toEqual([]);
+    // mehrsilbiges Wort mit Komma in der Mitte: als Lücke ginge das Komma verloren
+    const thanks: Sentence = { id: 's998', vn: 'Em cảm, ơn mẹ.', de: 'Danke, Mama.', words: [byVn('em').id, byVn('cảm ơn').id, byVn('mẹ').id], stage: 'e05', tags: [], checked: true };
+    expect(gapSpots(thanks).map((g) => g.fill)).not.toContain('cảm ơn');
+    for (const g of gapSpots(thanks)) expect(g.before + g.fill + g.after).toBe(thanks.vn);
+  });
+
+  it('im gemischten Quiz nur bei gelernten Sätzen – ohne Spielstand nie', () => {
+    const sentence = sentences.find(isGappable)!;
+    const kindsOf = (save?: SaveState) => new Set(Array.from({ length: 80 }, (_, i) => quizTask(sentence.id, rng(i), undefined, save).kind));
+    expect(kindsOf().has('gap')).toBe(false);
+    const seenOnly = everythingLearned();
+    seenOnly.items[sentence.id] = { box: 1, due: LATER, seen: 1, right: 0, wrong: 1 };
+    expect(kindsOf(seenOnly).has('gap')).toBe(false);
+    expect(kindsOf(everythingLearned()).has('gap')).toBe(true);
+  });
+
+  it('Training mit Fokus: Block nur aus Lückensätzen gelernter, freier Sätze', () => {
+    const save = everythingLearned();
+    const tasks = buildTrainingBatch(save, TODAY, false, rng(9), 'gap');
+    expect(tasks).toHaveLength(FOCUS_BATCH.gap);
+    for (const t of tasks) {
+      expect(t.kind).toBe('gap');
+      if (t.kind === 'gap') expect(isSentenceFree(save, t.item)).toBe(true);
+    }
+    expect(new Set(tasks.map((t) => t.key)).size).toBe(FOCUS_BATCH.gap);
+    // ein einziger gelernter Satz reicht
+    const one = newSave(NOW);
+    const sentence = sentences.find(isGappable)!;
+    for (const id of sentence.words) one.items[id] = progress();
+    one.items[sentence.id] = progress();
+    expect(focusInfo(one, 'gap')).toEqual({ available: true, count: 1 });
+    expect(new Set(buildTrainingBatch(one, TODAY, false, rng(2), 'gap').map((t) => t.key))).toEqual(new Set([sentence.id]));
   });
 });
 

@@ -107,6 +107,15 @@ function checkOptions(task: Task, save: SaveState, where: string) {
     }
     if (isSentence(answer)) expect(isSentenceFree(save, answer), `${where} ${answer.id} frei`).toBe(true);
   }
+  if (task.kind === 'gap') {
+    expect(task.options, where).toHaveLength(4);
+    expect(answerOf(task), where).toBe(task.answer.id);
+    expect(task.options.filter((o) => o.id === task.answer.id), where).toHaveLength(1);
+    expect(new Set(task.options.map((o) => o.vn.trim().toLowerCase())).size, where).toBe(4);
+    // Lückensatz nur bei gelernten, freien Sätzen
+    expect(save.items[task.key]?.right ?? 0, `${where} ${task.key} gelernt`).toBeGreaterThan(0);
+    expect(isSentenceFree(save, task.item), `${where} ${task.key} frei`).toBe(true);
+  }
   if (task.kind === 'role') {
     const answer = task.answer;
     expect(task.options.length, where).toBeGreaterThanOrEqual(3);
