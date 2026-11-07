@@ -533,6 +533,22 @@ function buildFocusBatch(
   return spread(tasks);
 }
 
+/** Gelernte Einheiten, die heute fällig sind („durstige Pflanzen“); optional nur Verben. */
+export const thirstyKeys = (save: SaveState, today: DateKey, verbsOnly = false): ProgressKey[] =>
+  learnedKeys(save, verbsOnly).filter((k) => isDue(save.items[k]!, today));
+
+/**
+ * Ein Block der Gießrunde: nur durstige Einheiten, jede einmal (älteste und schwächste zuerst), höchstens
+ * TRAINING_BATCH. Jede Antwort plant die Einheit neu ein (richtig: später, falsch: morgen) – sie ist danach nicht mehr
+ * durstig. So wird die Runde kürzer, bis nichts mehr fällig ist: dann ist der Block leer und die Runde zu Ende.
+ */
+export function buildWateringBatch(save: SaveState, today: DateKey, verbsOnly = false, rng: Rng = Math.random): Task[] {
+  const keys = shuffle(thirstyKeys(save, today, verbsOnly), rng)
+    .sort((a, b) => save.items[a]!.due.localeCompare(save.items[b]!.due) || weakness(save, a) - weakness(save, b))
+    .slice(0, TRAINING_BATCH);
+  return spread(keys.map((k) => quizTask(k, rng, undefined, save)));
+}
+
 /**
  * Ein Block des endlosen Trainings. Gemischt: fällige zuerst, dann die schwächsten, darunter eine Paare-Aufgabe
  * (nur Verben, wenn `verbsOnly`). Mit Fokus: ein Block nur aus diesem Modus. Leer, solange dafür nichts gelernt ist.

@@ -1,4 +1,5 @@
 import { content } from '../../content';
+import type { ItemId } from '../../content/types';
 import type { DateKey, ItemProgress, ProgressKey } from '../storage/state';
 import { isDue } from './srs';
 
@@ -282,6 +283,8 @@ function daysBetween(a: DateKey, b: DateKey): number {
 }
 
 export interface PlantInfo {
+  /** Wort oder Satz hinter der Pflanze (bei einer Rolle das Anredewort) – für Audio und Wortkarte; null, wenn unbekannt. */
+  item: ItemId | null;
   vn: string;
   de: string;
   /** Wuchs und nächstes Gießen, z. B. „reif · in 12 Tagen wieder gießen“. */
@@ -291,19 +294,22 @@ export interface PlantInfo {
 export function plantInfo(key: ProgressKey, p: ItemProgress, day: DateKey): PlantInfo {
   let vn = key as string;
   let de = '';
+  let item: ItemId | null = null;
   if (key.includes(':')) {
     const [id, mode] = key.split(':') as [string, 'self' | 'addr'];
     const role = roleById.get(id);
     const word = role && wordById.get((mode === 'self' ? role.self : role.addr) ?? '');
     if (role && word) {
+      item = word.id;
       vn = word.vn;
       de = `${mode === 'self' ? '„ich“' : '„du“'} im Gespräch mit: ${role.label}`;
     }
   } else {
-    const item = wordById.get(key) ?? sentenceById.get(key);
-    if (item) {
-      vn = item.vn;
-      de = item.de;
+    const it = wordById.get(key) ?? sentenceById.get(key);
+    if (it) {
+      item = it.id;
+      vn = it.vn;
+      de = it.de;
     }
   }
   const stage = STAGE_NAMES[p.box - 1];
@@ -314,5 +320,5 @@ export function plantInfo(key: ProgressKey, p: ItemProgress, day: DateKey): Plan
       ? `${stage} · durstig, heute fällig`
       : `${stage} · durstig seit ${late === 1 ? 'gestern' : `${late} Tagen`}`
     : `${stage} · ${next === 1 ? 'morgen' : `in ${next} Tagen`} wieder gießen`;
-  return { vn, de, state };
+  return { item, vn, de, state };
 }

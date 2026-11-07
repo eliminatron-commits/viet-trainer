@@ -5,7 +5,8 @@
   export type PlayMode =
     | { kind: 'stage'; stage: Stage }
     | { kind: 'boss'; stage: Stage }
-    | { kind: 'training'; verbsOnly: boolean; focus: TrainingFocus };
+    /** water: Gießrunde – nur die durstigen Einheiten, endet, wenn alle gegossen sind. */
+    | { kind: 'training'; verbsOnly: boolean; focus: TrainingFocus; water?: boolean };
 </script>
 
 <script lang="ts">
@@ -41,7 +42,9 @@
     buildBossSession,
     buildStageSession,
     buildTrainingBatch,
+    buildWateringBatch,
     optionText,
+    thirstyKeys,
     type Task,
   } from '../../lib/logic/session';
   import { reportToWorker } from '../../lib/push.svelte';
@@ -61,9 +64,14 @@
   let { mode, card, onexit, onboss }: { mode: PlayMode; card?: CardTone; onexit: () => void; onboss: (stage: Stage) => void } = $props();
   const CARD_COLOR: Record<CardTone, string> = { lantern: 'var(--lantern)', yellow: 'var(--tone-yellow)', sea: 'var(--sea)', lotus: 'var(--lotus)' };
 
+  /** Gießrunde läuft (nach dem Gießen geht es auf Wunsch als gewöhnliches Training weiter). */
+  const startsWatering = () => mode.kind === 'training' && mode.water === true;
+  let watering = $state(startsWatering());
+
   function build(): Task[] {
     if (mode.kind === 'stage') return buildStageSession(mode.stage, game.save, today());
     if (mode.kind === 'boss') return buildBossSession(mode.stage, game.save);
+    if (watering) return buildWateringBatch(game.save, today(), mode.verbsOnly);
     return buildTrainingBatch(game.save, today(), mode.verbsOnly, Math.random, mode.focus);
   }
 
@@ -227,6 +235,17 @@
     outcome = null;
   }
 
+  /** Nach der Gießrunde: weiter als gewöhnliches Training (fällige zuerst, dann die schwächsten). */
+  function keepTraining() {
+    watering = false;
+    again();
+  }
+
+  /** Durstige Pflanzen, die nach der Gießrunde noch übrig sind (beim Schließen vor dem Ende). */
+  const stillThirsty = $derived(
+    outcome && watering && mode.kind === 'training' ? thirstyKeys(game.save, today(), mode.verbsOnly).length : 0,
+  );
+
   function close() {
     if (mode.kind === 'training' && round.right + round.wrong > 0) return finish('done');
     onexit();
@@ -259,7 +278,9 @@
         </Card>
       {:else}
         <Card tone="sea">
-          <p class="kicker">{mode.kind === 'training' ? 'Training beendet' : 'Runde geschafft'}</p>
+          <p class="kicker">
+            {watering ? (stillThirsty ? 'Gießen unterbrochen' : 'Feld gegossen') : mode.kind === 'training' ? 'Training beendet' : 'Runde geschafft'}
+          </p>
           <h1>{round.right} von {round.right + round.wrong} richtig</h1>
           <p class="xp">+{Math.round(xpShown.current)} XP</p>
         </Card>
@@ -279,6 +300,10 @@
           {/if}
         {:else if outcome === 'lost'}
           <Button onclick={again}>Nochmal kämpfen</Button>
+        {:else if watering && stillThirsty}
+          <Button onclick={again}>Weiter gießen</Button>
+        {:else if watering}
+          <Button onclick={keepTraining}>Weiter trainieren</Button>
         {/if}
         <Button variant="ghost" onclick={onexit}>Fertig</Button>
       </div>

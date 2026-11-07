@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { content } from '../src/content';
-import type { Sentence, Stage } from '../src/content/types';
+import type { Sentence, Stage, WordId } from '../src/content/types';
 import { newSave } from '../src/lib/storage/state';
 import type { ItemProgress, ProgressKey, SaveState } from '../src/lib/storage/state';
 import {
@@ -25,8 +25,10 @@ import {
   buildBossSession,
   buildStageSession,
   buildTrainingBatch,
+  buildWateringBatch,
   learnedKeys,
   optionText,
+  thirstyKeys,
 } from '../src/lib/logic/session';
 import type { Item, Task } from '../src/lib/logic/session';
 
@@ -340,3 +342,42 @@ function setSeenOnly(save: SaveState) {
   const key: ProgressKey = words[0]!.id;
   save.items[key] = { box: 1, due: TODAY, seen: 1, right: 0, wrong: 0 };
 }
+
+describe('Gießrunde (nur durstige Einheiten)', () => {
+  /** Drei Etappen gelernt; `n` Einheiten davon sind fällig, je älter, desto weiter vorn in `keys`. */
+  function thirstySave(n: number) {
+    const save = learnedBefore(3);
+    const keys = learnedKeys(save).slice(0, n);
+    keys.forEach((k, i) => (save.items[k] = { ...save.items[k]!, due: addDays(TODAY, -(n - i)) }));
+    return { save, keys };
+  }
+
+  it('gießt jede durstige Einheit genau einmal, die ältesten zuerst, und endet, wenn alle gegossen sind', () => {
+    const { save, keys } = thirstySave(TRAINING_BATCH + 3);
+    expect(thirstyKeys(save, TODAY)).toHaveLength(TRAINING_BATCH + 3);
+    const r = rng(7);
+    const first = buildWateringBatch(save, TODAY, false, r);
+    expect(first).toHaveLength(TRAINING_BATCH);
+    expect(first.every((t) => t.kind !== 'intro' && t.kind !== 'pairs')).toBe(true);
+    const firstKeys = first.map((t) => t.key);
+    expect(new Set(firstKeys).size).toBe(TRAINING_BATCH);
+    // Die drei jüngsten fälligen bleiben für den zweiten Block.
+    expect(new Set(firstKeys)).toEqual(new Set(keys.slice(0, TRAINING_BATCH)));
+    // Auch falsche Antworten gießen: falsch heißt „morgen wieder“, heute nicht mehr durstig.
+    play(save, first, TODAY, () => r() < 0.5);
+    const second = buildWateringBatch(save, TODAY, false, r);
+    expect(new Set(second.map((t) => t.key))).toEqual(new Set(keys.slice(TRAINING_BATCH)));
+    play(save, second, TODAY);
+    expect(thirstyKeys(save, TODAY)).toEqual([]);
+    expect(buildWateringBatch(save, TODAY, false, r)).toEqual([]);
+  });
+
+  it('ohne durstige Einheiten ist die Gießrunde leer; „Nur Verben“ gießt nur Verben', () => {
+    expect(buildWateringBatch(learnedBefore(3), TODAY)).toEqual([]);
+    const { save } = thirstySave(learnedKeys(learnedBefore(3)).length);
+    const verbs = buildWateringBatch(save, TODAY, true, rng(3));
+    expect(verbs.length).toBeGreaterThan(0);
+    const verbIds = new Set(words.filter((w) => w.verb).map((w) => w.id));
+    expect(verbs.every((t) => verbIds.has(t.key as WordId))).toBe(true);
+  });
+});

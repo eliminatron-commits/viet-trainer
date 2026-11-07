@@ -101,7 +101,7 @@ describe('Reisfeld', () => {
 
   it('Beschriftung: Wort, Übersetzung und wann wieder gegossen wird', () => {
     const w = content.words[0]!;
-    expect(plantInfo(w.id, prog(5, '2026-11-18'), DAY)).toEqual({ vn: w.vn, de: w.de, state: 'reif · in 12 Tagen wieder gießen' });
+    expect(plantInfo(w.id, prog(5, '2026-11-18'), DAY)).toEqual({ item: w.id, vn: w.vn, de: w.de, state: 'reif · in 12 Tagen wieder gießen' });
     expect(plantInfo(w.id, prog(1, '2026-11-07'), DAY).state).toBe('Setzling · morgen wieder gießen');
     expect(plantInfo(w.id, prog(2, DAY), DAY).state).toBe('jung · durstig, heute fällig');
     expect(plantInfo(w.id, prog(3, '2026-11-05'), DAY).state).toBe('kräftig · durstig seit gestern');
@@ -109,6 +109,9 @@ describe('Reisfeld', () => {
     const role = content.roles.find((r) => r.addr)!;
     const info = plantInfo(`${role.id}:addr`, prog(1, DAY), DAY);
     expect(info.vn).toBe(content.words.find((x) => x.id === role.addr)!.vn);
+    expect(info.item).toBe(role.addr);
+    const sentence = content.sentences[0]!;
+    expect(plantInfo(sentence.id, prog(2, DAY), DAY)).toMatchObject({ item: sentence.id, vn: sentence.vn, de: sentence.de });
     expect(info.de).toContain(role.label);
   });
 });

@@ -72,6 +72,25 @@ export interface ChallengeState {
   done: boolean;
 }
 
+/** Tagebuch: was an einem Tag geschah (zählt ab dem Update mit dem Tagebuch, frühere Tage fehlen). */
+export interface DayLog {
+  /** Tages-XP (wie `today.xp`, mit Boost und Challenge-XP). */
+  xp: number;
+  /** Gelöste Aufgaben und davon richtige. */
+  tasks: number;
+  right: number;
+  /** Erstmals vorgestellte Wörter. */
+  newWords: number;
+  /** Beendete Runden (Etappe, Training, Bosskampf). */
+  rounds: number;
+  /** Tagesziel erreicht. */
+  goal: boolean;
+  /** Verpasster Tag, den der Streak-Schutz überbrückt hat. */
+  shield: boolean;
+}
+
+export const emptyDay = (): DayLog => ({ xp: 0, tasks: 0, right: 0, newWords: 0, rounds: 0, goal: false, shield: false });
+
 /** Gesamter Spielstand; liegt als ein Datensatz in IndexedDB und wird bei jeder Aktion sofort geschrieben. */
 export interface SaveState {
   version: 1;
@@ -107,6 +126,8 @@ export interface SaveState {
   settings: Settings;
   /** Trâus Hof: zuletzt gefüttert (einmal am Tag, nach erreichtem Tagesziel) und wie oft insgesamt. */
   yard: { fedOn: DateKey | null; fed: number };
+  /** Tagebuch je Kalendertag (nur Tage mit Aktivität oder Streak-Schutz). */
+  days: Record<DateKey, DayLog>;
 }
 
 export const SAVE_VERSION = 1;
@@ -148,6 +169,7 @@ export function newSave(now: Date = new Date()): SaveState {
     review: {},
     settings: { morning: '08:00', evening: '20:00', sound: true, haptics: true, theme: 'auto' },
     yard: { fedOn: null, fed: 0 },
+    days: {},
   };
 }
 
@@ -181,5 +203,11 @@ export function normalizeSave(raw: unknown): SaveState {
     save.stats.perfectBosses = stages.filter((s) => s?.bossBest === 3).length;
   }
   save.streak.best = Math.max(save.streak.best, save.streak.count);
+  // Tagebuch: Einträge älterer Fassungen um neue Felder ergänzen, Unbrauchbares verwerfen.
+  save.days = Object.fromEntries(
+    Object.entries(save.days)
+      .filter(([k, d]) => /^\d{4}-\d{2}-\d{2}$/.test(k) && isObject(d))
+      .map(([k, d]) => [k, { ...emptyDay(), ...d } as DayLog] as const),
+  );
   return save;
 }

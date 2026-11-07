@@ -67,7 +67,7 @@
   {#if tab === 'path'}
     <PathScreen onopen={(stage) => go({ name: 'stage', stage }, 'morph-open')} />
   {:else if tab === 'training'}
-    <TrainingScreen onstart={(verbsOnly, focus, card) => start({ kind: 'training', verbsOnly, focus }, card)} />
+    <TrainingScreen onstart={(verbsOnly, focus, card, water) => start({ kind: 'training', verbsOnly, focus, water }, card)} />
   {:else if tab === 'profile'}
     <ProfileScreen onsettings={() => go({ name: 'settings' }, 'push')} />
   {:else}

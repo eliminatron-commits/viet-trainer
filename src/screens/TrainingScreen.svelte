@@ -1,6 +1,9 @@
 <script lang="ts">
   import Button from '../lib/components/Button.svelte';
+  import type { ItemId, SentenceId, WordId } from '../content/types';
+  import { openLookup, type LookupView } from '../lib/lookup/lookup.svelte';
   import { arrivingByTab } from '../lib/motion';
+  import { ripple } from '../lib/ripple';
   import { game, today } from '../lib/game.svelte';
   import { learnedKeys, type TrainingFocus } from '../lib/logic/session';
   import type { PlantInfo } from '../lib/logic/field';
@@ -8,7 +11,9 @@
   import ModeCarousel, { type CardTone } from './training/ModeCarousel.svelte';
   import RiceField from './training/RiceField.svelte';
 
-  let { onstart }: { onstart: (verbsOnly: boolean, focus: TrainingFocus, card?: CardTone) => void } = $props();
+  let {
+    onstart,
+  }: { onstart: (verbsOnly: boolean, focus: TrainingFocus, card?: CardTone, water?: boolean) => void } = $props();
 
   let verbsOnly = $state(false);
   const day = today();
@@ -20,6 +25,8 @@
   const ripe = $derived(keys.filter((k) => game.save.items[k]!.box === 5).length);
   const noun = $derived(verbsOnly ? (keys.length === 1 ? 'Verb' : 'Verben') : keys.length === 1 ? 'Pflanze' : 'Pflanzen');
   const summary = $derived([due === 0 ? 'alle gegossen' : `${due} durstig`, ...(ripe ? [`${ripe} reif`] : [])].join(' · '));
+  const lookOf = (item: ItemId): LookupView =>
+    item.startsWith('s') ? { kind: 'sentence', id: item as SentenceId } : { kind: 'word', id: item as WordId };
   /** zuletzt angetippte Pflanze im Feld */
   let info = $state<PlantInfo | null>(null);
   /** was sich seit dem letzten Blick aufs Feld getan hat */
@@ -39,21 +46,37 @@
         {#if keys.length}<p class="sub">{summary}</p>{/if}
       </div>
       {#if all.length}
-        <p class="detail" role="status">
-          {#if info}
-            <strong lang="vi">{info.vn}</strong> · {info.de}<br /><span class="state">{info.state}</span>
-          {:else if report}
-            <strong>Seit deinem letzten Blick</strong><br />{report}
-          {:else}
-            Jede gelernte Einheit ist eine Pflanze: Rechtzeitig wiederholt, wächst sie bis zur Ernte. Tipp eine an.
+        <!-- Info-Feld mit fester Mindesthöhe; die Lupe sitzt rechts daneben, damit nichts darunter springt. -->
+        <div class="detail">
+          <p role="status">
+            {#if info}
+              <strong lang="vi">{info.vn}</strong> · {info.de}<br /><span class="state">{info.state}</span>
+            {:else if report}
+              <strong>Seit deinem letzten Blick</strong><br />{report}
+            {:else}
+              Jede gelernte Einheit ist eine Pflanze: Rechtzeitig wiederholt, wächst sie bis zur Ernte. Tipp eine an.
+            {/if}
+          </p>
+          {#if info?.item}
+            {@const item = info.item}
+            <button
+              class="look"
+              aria-label="{item.startsWith('s') ? 'Wort für Wort' : 'Zum Wort'}: {info.vn}"
+              onclick={() => openLookup(lookOf(item))}
+              use:ripple
+            >
+              <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"
+                ><path d="M10.5 3a7.5 7.5 0 0 1 5.9 12.1l4.8 4.8-1.4 1.4-4.8-4.8A7.5 7.5 0 1 1 10.5 3Zm0 2a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11Z" fill="currentColor" /></svg
+              >
+            </button>
           {/if}
-        </p>
+        </div>
       {/if}
       <label class="switch">
         <input type="checkbox" bind:checked={verbsOnly} />
         <span>Nur Verben</span>
       </label>
-      <Button disabled={keys.length === 0} onclick={() => onstart(verbsOnly, 'mixed')}>{due > 0 ? 'Feld gießen' : 'Training starten'}</Button>
+      <Button disabled={keys.length === 0} onclick={() => onstart(verbsOnly, 'mixed', undefined, due > 0)}>{due > 0 ? 'Feld gießen' : 'Training starten'}</Button>
       {#if all.length === 0}
         <p class="hint">Noch nichts gepflanzt – spiel zuerst eine Etappe im Lernpfad.</p>
       {/if}
@@ -110,8 +133,13 @@
   /* Erklärung bzw. angetippte Pflanze */
   .detail {
     width: 100%;
-    min-height: calc(2 * 1.45em + 20px);
-    padding: 10px 14px;
+    /* drei Zeilen: so hoch wie der Hinweis vor dem ersten Antippen – Pflanzen wechseln, ohne dass etwas springt */
+    min-height: calc(3 * 1.45em + 20px);
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 10px 10px 14px;
     border-radius: 16px;
     background: var(--paper-2);
     font-size: var(--fs-small);
@@ -124,6 +152,25 @@
   .detail .state {
     color: var(--ink-2);
     font-weight: 600;
+  }
+  /* Zur Wortkarte bzw. Satzlupe der angetippten Pflanze: runde Lupe, gelb wie die Zweitknöpfe (hebt sich bei Tag und Nacht ab) */
+  .look {
+    position: relative;
+    overflow: hidden;
+    display: grid;
+    place-items: center;
+    width: var(--tap);
+    height: var(--tap);
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: var(--yellow);
+    color: var(--on-yellow);
+    cursor: pointer;
+    transition: transform 120ms ease;
+  }
+  .look:active {
+    transform: scale(0.92);
   }
   .field-card .body :global(.btn) {
     margin-top: 6px;

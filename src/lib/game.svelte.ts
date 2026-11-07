@@ -4,6 +4,7 @@ import { toggleEquip as equip } from './logic/accessories';
 import { checkAchievements } from './logic/achievements';
 import { CHALLENGE_XP, checkChallenges, rollWeek } from './logic/challenges';
 import { awardChest, openChest as open, type ChestPrize } from './logic/chest';
+import { logNewWord, logRound, logShields, logTask, syncDay } from './logic/diary';
 import { completeStage, isDone } from './logic/path';
 import { activateBoost, addXp, applyShields, rollDay, XP_PER_CORRECT, xpMultiplier, type XpResult } from './logic/rewards';
 import { answerItem, markSeen } from './logic/srs';
@@ -64,8 +65,12 @@ export const flushed = () => writing;
 function begin(now = new Date()): string {
   const t = dateKey(now);
   rollDay(game.save, t);
+  const last = game.save.streak.lastDate;
   const used = applyShields(game.save, t);
-  if (used > 0) game.news.push({ kind: 'shield', days: used });
+  if (used > 0) {
+    game.news.push({ kind: 'shield', days: used });
+    if (last) logShields(game.save, last, used);
+  }
   rollWeek(game.save, t);
   return t;
 }
@@ -76,8 +81,10 @@ function begin(now = new Date()): string {
  */
 function settle(t: string): XpResult {
   const extra: XpResult = { levelUp: null, goalJustReached: false };
+  let gained = false;
   for (let done = checkChallenges(game.save, t); done.length > 0; done = checkChallenges(game.save, t)) {
     for (const c of done) {
+      gained = true;
       const r = addXp(game.save, CHALLENGE_XP, t);
       if (r.goalJustReached) {
         game.save.stats.goals++;
@@ -88,13 +95,18 @@ function settle(t: string): XpResult {
     }
   }
   for (const a of checkAchievements(game.save, t)) game.news.push({ kind: 'achievement', id: a.id, title: a.title });
+  // Tagebuch: Challenge-XP zählen zum Tag (nur an Tagen mit Aktivität – bloßes Öffnen legt keinen Eintrag an).
+  if (gained || game.save.days[t]) syncDay(game.save, t);
   return extra;
 }
 
 /** Vorstellkarte gesehen. */
 export function recordSeen(key: ProgressKey): void {
   const t = begin();
-  if (!game.save.items[key] && key.startsWith('w')) game.save.stats.newWords++;
+  if (!game.save.items[key] && key.startsWith('w')) {
+    game.save.stats.newWords++;
+    logNewWord(game.save, t);
+  }
   game.save.items[key] = markSeen(game.save.items[key], t);
   settle(t);
   persist();
@@ -115,6 +127,7 @@ export function recordTask(result: TaskResult): TaskOutcome {
   const booked = xp > 0 ? addXp(game.save, xp, t) : { levelUp: null, goalJustReached: false };
   if (booked.goalJustReached) game.save.stats.goals++;
   const extra = settle(t);
+  logTask(game.save, t, result.correct);
   persist();
   return {
     xp,
@@ -128,6 +141,7 @@ export function recordRoundEnd(): XpResult {
   const t = begin();
   game.save.stats.rounds++;
   const extra = settle(t);
+  logRound(game.save, t);
   persist();
   return extra;
 }
@@ -145,6 +159,7 @@ export function recordBossWin(stage: StageId, lives: number, maxLives: number): 
   if (lives === maxLives) game.save.stats.perfectBosses++;
   const chest = awardChest(game.save, firstWin, lives === maxLives);
   settle(t);
+  logRound(game.save, t);
   persist();
   return chest;
 }

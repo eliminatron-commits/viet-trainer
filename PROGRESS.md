@@ -202,7 +202,33 @@
       - Gesamtmessung ohne Befund (Kontrast, Tap-Ziele, kein Überlauf).
   - check grün, 245 Vitest grün (neu: `tests/gloss.test.ts`, 5 Mutationen machen ihn rot), Playwright 9/9 grün. Neu: Satzlupe, Scrollstand ohne Übergänge (rot mit dem alten Code), Lupe in jedem Trainingsmodus.
   - Live seit `ca545f5` (2026-11-07).
-- **Nächste Schritte:** keine Phase offen; neue Wünsche von Alex als eigene Runde planen. Sonst offen: P1-06 (Prototyp im LAN, `pending-alex`).
+- **Phase 6 – Ideen-Runde (ab 2026-11-07, Opus 5.5 hoch).** Alex hat aus acht Vorschlägen alle gewählt (2026-11-07). Akzeptanz siehe `tests.json` Phase 6. Alles nur aus vorhandenen Inhalten; keine neuen vietnamesischen Texte.
+  1. Reisfeld als Werkzeug (P6-01) und Tagebuch im Spielstand (P6-02) – zusammen live, damit das Tagebuch früh zu zählen beginnt.
+  2. Lückensatz (P6-03).
+  3. Roller-Sprint (P6-04).
+  4. Laternen-Kalender (P6-05).
+  5. Wochenrückblick (P6-06).
+  6. Trâus Tagesblick (P6-07).
+  7. Reise zur nächsten Region (P6-08).
+  8. Ton-Zwillinge (P6-09) – nur, wenn Alex die Bedeutungs-Variante will.
+  9. Gesamtprüfung (P6-10), danach Abnahme (P6-11).
+  - Jeder Punkt wird bei 440×956 und 375×667, Tag und Nacht, Bild für Bild und in Echtzeit geprüft und Alex gezeigt; live erst auf sein Wort.
+  - Entscheidungen beim Planen:
+    - „Ton-Zwillinge“ gibt es im Kern schon als Ton-Ninja (Schreibung mit dem richtigen Ton wählen). Neu wäre nur die Variante „Bedeutung wählen“ zwischen echten Ton-Zwillingen (66 Gruppen im Wortschatz). Darum steht der Punkt am Ende und wartet auf Alex.
+    - „Feld gießen“ startete bisher das endlose gemischte Training (fällige zuerst). Neu ist es eine Gießrunde aus genau den durstigen Einheiten, die endet, wenn alle gegossen sind; ohne durstige Pflanzen bleibt „Training starten“ wie bisher.
+    - Das Tagebuch zählt ab dem Update. Frühere Tage lassen sich nicht sicher rekonstruieren: Der Spielstand speichert keine Tage, und die Serie überbrückt Lücken mit dem Streak-Schutz. Darum bleibt der Kalender vor dem Update leer, statt zu raten.
+    - Am ersten Tag einer neuen Woche ersetzt der Wochenrückblick den Tagesblick; dessen Punkte stehen dann auf der letzten Seite.
+    - Die Reise gibt es zwischen den Regionen (vier Fahrten). Ein Finale nach Sài Gòn gehört nicht dazu (Idee).
+  - **Punkt 1 erledigt (2026-11-07), Reisfeld als Werkzeug (P6-01) und Tagebuch (P6-02):**
+    - „Feld gießen“ ist jetzt eine Gießrunde aus genau den durstigen Einheiten (`buildWateringBatch`): jede einmal, die ältesten zuerst, in Blöcken zu 12 (jeder Block eine neue Reise). Jede Antwort plant neu ein (richtig: später, falsch: morgen), deshalb endet die Runde, wenn nichts mehr fällig ist. Das Ergebnis heißt „Feld gegossen“ mit „Weiter trainieren“ (gewöhnliches Training); wer vorher schließt, sieht „Gießen unterbrochen“ mit „Weiter gießen“.
+    - Eine angetippte Pflanze spielt ihr Wort bzw. ihren Satz (bei Rollen das Anredewort). Die gelbe runde Lupe rechts im Info-Feld öffnet Wortkarte bzw. Satzlupe. Abweichung von der Ideenbeschreibung: Das Blatt öffnet nicht direkt beim Antippen, sonst käme es beim Durchtippen des Felds jedes Mal hoch.
+    - Tagebuch `save.days` (`logic/diary.ts`): je Tag XP, Aufgaben, richtige, neue Wörter, Runden, Tagesziel, Streak-Schutz. Gebucht in `recordSeen`, `recordTask`, Rundenende und Boss-Sieg, Challenge-XP über `settle`; überbrückte Tage markiert `begin`. Ältere Stände bekommen ein leeres Tagebuch, unbrauchbare Einträge fallen weg.
+    - Gefunden und behoben:
+      - Nachts hob sich der erste Lupenknopf (Fläche `--surface`) kaum vom Info-Feld (`--paper-2`) ab; jetzt gelb wie die Zweitknöpfe.
+      - Der Knopf unter dem Text ließ beim ersten Antippen alles darunter um 32 px springen. Jetzt sitzt die Lupe rechts, und das Info-Feld hat drei Zeilen Mindesthöhe (gemessen: 440 bleibt bei 81 px; bei 375 wächst es nur bei langen Sätzen um eine Zeile, wie vorher).
+    - Geprüft in Edge bei 440×956 (Safe-Area 59) und 375×667, Tag und Nacht: Feld mit angetippter Pflanze, Wortkarte, Aufgabe der Gießrunde, „Feld gegossen“, Rückkehr mit Gießwelle, „Gießen unterbrochen“. Keine Konsolenfehler, kein seitliches Scrollen.
+    - check grün, 253 Vitest grün (neu: `tests/diary.test.ts`, Gießrunde in `tests/session.test.ts`; 7 von 8 Mutationen machen sie rot, die achte – Tagebuch-Eintrag nach dem Anlegen nicht neu gelesen – ist in Svelte 5 harmlos und bleibt als Absicherung), Playwright 11/11 grün (neu: `tests/e2e/field.spec.ts`, Gegenprobe ohne Gießrunde rot).
+- **Nächste Schritte:** Alex Punkt 1 zeigen; live erst auf sein Wort (zusammen, damit das Tagebuch früh zählt). Danach Punkt 2 (Lückensatz, P6-03). Sonst offen: P1-06 (Prototyp im LAN, `pending-alex`).
 
 ## Phase 2 – Ergebnis
 

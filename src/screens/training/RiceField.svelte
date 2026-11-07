@@ -6,6 +6,7 @@
 
 <script lang="ts">
   import { onDestroy, onMount, untrack } from 'svelte';
+  import { play } from '../../lib/audio/player';
   import { tick } from '../../lib/feedback';
   import { game, today } from '../../lib/game.svelte';
   import Glow from '../../lib/illustrations/Glow.svelte';
@@ -218,6 +219,8 @@
     tick();
     picked = j;
     info = plantInfo(order[j]!, game.save.items[order[j]!]!, day);
+    // Antippen spielt das Wort bzw. den Satz der Pflanze.
+    if (info.item) play(info.item).catch(() => {});
     const s = slots[j]!;
     splash(s.x, s.y, s.k);
     if (!reducedMotion())
