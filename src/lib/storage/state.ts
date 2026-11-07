@@ -91,6 +91,14 @@ export interface DayLog {
 
 export const emptyDay = (): DayLog => ({ xp: 0, tasks: 0, right: 0, newWords: 0, rounds: 0, goal: false, shield: false });
 
+/** Roller-Sprint: Bestzeit gesamt, Bestzeit der Woche (week = deren Montag), Zahl der Fahrten; Zeiten in ms. */
+export interface SprintRecord {
+  best: number | null;
+  week: DateKey | null;
+  weekBest: number | null;
+  runs: number;
+}
+
 /** Gesamter Spielstand; liegt als ein Datensatz in IndexedDB und wird bei jeder Aktion sofort geschrieben. */
 export interface SaveState {
   version: 1;
@@ -128,6 +136,7 @@ export interface SaveState {
   yard: { fedOn: DateKey | null; fed: number };
   /** Tagebuch je Kalendertag (nur Tage mit Aktivität oder Streak-Schutz). */
   days: Record<DateKey, DayLog>;
+  sprint: SprintRecord;
 }
 
 export const SAVE_VERSION = 1;
@@ -170,6 +179,7 @@ export function newSave(now: Date = new Date()): SaveState {
     settings: { morning: '08:00', evening: '20:00', sound: true, haptics: true, theme: 'auto' },
     yard: { fedOn: null, fed: 0 },
     days: {},
+    sprint: { best: null, week: null, weekBest: null, runs: 0 },
   };
 }
 
@@ -209,5 +219,15 @@ export function normalizeSave(raw: unknown): SaveState {
       .filter(([k, d]) => /^\d{4}-\d{2}-\d{2}$/.test(k) && isObject(d))
       .map(([k, d]) => [k, { ...emptyDay(), ...d } as DayLog] as const),
   );
+  // Roller-Sprint: nur gültige Zeiten übernehmen.
+  const time = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) && v > 0 ? v : null);
+  const sp = save.sprint;
+  const week = typeof sp.week === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(sp.week) ? sp.week : null;
+  save.sprint = {
+    best: time(sp.best),
+    week,
+    weekBest: week ? time(sp.weekBest) : null,
+    runs: typeof sp.runs === 'number' && sp.runs >= 0 ? Math.floor(sp.runs) : 0,
+  };
   return save;
 }

@@ -22,8 +22,11 @@
    * wie die Szenen (flach, keine Konturen, Licht von rechts oben); lebt mit den Schleifen aus scene.css.
    * Nachts leuchtet die Laterne und der Roller hat Licht.
    */
-  /** Ohne `size` füllt das Objekt seinen Container (Größe dann per CSS). */
-  let { region, size }: { region: RegionId; size?: number } = $props();
+  /**
+   * Ohne `size` füllt das Objekt seinen Container (Größe dann per CSS). `layer` (nur Roller): `back` zeichnet nur den
+   * Blumenkorb, `front` alles andere – dazwischen sitzt Trâu (Roller-Sprint).
+   */
+  let { region, size, layer }: { region: RegionId; size?: number; layer?: 'back' | 'front' } = $props();
 
   const labels: Record<RegionId, string> = {
     danang: 'Korbboot mit Ruder',
@@ -59,7 +62,16 @@
   ] as const;
 </script>
 
-<svg class="scene hero" data-phase="in" viewBox="0 0 200 200" width={size ?? '100%'} height={size ?? '100%'} role="img" aria-label={labels[region]}>
+<svg
+  class="scene hero"
+  data-phase="in"
+  viewBox="0 0 200 200"
+  width={size ?? '100%'}
+  height={size ?? '100%'}
+  role={layer ? undefined : 'img'}
+  aria-label={layer ? undefined : labels[region]}
+  aria-hidden={layer ? 'true' : undefined}
+>
   {#if region === 'danang'}
     <!-- Thúng chai: rundes Korbboot, Ruder quer darüber, Wellenringe -->
     <g class="loop-ring" style="--t: 2.8s"><ellipse cx="100" cy="128" rx="84" ry="26" fill={C.seaLight} /></g>
@@ -106,6 +118,7 @@
     <circle cx="100" cy="27" r="4" fill={C.hatShade} />
   {:else if region === 'hanoi'}
     <!-- Roller mit Blumenkorb: Räder drehen, Blumen wippen -->
+    {#if layer !== 'back'}
     {#each wheels as [cx, cy] (cx)}
       <circle {cx} {cy} r="24" fill={C.boatDark} />
       <circle {cx} {cy} r="12" fill={C.metal} />
@@ -114,7 +127,9 @@
         <rect x={cx - 11} y={cy - 1.6} width="22" height="3.2" fill={C.metalShade} />
       </g>
     {/each}
+    {/if}
     <!-- Blumenkorb auf dem Gepäckträger -->
+    {#if layer !== 'front'}
     <g class="loop-sway origin-bottom" style="--t: 1.8s; --rot: 4">
       <rect x="10" y="78" width="44" height="30" rx="6" fill={C.boatDark} />
       <circle cx="16" cy="74" r="11" fill={C.lotus} />
@@ -125,6 +140,8 @@
       <path d="M50 62 Q66 48 70 56 Q62 62 52 70 Z" fill={C.green} />
       <path d="M12 64 Q-2 52 -4 62 Q4 66 12 72 Z" fill={C.green} />
     </g>
+    {/if}
+    {#if layer !== 'back'}
     <!-- Heckverkleidung über dem Hinterrad, Sitzbank, Trittbrett -->
     <path d="M22 132 Q20 104 52 100 L102 100 Q110 100 110 110 L110 136 Q110 144 102 144 L32 144 Q22 144 22 132 Z" fill={C.red} />
     <path d="M22 132 Q20 104 52 100 L62 100 Q40 108 40 144 L32 144 Q22 144 22 132 Z" fill={C.redDeep} />
@@ -139,6 +156,7 @@
       <Glow x={160} y={68} r={9} color={C.yellow} t={2} />
     {/if}
     <circle cx="160" cy="68" r="8" fill={C.yellow} />
+    {/if}
   {:else}
     <!-- Cà phê sữa đá: Phin tropft in das Glas -->
     <rect x="58" y="62" width="84" height="8" rx="3" fill={C.metalShade} />

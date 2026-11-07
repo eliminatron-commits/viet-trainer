@@ -10,6 +10,7 @@
   import { game } from '../../lib/game.svelte';
   import { centeredIndex, motifGap, motifPairs, motifSentences } from '../../lib/logic/carousel';
   import { focusInfo, PAIR_COUNT, PAIRS_SECONDS, type TrainingFocus } from '../../lib/logic/session';
+  import { formatTime, SPRINT_GOAL, SPRINT_MIN_WORDS, sprintReady } from '../../lib/logic/sprint';
   import { reducedMotion } from '../../lib/motion';
   import { ripple } from '../../lib/ripple';
   import ModeMotif from './ModeMotif.svelte';
@@ -20,8 +21,10 @@
    * sie in die Mitte, Antippen der mittleren startet die Übung – die Karte wächst dabei wie ein Fenster in die
    * Übung (`stage-card`, motion „morph-open“).
    */
-  type Focus = Exclude<TrainingFocus, 'mixed'>;
-  let { onstart }: { onstart: (focus: Focus, tone: CardTone) => void } = $props();
+  type Exercise = Exclude<TrainingFocus, 'mixed'>;
+  /** Übungen im Training plus der Roller-Sprint (eigener Bildschirm). */
+  type Focus = Exercise | 'sprint';
+  let { onstart, onsprint }: { onstart: (focus: Exercise, tone: CardTone) => void; onsprint: (tone: CardTone) => void } = $props();
 
   interface Mode {
     focus: Focus;
@@ -66,8 +69,21 @@
       need: 'Dafür brauchst du gelernte Wörter.',
       tone: 'lotus',
     },
+    {
+      focus: 'sprint',
+      title: 'Roller-Sprint',
+      text: `Zeitrennen durch Hà Nội: ${SPRINT_GOAL} richtige Antworten bis ins Ziel, Fehler kosten Zeit.`,
+      need: `Dafür brauchst du mindestens ${SPRINT_MIN_WORDS} gelernte Wörter.`,
+      tone: 'yellow',
+    },
   ];
-  const available = $derived(Object.fromEntries(modes.map((m) => [m.focus, focusInfo(game.save, m.focus).available])) as Record<Focus, boolean>);
+  const available = $derived(
+    Object.fromEntries(modes.map((m) => [m.focus, m.focus === 'sprint' ? sprintReady(game.save) : focusInfo(game.save, m.focus).available])) as Record<
+      Focus,
+      boolean
+    >,
+  );
+  const best = $derived(game.save.sprint.best);
   const pairs = $derived(motifPairs(game.save));
   const sentences = $derived(motifSentences(game.save));
   const gap = $derived(motifGap(game.save));
@@ -114,7 +130,8 @@
     if (!available[m.focus]) return;
     lastIndex = i;
     opening = m.focus;
-    onstart(m.focus, m.tone);
+    if (m.focus === 'sprint') onsprint(m.tone);
+    else onstart(m.focus, m.tone);
   }
 </script>
 
@@ -146,7 +163,11 @@
         />
         <span class="body">
           <span class="name">{m.title}</span>
-          <span class="text" id="mode-text-{m.focus}">{available[m.focus] ? m.text : m.need}</span>
+          <span class="text" id="mode-text-{m.focus}"
+            >{available[m.focus] ? m.text : m.need}{#if m.focus === 'sprint' && available.sprint && best !== null}<span class="best">
+                Bestzeit {formatTime(best)}</span
+              >{/if}</span
+          >
         </span>
       </button>
     {/each}
@@ -228,6 +249,12 @@
   }
   .text {
     line-height: 1.4;
+  }
+  .best {
+    display: block;
+    margin-top: 4px;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
   }
   .lotus {
     background: var(--lotus);

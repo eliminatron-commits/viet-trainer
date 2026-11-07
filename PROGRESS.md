@@ -242,7 +242,25 @@
     - Bekannt, wie bei allen Auswahl-Aufgaben: Bei 375×667 deckt die Rückmeldungsleiste die untere Kachelreihe; die Lösung steht hier zusätzlich in der Lücke.
     - Geprüft in Edge bei 440×956 (Safe-Area 59) und 375×667, Tag und Nacht: Motiv Bild für Bild (0–5000 ms), Aufgabe, richtig, falsch; Echtzeit per CDP-Screencast (Motiv, Karte wächst in die Übung, Lücke füllt sich). Keine Konsolenfehler, kein seitliches Scrollen.
     - check grün, 261 Vitest grün (Lückensatz über alle 270 Sätze und mehrere Seeds; 8 von 8 Mutationen machen die Tests rot), Playwright 12/12 grün (neu: `tests/e2e/gap.spec.ts`, Gegenprobe mit leerer Lücke rot).
-- **Nächste Schritte:** Alex Punkt 2 zeigen; live erst auf sein Wort. Danach Punkt 3 (Roller-Sprint, P6-04). Sonst offen: P1-06 (Prototyp im LAN, `pending-alex`).
+    - Live seit `5386acc` (2026-11-07).
+  - **Punkt 3 erledigt (2026-11-07), Roller-Sprint (P6-04):**
+    - Regeln: Ampel Rot – Gelb – Grün (je 0,7 s), dann läuft die Uhr. Ziel nach 12 richtigen Antworten. Gemessen wird nur die Zeit beim Antworten (die Rückmeldung danach nicht), und nicht, solange die App im Hintergrund ist (nachgestellt: 3 s verborgen, die Uhr stand). Jeder Fehler +3 s, Trâu bremst. Aufgaben: Wort-Auswahl mit einem Tipp (Vietnamesisch → Deutsch und umgekehrt) aus gelernten echten Wörtern; kein „Weiter“, die nächste kommt von selbst (richtig nach 0,38 s, falsch nach 1 s). Ab 8 gelernten Wörtern.
+    - Bild: oben die Hà-Nội-Szene unten bündig, damit die Fahrbahn zu sehen ist; Trâu sitzt auf dem Roller mit Blumenkorb (Hero-Objekt, jetzt in zwei Ebenen: Korb hinter ihm, Sitz, Verkleidung und Räder davor) und fährt mit jeder richtigen Antwort ein Stück zur Zielfahne (rote Flagge mit gelbem Stern), mit Abgaswölkchen; Uhr als Glas-Pille, Fehler als rote „+3 s“-Pille. Karte im Karussell an letzter Stelle (gelb wie Hà Nội), Motiv: Trâu fährt in drei Stößen zur Fahne, die Stoppuhr läuft. Ziel: Zeit, „Erste Fahrt“ / „Neue Bestzeit!“ / „Bestzeit der Woche!“, Bestzeit und diese Woche, XP. Die Karte zeigt die Bestzeit.
+    - Spielstand `save.sprint` (Bestzeit, Montag und Bestzeit der Woche, Fahrten); ältere Stände bekommen einen leeren Rekord, unbrauchbare Werte fallen weg. Antworten zählen wie im Training (SRS, XP, Tagebuch), die Fahrt als Runde.
+    - Neues Token `--go` (grünes Ampellicht, nur als Fläche, Tag und Nacht).
+    - Gefunden und behoben:
+      - Die Roller der Szene fuhren mitten durch Trâu; die vordere Spur bleibt im Sprint frei (`data-lane` in der Szene), der Gegenverkehr hinten bleibt.
+      - Motiv: Roller fuhr am Ende in die Fahne und blendete dort aus; jetzt hält er davor. Roller größer, Uhr nach oben rechts.
+      - Mittellinie der Motiv-Fahrbahn war ein `repeating-linear-gradient` (Regel: keine Verläufe) – jetzt einzelne Striche.
+      - Grünes Ampellicht hatte eine feste Farbe – jetzt Token.
+      - „hinuntergehen“ brach bei 375 mitten im Wort; Kachel 17 px mit 14 px Rand – gemessen passt das breiteste Wort (Entschuldigung, 130 von 133 px).
+      - „Entschuldigung“ als Aufgabe wäre bei 375 mit 40 px über den Rand gelaufen (315 von 295 px); groß nur noch bis 16 Zeichen und Wörter bis 11 (breitestes dann 269 px), sonst 24 px.
+      - Zielfahne steckte bei 375 halb hinter der Uhr; kleiner und tiefer (4 px Abstand, gemessen).
+      - „Gleich geht’s los …“: die Punkte standen bei 375 allein in der zweiten Zeile; jetzt ohne.
+      - Rekorde im Ziel waren eingerückt (Standard-Einzug von `dd`).
+    - Geprüft in Edge bei 440×956 (Safe-Area 59) und 375×667, Tag und Nacht: Motiv Bild für Bild (0–5800 ms, nichts ragt heraus), Ampel, Aufgabe, Gas, Bremse, Ziel; Echtzeit per CDP-Screencast (Karte wächst, Ampel, Gas, Bremse), 100 fps. Keine Konsolenfehler, kein seitliches Scrollen.
+    - check grün, 268 Vitest grün (neu: `tests/sprint.test.ts`; 8 von 8 Mutationen machen ihn rot), Playwright 14/14 grün (neu: `tests/e2e/sprint.spec.ts` mit Rennen und Sperre; Gegenprobe ohne Strafzeit rot).
+- **Nächste Schritte:** Alex Punkt 3 zeigen; live erst auf sein Wort. Danach Punkt 4 (Laternen-Kalender, P6-05). Sonst offen: P1-06 (Prototyp im LAN, `pending-alex`).
 
 ## Phase 2 – Ergebnis
 

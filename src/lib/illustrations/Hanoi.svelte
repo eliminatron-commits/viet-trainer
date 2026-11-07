@@ -193,18 +193,18 @@
     </g>
   {/if}
 
-  <!-- Rollerverkehr: vorne nach rechts, hinten nach links -->
+  <!-- Rollerverkehr: vorne nach rechts, hinten nach links (data-lane: der Roller-Sprint lässt die vordere Spur frei, dort fährt Trâu) -->
   <g class="in in-fade" style="--e: 160">
-    <g class="loop-cross" style="--t: 8s; --d: -3s; --dist: -540px">
+    <g class="loop-cross" data-lane="far" style="--t: 8s; --d: -3s; --dist: -540px">
       <g transform="translate(470 226) scale(-0.78 0.78)">{@render scooter('mint', 'yellow', 'helmet', false)}</g>
     </g>
-    <g class="loop-cross" style="--t: 11s; --d: -8s; --dist: -540px">
+    <g class="loop-cross" data-lane="far" style="--t: 11s; --d: -8s; --dist: -540px">
       <g transform="translate(470 226) scale(-0.78 0.78)">{@render scooter('yellow', 'red', 'mint', false)}</g>
     </g>
-    <g class="loop-cross" style="--t: 7s; --d: -1s; --dist: 540px">
+    <g class="loop-cross" data-lane="near" style="--t: 7s; --d: -1s; --dist: 540px">
       <g transform="translate(-70 248)">{@render scooter('red', 'mint', 'star', true)}</g>
     </g>
-    <g class="loop-cross" style="--t: 9.5s; --d: -6.2s; --dist: 540px">
+    <g class="loop-cross" data-lane="near" style="--t: 9.5s; --d: -6.2s; --dist: 540px">
       <g transform="translate(-70 248)">{@render scooter('green', 'pink', 'helmet', false)}</g>
     </g>
   </g>

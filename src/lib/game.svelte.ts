@@ -7,6 +7,7 @@ import { awardChest, openChest as open, type ChestPrize } from './logic/chest';
 import { logNewWord, logRound, logShields, logTask, syncDay } from './logic/diary';
 import { completeStage, isDone } from './logic/path';
 import { activateBoost, addXp, applyShields, rollDay, XP_PER_CORRECT, xpMultiplier, type XpResult } from './logic/rewards';
+import { recordRun } from './logic/sprint';
 import { answerItem, markSeen } from './logic/srs';
 import { countTask, type TaskResult } from './logic/stats';
 import { feed } from './logic/yard';
@@ -144,6 +145,24 @@ export function recordRoundEnd(): XpResult {
   logRound(game.save, t);
   persist();
   return extra;
+}
+
+export interface SprintOutcome extends XpResult {
+  /** erste Fahrt überhaupt, neue Bestzeit, neue Wochenbestzeit */
+  first: boolean;
+  best: boolean;
+  week: boolean;
+}
+
+/** Roller-Sprint im Ziel: Zeit eintragen (Bestzeit gesamt und je Woche) – zählt als Runde. */
+export function recordSprint(ms: number): SprintOutcome {
+  const t = begin();
+  game.save.stats.rounds++;
+  const run = recordRun(game.save.sprint, ms, t);
+  const extra = settle(t);
+  logRound(game.save, t);
+  persist();
+  return { ...run, ...extra };
 }
 
 /**

@@ -42,6 +42,7 @@
   --bad: var(--red);
   --bad-soft: #fbd3cf;
   --bad-ink: #a8170f;
+  --go: #2fb56f; /* grünes Ampellicht (Roller-Sprint), nur als Fläche */
   --disabled-bg: rgb(255 255 255 / 0.45);
   --disabled-ink: rgb(35 26 21 / 0.55);
   --scrim: rgb(35 26 21 / 0.45); /* abgedunkelter Grund hinter Blättern (Truhe) */
@@ -117,6 +118,7 @@
   --ok-soft: #1d4a39;
   --bad-soft: #4d2226;
   --bad-ink: #ff9a8e;
+  --go: #4fd08e;
   --disabled-bg: rgb(255 255 255 / 0.1);
   --disabled-ink: rgb(246 235 221 / 0.5);
   --scrim: rgb(5 8 18 / 0.6);

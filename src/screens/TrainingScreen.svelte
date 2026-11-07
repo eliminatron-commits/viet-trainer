@@ -13,7 +13,11 @@
 
   let {
     onstart,
-  }: { onstart: (verbsOnly: boolean, focus: TrainingFocus, card?: CardTone, water?: boolean) => void } = $props();
+    onsprint,
+  }: {
+    onstart: (verbsOnly: boolean, focus: TrainingFocus, card?: CardTone, water?: boolean) => void;
+    onsprint: (card: CardTone) => void;
+  } = $props();
 
   let verbsOnly = $state(false);
   const day = today();
@@ -83,7 +87,7 @@
     </div>
   </section>
 
-  <ModeCarousel onstart={(focus, tone) => onstart(false, focus, tone)} />
+  <ModeCarousel onstart={(focus, tone) => onstart(false, focus, tone)} {onsprint} />
 </main>
 
 <style>

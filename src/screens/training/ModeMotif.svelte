@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount, tick } from 'svelte';
   import type { MotifGap } from '../../lib/logic/carousel';
+  import TrauRide from '../../lib/mascot/TrauRide.svelte';
   import { at, loop } from './motion-loop';
 
   /**
@@ -8,13 +9,14 @@
    * - Paare: links Vietnamesisch, rechts Deutsch; Paar für Paar leuchtet gelb auf, schnappt zusammen und verblasst,
    *   unten läuft die Zeit ab.
    * - Lückensatz: in der Satzleiste klafft eine Lücke; die richtige Kachel springt hinein, die anderen treten zurück.
+   * - Roller-Sprint: Trâu fährt auf dem Roller in drei Stößen (Gas) zur Zielfahne, die Stoppuhr läuft, dann von vorn.
    * - Satzbau: die Kacheln eines gelernten Satzes liegen verstreut und springen der Reihe nach in die Satzleiste.
    * - Hör-Diktat: die Klangscheibe pulsiert wie beim Sprechen, die Kacheln erscheinen Wort für Wort.
    * - Ton-Ninja: Tonzeichen fliegen kreiselnd heran und landen auf dem a; das vorige fliegt davon, sobald das nächste kommt.
    * Steht es still (nicht in der Mitte, nicht sichtbar, reduzierte Bewegung), zeigt es eine erklärende Pose.
    * Ohne passenden gelernten Inhalt bleiben die Kacheln leer – das Motiv zeigt nie etwas Ungelerntes.
    */
-  type Focus = 'pairs' | 'gap' | 'build' | 'dictation' | 'tone';
+  type Focus = 'pairs' | 'gap' | 'build' | 'dictation' | 'tone' | 'sprint';
   let {
     focus,
     playing,
@@ -34,9 +36,9 @@
   const D = 6000;
   const SPRING = 'cubic-bezier(0.34, 1.56, 0.64, 1)';
   const OUT = 'cubic-bezier(0.22, 1, 0.36, 1)';
-  const POSE: Record<Focus, number> = { pairs: 2750, gap: 3000, build: 4300, dictation: 4300, tone: 900 };
+  const POSE: Record<Focus, number> = { pairs: 2750, gap: 3000, build: 4300, dictation: 4300, tone: 900, sprint: 3000 };
   /** gesperrte Karte (`idle`): ruhige Grundstellung statt Spielszene – bei Paaren alle Kacheln weiß */
-  const pose = $derived(idle && (focus === 'pairs' || focus === 'gap') ? 0 : POSE[focus]);
+  const pose = $derived(idle && (focus === 'pairs' || focus === 'gap' || focus === 'sprint') ? 0 : POSE[focus]);
   const run = (frames: Keyframe[]) => ({ frames, duration: D, pose, playing });
 
   // --- Paare ---------------------------------------------------------------------------------------------------
@@ -73,6 +75,47 @@
     { offset: at(5300, D), transform: 'scaleX(0.1)', easing: OUT },
     { offset: at(5700, D), transform: 'scaleX(1)' },
     { offset: 1, transform: 'scaleX(1)' },
+  ];
+
+  // --- Roller-Sprint -----------------------------------------------------------------------------------------
+  /** Rollergröße in px (die Szene rechnet in cqw, TrauRide in px – gemessen an der Motivbreite) */
+  let rideSize = $state(96);
+  /** Lage (cqw) nach jedem Gas-Stoß; der letzte endet vor der Fahne */
+  const STOPS = [0, 13, 26, 39] as const;
+  const GAS = [900, 2100, 3300];
+  const RIDE: Keyframe[] = [
+    { offset: 0, transform: 'translateX(0cqw)', opacity: 1 },
+    ...GAS.flatMap((ms, k) => [
+      { offset: at(ms, D), transform: `translateX(${STOPS[k]!}cqw)`, opacity: 1, easing: SPRING },
+      { offset: at(ms + 520, D), transform: `translateX(${STOPS[k + 1]!}cqw)`, opacity: 1 },
+    ]),
+    // im Ziel kurz stehen, ausblenden, vorn wieder auftauchen – nie über die Fahne hinaus
+    { offset: at(4800, D), transform: `translateX(${STOPS[3]}cqw)`, opacity: 1 },
+    { offset: at(5150, D), transform: `translateX(${STOPS[3]}cqw)`, opacity: 0 },
+    { offset: at(5200, D), transform: 'translateX(0cqw)', opacity: 0 },
+    { offset: at(5700, D), transform: 'translateX(0cqw)', opacity: 1 },
+    { offset: 1, transform: 'translateX(0cqw)', opacity: 1 },
+  ];
+  /** Wölkchen hinter dem Hinterrad bei jedem Stoß */
+  const PUFF: Keyframe[] = [
+    { offset: 0, opacity: 0, transform: 'translateX(0cqw) scale(0.6)' },
+    ...GAS.flatMap((ms, k) => [
+      { offset: at(ms, D), opacity: 0, transform: `translateX(${STOPS[k]!}cqw) scale(0.6)` },
+      { offset: at(ms + 60, D), opacity: 0.9, transform: `translateX(${STOPS[k]!}cqw) scale(0.7)` },
+      { offset: at(ms + 600, D), opacity: 0, transform: `translateX(${STOPS[k]! - 7}cqw) scale(1.5)` },
+    ]),
+    { offset: 1, opacity: 0, transform: 'translateX(0cqw) scale(0.6)' },
+  ];
+  const HAND: Keyframe[] = [
+    { offset: 0, transform: 'rotate(0deg)' },
+    { offset: 1, transform: 'rotate(360deg)' },
+  ];
+  const WAVE: Keyframe[] = [
+    { offset: 0, transform: 'skewY(0deg)' },
+    { offset: 0.25, transform: 'skewY(-6deg)' },
+    { offset: 0.5, transform: 'skewY(0deg)' },
+    { offset: 0.75, transform: 'skewY(5deg)' },
+    { offset: 1, transform: 'skewY(0deg)' },
   ];
 
   // --- Lückensatz ---------------------------------------------------------------------------------------------
@@ -162,6 +205,11 @@
     });
   }
   onMount(() => {
+    if (focus === 'sprint') {
+      const ro = new ResizeObserver(() => (rideSize = Math.round(box.clientWidth * 0.38)));
+      ro.observe(box);
+      return () => ro.disconnect();
+    }
     if (focus !== 'build' && focus !== 'gap') return;
     const again = () => (focus === 'gap' ? void measureGap() : measure());
     const ro = new ResizeObserver(again);
@@ -243,7 +291,7 @@
   ];
 </script>
 
-<div class="motif {focus}" bind:this={box} aria-hidden="true">
+<div class="motif {focus}" class:still={!playing} bind:this={box} aria-hidden="true">
   {#if focus === 'pairs'}
     {#each rows as pair, p (p)}
       <span class="tile left" style:--row={p} use:loop={run(tileFrames(pickAt(p), matchAt(p)))}>
@@ -256,6 +304,18 @@
       </span>
     {/each}
     <span class="timer"><span class="fill" use:loop={run(TIMER)}></span></span>
+  {:else if focus === 'sprint'}
+    <span class="road"><span class="lane">{#each { length: 9 } as _, i (i)}<span></span>{/each}</span></span>
+    <svg class="goal" viewBox="0 0 40 80">
+      <rect x="4" y="6" width="4" height="72" rx="2" fill="var(--nav-bg)" />
+      <g class="cloth" use:loop={run(WAVE)}>
+        <path d="M8 8 L38 10 L38 34 L8 32 Z" fill="var(--red)" />
+        <path d="M23 13 L25.4 19.2 L32 19.4 L26.8 23.4 L28.7 29.8 L23 26 L17.3 29.8 L19.2 23.4 L14 19.4 L20.6 19.2 Z" fill="var(--yellow)" />
+      </g>
+    </svg>
+    <span class="watch"><span class="hand" use:loop={run(HAND)}></span><span class="pin"></span></span>
+    <span class="puff" use:loop={run(PUFF)}></span>
+    <span class="racer" use:loop={run(RIDE)}><TrauRide size={rideSize} /></span>
   {:else if focus === 'gap'}
     <div class="strip gapline" use:loop={run(GAP_STRIP)}>
       {#if gap}
@@ -384,6 +444,92 @@
     background: var(--yellow);
     border-radius: inherit;
     transform-origin: left center;
+  }
+
+  /* Roller-Sprint: Fahrbahn unten, Trâu fährt von links zur Fahne rechts (hält davor); Stoppuhr oben rechts */
+  .road {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 3cqw;
+    height: 9cqw;
+    border-radius: 4.5cqw;
+    background: var(--tone-yellow-soft);
+  }
+  .lane {
+    position: absolute;
+    left: 4cqw;
+    right: 4cqw;
+    top: 4cqw;
+    height: 1cqw;
+    display: flex;
+    justify-content: space-between;
+  }
+  .lane span {
+    width: 5cqw;
+    height: 100%;
+    border-radius: 0.5cqw;
+    background: var(--surface);
+  }
+  .goal {
+    position: absolute;
+    right: 5cqw;
+    bottom: 6cqw;
+    width: 10cqw;
+    height: 20cqw;
+    overflow: visible;
+  }
+  .cloth {
+    transform-box: fill-box;
+    transform-origin: 0 50%;
+  }
+  .watch {
+    position: absolute;
+    right: 5cqw;
+    top: 4cqw;
+    width: 12cqw;
+    height: 12cqw;
+    border-radius: 50%;
+    background: var(--surface);
+  }
+  .hand {
+    position: absolute;
+    left: calc(50% - 0.6cqw);
+    top: 1.6cqw;
+    width: 1.2cqw;
+    height: 4.4cqw;
+    border-radius: 0.6cqw;
+    background: var(--red);
+    transform-origin: 50% 100%;
+  }
+  .pin {
+    position: absolute;
+    left: calc(50% - 1cqw);
+    top: calc(50% - 1cqw);
+    width: 2cqw;
+    height: 2cqw;
+    border-radius: 50%;
+    background: var(--ink);
+  }
+  .racer {
+    position: absolute;
+    left: 6cqw;
+    bottom: 4cqw;
+    line-height: 0;
+  }
+  .puff {
+    position: absolute;
+    left: 6cqw;
+    bottom: 10cqw;
+    width: 5cqw;
+    height: 5cqw;
+    border-radius: 50%;
+    background: var(--surface);
+    opacity: 0;
+  }
+  /* Nicht in der Mitte: auch Trâus eigene Bewegungen (Atmen, Räder) ruhen */
+  .still :global(*) {
+    animation-play-state: paused !important;
   }
 
   /* Lückensatz: Satzleiste mit eingelassener Lücke oben, die Kacheln darunter; die richtige springt hinein.

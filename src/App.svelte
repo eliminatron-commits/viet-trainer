@@ -13,6 +13,7 @@
   import PhrasebookScreen from './screens/PhrasebookScreen.svelte';
   import SituationScreen from './screens/SituationScreen.svelte';
   import Play, { type PlayMode } from './screens/play/Play.svelte';
+  import Sprint from './screens/play/Sprint.svelte';
   import ProfileScreen from './screens/ProfileScreen.svelte';
   import ReviewScreen from './screens/ReviewScreen.svelte';
   import SettingsScreen from './screens/SettingsScreen.svelte';
@@ -20,7 +21,14 @@
   import TrainingScreen from './screens/TrainingScreen.svelte';
   import type { CardTone } from './screens/training/ModeCarousel.svelte';
 
-  type Screen = { name: 'tabs' } | { name: 'stage'; stage: Stage } | { name: 'play'; mode: PlayMode; card?: CardTone } | { name: 'settings' } | { name: 'review' } | { name: 'situation'; tag: SituationTag };
+  type Screen =
+    | { name: 'tabs' }
+    | { name: 'stage'; stage: Stage }
+    | { name: 'play'; mode: PlayMode; card?: CardTone }
+    | { name: 'sprint'; card?: CardTone }
+    | { name: 'settings' }
+    | { name: 'review' }
+    | { name: 'situation'; tag: SituationTag };
 
   let tab = $state<Tab>('path');
   let screen = $state<Screen>({ name: 'tabs' });
@@ -67,7 +75,13 @@
   {#if tab === 'path'}
     <PathScreen onopen={(stage) => go({ name: 'stage', stage }, 'morph-open')} />
   {:else if tab === 'training'}
-    <TrainingScreen onstart={(verbsOnly, focus, card, water) => start({ kind: 'training', verbsOnly, focus, water }, card)} />
+    <TrainingScreen
+      onstart={(verbsOnly, focus, card, water) => start({ kind: 'training', verbsOnly, focus, water }, card)}
+      onsprint={(card) => {
+        playRun++;
+        go({ name: 'sprint', card }, 'morph-open');
+      }}
+    />
   {:else if tab === 'profile'}
     <ProfileScreen onsettings={() => go({ name: 'settings' }, 'push')} />
   {:else}
@@ -91,6 +105,10 @@
       onboss={(stage) => start({ kind: 'boss', stage })}
     />
   {/key}
+{:else if screen.name === 'sprint'}
+  {#key playRun}
+    <Sprint card={screen.card} onexit={() => go({ name: 'tabs' }, 'sheet-down')} />
+  {/key}
 {:else if screen.name === 'situation'}
   <SituationScreen tag={screen.tag} onback={() => go({ name: 'tabs' }, 'morph-close')} />
 {:else if screen.name === 'settings'}
@@ -105,7 +123,7 @@
   <div class="statusbar" aria-hidden="true"></div>
 {/if}
 
-<NewsToast active={game.ready && screen.name !== 'play'} />
+<NewsToast active={game.ready && screen.name !== 'play' && screen.name !== 'sprint'} />
 <LookupSheet />
 
 {#if game.error}
