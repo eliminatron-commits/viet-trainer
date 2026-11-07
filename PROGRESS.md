@@ -101,7 +101,7 @@
     - reduzierte Bewegung: alles sofort sichtbar, keine Animation;
     - kein seitliches Scrollen.
   - check grün, 214 Vitest grün (neu: `tests/route.test.ts`, 4 Mutationen machen ihn rot).
-- **Phase 5 – Kreativ-Runde (ab 2026-11-06, Opus 5.5 hoch).** Alex: „die anderen Bereiche sind eher langweilig … mehr Kreativität mit Animationen, schönem Design so wie im Lernpfad“, und im Profil gebe es zu wenig zu tun. Er hat diese Ideen gewählt, Akzeptanz siehe `tests.json` Phase 5:
+- **Phase 5 – Kreativ-Runde: abgeschlossen** (2026-11-07, Opus 5.5 hoch; begonnen 2026-11-06, live seit `ca545f5`). Von Alex auf dem iPhone abgenommen (2026-11-07: „Alles passt“). Alex: „die anderen Bereiche sind eher langweilig … mehr Kreativität mit Animationen, schönem Design so wie im Lernpfad“, und im Profil gebe es zu wenig zu tun. Er hat diese Ideen gewählt, Akzeptanz siehe `tests.json` Phase 5:
   1. Lernpfad: Route (erledigt, P5-01).
   2. Session „Etappe als Reise“: Trâu läuft oben auf einer Route zum Ziel, die Szene der Region baut sich mit dem Fortschritt auf (P5-02).
   3. Session „Lebendige Wörter“: Buchstabe für Buchstabe, Tonzeichen fallen auf ihre Vokale, die Karte dreht sich (P5-03).
@@ -201,7 +201,8 @@
       - Öffnen und Wortwechsel Bild für Bild (feste Animationszeiten), der ganze Ablauf in Echtzeit per CDP-Screencast.
       - Gesamtmessung ohne Befund (Kontrast, Tap-Ziele, kein Überlauf).
   - check grün, 245 Vitest grün (neu: `tests/gloss.test.ts`, 5 Mutationen machen ihn rot), Playwright 9/9 grün. Neu: Satzlupe, Scrollstand ohne Übergänge (rot mit dem alten Code), Lupe in jedem Trainingsmodus.
-- **Nächste Schritte:** Alex Gesamtprüfung und Satzlupe zeigen; committen und live stellen erst auf sein Wort. Danach P5-10 (Abnahme jedes Bereichs auf dem iPhone). Sonst offen: P1-06 (Prototyp im LAN, `pending-alex`).
+  - Live seit `ca545f5` (2026-11-07).
+- **Nächste Schritte:** keine Phase offen; neue Wünsche von Alex als eigene Runde planen. Sonst offen: P1-06 (Prototyp im LAN, `pending-alex`).
 
 ## Phase 2 – Ergebnis
 
