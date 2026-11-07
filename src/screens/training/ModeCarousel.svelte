@@ -238,8 +238,10 @@
     box-shadow: inset 0 0 0 2px var(--paper-2);
     cursor: default;
   }
+  /* Der Grund der Sperre ist die einzige Auskunft – lesbar (AA), nicht ausgegraut */
   .mode.off .text {
     font-weight: 600;
+    color: var(--ink-2);
   }
   .mode.off :global(.motif) {
     opacity: 0.45;
@@ -251,7 +253,7 @@
   .dot {
     display: grid;
     place-items: center;
-    width: 32px;
+    width: var(--tap);
     height: var(--tap);
     padding: 0;
     border: 0;

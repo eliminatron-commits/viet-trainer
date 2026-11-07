@@ -1,13 +1,16 @@
 /*
  * Design-Tokens. Tag: warmes Off-White, kräftige Kartenflächen. Nacht ([data-theme='dark'], theme.svelte.ts):
  * tiefes Nachtblau, dieselben Flächen gedämpft und dunkel, Schrift cremeweiß; Akzente Rot und Gelb bleiben leuchtend.
- * Kontraste (Text --ink auf allen Kartenflächen, --on-yellow auf Gelb, Weiß auf --red) erfüllen WCAG AA – hell wie dunkel.
+ * Kontraste (Text --ink und --ink-muted auf allen Kartenflächen und ihren -soft-Tönen, --on-yellow auf Gelb, Weiß auf --red,
+ * --ink-2 auf Papier und Karten) erfüllen WCAG AA – hell wie dunkel. --ink-3 ist nur für Flächen und Linien, nie für Text.
+ * Nachts sind die -soft-Töne dunkler als ihre Fläche (zurückgenommen zum Nachthimmel), damit die helle Schrift lesbar bleibt.
  */
 :root {
   /* Akzente */
   --red: #da251d; /* Flaggenrot */
   --red-deep: #a8170f;
   --yellow: #ffcd00; /* Sternengelb */
+  --yellow-deep: #d9a900; /* Kante unter gelben Flächen */
 
   /* Kartenflächen */
   --lotus: #f6a5b8;
@@ -25,7 +28,7 @@
   --ink-3: #8f8177;
   --on-red: #ffffff;
   --on-yellow: #231a15; /* Text auf Gelb bleibt auch nachts dunkel */
-  --ink-muted: rgb(35 26 21 / 0.75); /* Kicker und Hinweise auf Kartenflächen */
+  --ink-muted: rgb(35 26 21 / 0.82); /* Kicker und Hinweise auf Kartenflächen (≥ 4,9 auf Meer) */
   --surface: #ffffff; /* weiße Karten, Kacheln, Antworten */
   --glass: rgb(255 255 255 / 0.85); /* Knopf über Szenen */
   --nav-bg: #231a15;
@@ -34,7 +37,7 @@
   --tone-yellow-soft: #ffe58a;
 
   /* Feedback */
-  --ok: #1f8a5b;
+  --ok: #177049; /* auf Weiß 6,1, auf --ok-soft 4,9 */
   --ok-soft: #cdeedb;
   --bad: var(--red);
   --bad-soft: #fbd3cf;
@@ -96,19 +99,19 @@
   --ink: #f6ebdd; /* Mondlicht-Creme */
   --ink-2: #c4b9b1;
   --ink-3: #8a8398;
-  --ink-muted: rgb(246 235 221 / 0.78);
+  --ink-muted: rgb(246 235 221 / 0.95); /* ≥ 4,7 auf allen Kartenflächen */
   --glass: rgb(19 26 46 / 0.8);
   --nav-bg: #2b3555;
   --nav-fg: #f6ebdd;
 
   --sea: #17666b;
-  --sea-soft: #23807e;
+  --sea-soft: #154853;
   --lantern: #9c4a20;
-  --lantern-soft: #b6612f;
+  --lantern-soft: #653726;
   --lotus: #7e3d5c;
-  --lotus-soft: #9a5577;
+  --lotus-soft: #532f4a;
   --tone-yellow: #7d6012;
-  --tone-yellow-soft: #977718;
+  --tone-yellow-soft: #53441d;
 
   --ok: #74d8a6;
   --ok-soft: #1d4a39;

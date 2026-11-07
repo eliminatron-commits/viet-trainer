@@ -2,7 +2,7 @@
   import { theme } from '../../theme.svelte';
   import Glow from '../Glow.svelte';
   import Scene from '../Scene.svelte';
-  import Sky from '../Sky.svelte';
+  import Sky, { MOON_SHINE } from '../Sky.svelte';
 
   /**
    * Gefühle: Lotusteich – eine große Lotusblüte, eine Knospe, Seerosenblätter, eine Libelle.
@@ -106,7 +106,7 @@
     <rect y="116" width="400" height="144" fill={C.water} />
     {#if night}
       {#each [[320, 128, 16], [314, 138, 24], [324, 148, 18]] as [mx, my, mr], i (my)}
-        <g class="loop-shimmer" style="--t: {2.4 + i * 0.4}s; --d: {-i * 0.6}s; --dx: 5"><ellipse cx={mx} cy={my} rx={mr} ry="1.8" fill="#E9DEAF" /></g>
+        <g class="loop-shimmer" style="--t: {2.4 + i * 0.4}s; --d: {-i * 0.6}s; --dx: 5"><ellipse cx={mx} cy={my} rx={mr} ry="1.8" fill={MOON_SHINE} /></g>
       {/each}
     {/if}
     <g class="loop-shimmer" style="--t: 3.3s"><ellipse cx="170" cy="130" rx="26" ry="2" fill={C.waterLight} /></g>

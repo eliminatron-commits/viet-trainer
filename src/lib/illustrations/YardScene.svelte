@@ -2,7 +2,7 @@
   import { theme } from '../theme.svelte';
   import Glow from './Glow.svelte';
   import Scene from './Scene.svelte';
-  import Sky from './Sky.svelte';
+  import Sky, { FIREFLY } from './Sky.svelte';
 
   /**
    * Trâus Hof (Profil): Stelzenhaus (nhà sàn) mit Strohdach vor Reisterrassen und fernen Hügeln, Bananenstaude,
@@ -45,7 +45,6 @@
     groundShade: '#3B394F',
     leaf: '#244A3A',
   };
-  const LAMP = '#FFC14D';
   /** Wasser in den Feldern: x, y, Breite. */
   const PADDIES: [number, number, number][] = [
     [210, 156, 54],
@@ -115,8 +114,8 @@
     {#if night}
       {#each FIREFLIES as [fx, fy], i (fx)}
         <g class="loop-twinkle" style="--t: {1.6 + (i % 3) * 0.7}s; --d: {-i * 0.5}s">
-          <Glow x={fx} y={fy} r={2.4} color={LAMP} t={1.8 + i * 0.3} />
-          <circle cx={fx} cy={fy} r="1.6" fill={LAMP} />
+          <Glow x={fx} y={fy} r={2.4} color={FIREFLY} t={1.8 + i * 0.3} />
+          <circle cx={fx} cy={fy} r="1.6" fill={FIREFLY} />
         </g>
       {/each}
     {/if}
@@ -155,7 +154,7 @@
     <rect x="30" y="104" width="104" height="42" fill={C.wood} />
     <rect x="30" y="104" width="18" height="42" fill={C.woodShade} />
     {#each [62, 100] as x (x)}
-      {#if night}<Glow x={x + 9} y={122} r={10} color={LAMP} t={3.4} d={x / 50} />{/if}
+      {#if night}<Glow x={x + 9} y={122} r={10} color={FIREFLY} t={3.4} d={x / 50} />{/if}
       <rect {x} y="114" width="18" height="17" rx="2" fill={C.win} />
     {/each}
     <path d="M10 108 L46 66 L120 66 L156 108 Z" fill={C.thatch} />

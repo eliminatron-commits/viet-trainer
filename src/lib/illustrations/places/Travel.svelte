@@ -2,7 +2,7 @@
   import { theme } from '../../theme.svelte';
   import Glow from '../Glow.svelte';
   import Scene from '../Scene.svelte';
-  import Sky from '../Sky.svelte';
+  import Sky, { MOON_SHINE } from '../Sky.svelte';
 
   /**
    * Unterwegs: der Zug fährt an der Küste entlang, hinter ihm Meer und Berge (wie am Hải-Vân-Pass).
@@ -69,7 +69,7 @@
     <rect y="156" width="400" height="44" fill={C.sea} />
     {#if night}
       {#each [[322, 166, 16], [316, 175, 24], [326, 184, 18]] as [mx, my, mr], i (my)}
-        <g class="loop-shimmer" style="--t: {2.4 + i * 0.4}s; --d: {-i * 0.6}s; --dx: 5"><ellipse cx={mx} cy={my} rx={mr} ry="1.8" fill="#E9DEAF" /></g>
+        <g class="loop-shimmer" style="--t: {2.4 + i * 0.4}s; --d: {-i * 0.6}s; --dx: 5"><ellipse cx={mx} cy={my} rx={mr} ry="1.8" fill={MOON_SHINE} /></g>
       {/each}
     {/if}
     <g class="loop-shimmer" style="--t: 3.1s"><ellipse cx="60" cy="168" rx="24" ry="2" fill={C.seaLight} /></g>

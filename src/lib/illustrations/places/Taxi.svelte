@@ -106,24 +106,28 @@
     <ellipse cx="216" cy="232" rx="104" ry="5" fill={C.wheel} opacity="0.35" />
     {#if night}<path d="M320 186 L400 166 L400 226 L320 197 Z" fill={C.light} opacity="0.3" />{/if}
     <g class="loop-bob" style="--t: 0.42s; --amp: 1.2; --rot: 0.4">
-      <rect x="214" y="133" width="44" height="15" rx="4" fill={C.sign} />
-      {#each [219, 229, 239, 249] as sx (sx)}<rect x={sx} y="137" width="5" height="3.5" fill={C.glass} />{/each}
-      {#each [224, 234, 244] as sx (sx)}<rect x={sx} y="140.5" width="5" height="3.5" fill={C.glass} />{/each}
-      <rect x="230" y="147" width="12" height="3" fill={C.carShade} />
-      <path
-        d="M112 204 C112 190 120 182 136 180 L170 178 L194 154 C199 149 206 147 214 147 L262 147 C272 147 280 152 286 160 L302 178 C314 180 320 188 320 200 L320 208 C320 212 316 214 312 214 L118 214 C114 214 112 211 112 208 Z"
-        fill={C.car}
-      />
-      <path d="M112 200 L320 200 L320 208 C320 212 316 214 312 214 L118 214 C114 214 112 211 112 208 Z" fill={C.carShade} />
-      <path d="M200 158 C203 154 207 153 212 153 L238 153 L238 178 L180 178 Z" fill={C.glass} />
-      <path d="M244 153 L262 153 C268 153 273 156 277 161 L291 178 L244 178 Z" fill={C.glass} />
-      <rect x="240" y="180" width="2.5" height="30" fill={C.carShade} />
-      <rect x="222" y="186" width="10" height="3" rx="1.5" fill={C.carShade} />
-      <rect x="268" y="186" width="10" height="3" rx="1.5" fill={C.carShade} />
+      <!-- Karosserie gespiegelt (um x = 216): lange Motorhaube vorn rechts, in Fahrtrichtung -->
+      <g transform="translate(432 0) scale(-1 1)">
+        <rect x="214" y="133" width="44" height="15" rx="4" fill={C.sign} />
+        {#each [219, 229, 239, 249] as sx (sx)}<rect x={sx} y="137" width="5" height="3.5" fill={C.glass} />{/each}
+        {#each [224, 234, 244] as sx (sx)}<rect x={sx} y="140.5" width="5" height="3.5" fill={C.glass} />{/each}
+        <rect x="230" y="147" width="12" height="3" fill={C.carShade} />
+        <path
+          d="M112 204 C112 190 120 182 136 180 L170 178 L194 154 C199 149 206 147 214 147 L262 147 C272 147 280 152 286 160 L302 178 C314 180 320 188 320 200 L320 208 C320 212 316 214 312 214 L118 214 C114 214 112 211 112 208 Z"
+          fill={C.car}
+        />
+        <path d="M112 200 L320 200 L320 208 C320 212 316 214 312 214 L118 214 C114 214 112 211 112 208 Z" fill={C.carShade} />
+        <path d="M200 158 C203 154 207 153 212 153 L238 153 L238 178 L180 178 Z" fill={C.glass} />
+        <path d="M244 153 L262 153 C268 153 273 156 277 161 L291 178 L244 178 Z" fill={C.glass} />
+        <rect x="240" y="180" width="2.5" height="30" fill={C.carShade} />
+        <rect x="222" y="186" width="10" height="3" rx="1.5" fill={C.carShade} />
+        <rect x="268" y="186" width="10" height="3" rx="1.5" fill={C.carShade} />
+      </g>
+      <!-- Scheinwerfer vorn (rechts), Rücklicht hinten (links) -->
       <rect x="311" y="185" width="9" height="7" rx="2" fill={C.light} />
       <rect x="112" y="185" width="6" height="7" rx="2" fill={C.sign} />
     </g>
-    {@render wheel(160)}
-    {@render wheel(278)}
+    {@render wheel(154)}
+    {@render wheel(272)}
   </g>
 </Scene>

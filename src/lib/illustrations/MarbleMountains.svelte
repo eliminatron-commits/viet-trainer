@@ -2,7 +2,7 @@
   import { theme } from '../theme.svelte';
   import Glow from './Glow.svelte';
   import Scene from './Scene.svelte';
-  import Sky from './Sky.svelte';
+  import Sky, { MOON_SHINE } from './Sky.svelte';
 
   /**
    * Đà Nẵng: Thúng-chai-Korbboote vor den Marmorbergen (Ngũ Hành Sơn) – Referenz für alle Szenen.
@@ -156,7 +156,7 @@
     <rect x="0" y="180" width="400" height="48" fill={C.sea} />
     {#if night}
       {#each [[318, 189, 16], [312, 197, 24], [322, 206, 19], [314, 216, 30]] as [mx, my, mr], i (my)}
-        <g class="loop-shimmer" style="--t: {2.4 + i * 0.4}s; --d: {-i * 0.6}s; --dx: 5"><ellipse cx={mx} cy={my} rx={mr} ry="1.8" fill="#E9DEAF" /></g>
+        <g class="loop-shimmer" style="--t: {2.4 + i * 0.4}s; --d: {-i * 0.6}s; --dx: 5"><ellipse cx={mx} cy={my} rx={mr} ry="1.8" fill={MOON_SHINE} /></g>
       {/each}
     {/if}
     <g class="loop-shimmer" style="--t: 3.1s"><ellipse cx="60" cy="190" rx="26" ry="2" fill={C.seaLight} /></g>

@@ -3,6 +3,8 @@
   import type { Stage } from '../content/types';
   import Button from '../lib/components/Button.svelte';
   import { game } from '../lib/game.svelte';
+  import { openLookup } from '../lib/lookup/lookup.svelte';
+  import { ripple } from '../lib/ripple';
   import { bossReady, isDone, stageLearned, stageWords } from '../lib/logic/path';
   import RegionHero, { REGION_TONE } from '../lib/illustrations/RegionHero.svelte';
   import RegionScene from '../lib/illustrations/RegionScene.svelte';
@@ -45,7 +47,9 @@
 
   <ul class="chips">
     {#each words as w, i (w.id)}
-      <li style:--i={i} class:known={(game.save.items[w.id]?.right ?? 0) > 0} lang="vi">{game.save.items[w.id] ? w.vn : '···'}</li>
+      <li style:--i={i} class:known={(game.save.items[w.id]?.right ?? 0) > 0} lang="vi">
+        {#if game.save.items[w.id]}<button onclick={() => openLookup({ kind: 'word', id: w.id })} use:ripple>{w.vn}</button>{:else}<span aria-label="noch nicht gesehen">···</span>{/if}
+      </li>
     {/each}
   </ul>
 
@@ -170,8 +174,24 @@
   .chips li {
     background: var(--soft);
     border-radius: 999px;
-    padding: 8px 14px;
     font-weight: 600;
+  }
+  .chips li > * {
+    display: grid;
+    place-items: center;
+    min-height: var(--tap);
+    padding: 0 16px;
+  }
+  /* Gesehene Wörter: antippen öffnet die Wortkarte */
+  .chips button {
+    position: relative;
+    overflow: hidden;
+    border: 0;
+    border-radius: inherit;
+    background: none;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
   }
   .chips li.known {
     background: var(--known, var(--surface));

@@ -1,5 +1,14 @@
 <svelte:options namespace="svg" />
 
+<script lang="ts" module>
+  /**
+   * Feste Farben des Himmels, gemeinsam für alle Szenen (zählen nicht zur Palette C einer Szene):
+   * Mondspiegelung auf dem Wasser und Glühwürmchen (Nachtlicht über Feld und Hof).
+   */
+  export const MOON_SHINE = '#E9DEAF';
+  export const FIREFLY = '#FFC14D';
+</script>
+
 <script lang="ts">
   import { theme } from '../theme.svelte';
 

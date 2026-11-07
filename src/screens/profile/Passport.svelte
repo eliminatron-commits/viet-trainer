@@ -317,7 +317,7 @@
     font-size: 11px;
     font-weight: 700;
     text-align: center;
-    color: var(--ink-3);
+    color: var(--ink-2);
   }
   .names span.got {
     color: var(--ink);
@@ -338,7 +338,7 @@
     padding: 0;
     border: 0;
     background: transparent;
-    color: var(--ink-3);
+    color: var(--ink-2);
     font: inherit;
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
@@ -373,8 +373,9 @@
   .bg {
     fill: var(--surface);
   }
-  .stamp:not(.got) .ink {
-    opacity: 0.55;
+  /* Offener Stempel: nur der Umriss verblasst, Text bleibt lesbar (AA) */
+  .stamp:not(.got) .ink svg {
+    opacity: 0.4;
   }
   .t,
   .d {
@@ -430,7 +431,7 @@
     bottom: 10px;
     font-size: 12px;
     font-weight: 700;
-    color: var(--ink-3);
+    color: var(--ink-2);
   }
   .nav {
     display: flex;

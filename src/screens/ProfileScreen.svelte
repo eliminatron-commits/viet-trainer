@@ -352,7 +352,7 @@
   }
   .garment.locked {
     background: var(--paper-2);
-    color: var(--ink-3);
+    color: var(--ink-2);
     box-shadow: none;
     cursor: default;
   }

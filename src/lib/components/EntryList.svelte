@@ -1,12 +1,15 @@
 <script lang="ts">
   import { play } from '../audio/player';
   import { game, toggleFavorite } from '../game.svelte';
-  import type { ItemId } from '../../content/types';
+  import type { ItemId, SentenceId, WordId } from '../../content/types';
+  import { openLookup } from '../lookup/lookup.svelte';
+  import { ripple } from '../ripple';
   import type { Entry } from '../logic/phrasebook';
   import Button from './Button.svelte';
 
   /**
    * Einträge des Sprachführers (Übersicht und Situation): Anzahl, Karten mit Anhören und Stern, „Mehr anzeigen“.
+   * Antippen des Texts öffnet die Satzlupe (Satz Wort für Wort) bzw. die Wortkarte.
    * Gerendert werden nur die ersten `limit` – die Gesamtliste hat rund 800, das hält das Scrollen flüssig.
    */
   let {
@@ -20,7 +23,7 @@
   const shown = $derived(results.slice(0, limit));
 </script>
 
-<p class="count" role="status">{results.length} {results.length === 1 ? 'Eintrag' : 'Einträge'}</p>
+<p class="count" role="status">{results.length} {results.length === 1 ? 'Eintrag' : 'Einträge'}{#if results.length}{' · '}<span class="tip">Antippen erklärt Wort für Wort</span>{/if}</p>
 
 {#if results.length === 0}
   <p class="empty">{empty}</p>
@@ -28,11 +31,16 @@
   <ul class="list">
     {#each shown as e (e.id)}
       <li class="item" data-id={e.id}>
-        <div class="text">
-          <p class="vn" lang="vi">{e.vn}</p>
-          {#if e.pron}<p class="pron">[{e.pron}]</p>{/if}
-          <p class="de">{e.de}</p>
-        </div>
+        <button
+          class="text"
+          onclick={() => openLookup(e.kind === 'sentence' ? { kind: 'sentence', id: e.id as SentenceId } : { kind: 'word', id: e.id as WordId })}
+          use:ripple
+        >
+          <span class="vn" lang="vi">{e.vn}</span>
+          {#if e.pron}<span class="pron">[{e.pron}]</span>{/if}
+          <span class="de">{e.de}</span>
+          <span class="sr">{e.kind === 'sentence' ? 'Wort für Wort erklären' : 'Wort erklären'}</span>
+        </button>
         <div class="actions">
           <button class="icon" aria-label="Anhören" onclick={() => play(e.id).catch(() => {})}>
             <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true">
@@ -92,7 +100,27 @@
     box-shadow: 0 4px 0 var(--item-edge, var(--paper-2));
   }
   .text {
+    position: relative;
     min-width: 0;
+    display: grid;
+    padding: 4px 6px;
+    margin: -4px -6px;
+    border: 0;
+    border-radius: 16px;
+    background: none;
+    color: var(--ink);
+    font: inherit;
+    text-align: left;
+    overflow: hidden;
+    cursor: pointer;
+  }
+  .sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
   .vn {
     font-size: 20px;

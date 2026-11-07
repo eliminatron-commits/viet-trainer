@@ -10,7 +10,7 @@
   import { game, today } from '../../lib/game.svelte';
   import Glow from '../../lib/illustrations/Glow.svelte';
   import Scene from '../../lib/illustrations/Scene.svelte';
-  import Sky from '../../lib/illustrations/Sky.svelte';
+  import Sky, { FIREFLY } from '../../lib/illustrations/Sky.svelte';
   import { FIELD, fieldChanges, fieldOrder, fieldSlots, nearestSlot, plantInfo, plantOf, plantShape, restingShape, type Change, type PlantInfo } from '../../lib/logic/field';
   import { reducedMotion } from '../../lib/motion';
   import type { ProgressKey } from '../../lib/storage/state';
@@ -65,7 +65,6 @@
     dry: '#6C735A',
     dryShade: '#565C49',
   };
-  const LAMP = '#FFC14D';
   const night = $derived(theme.dark);
   const C = $derived(night ? NIGHT : DAY);
 
@@ -340,8 +339,8 @@
           {#each FIREFLIES as [fx, fy], i (fx)}
             <g class="loop-bob" style="--t: {3 + (i % 3) * 0.8}s; --amp: 6; --rot: 0; --d: {-i * 0.7}s">
               <g class="loop-twinkle" style="--t: {1.6 + (i % 3) * 0.7}s; --d: {-i * 0.5}s">
-                <Glow x={fx} y={fy} r={2.4} color={LAMP} t={1.8 + i * 0.3} />
-                <circle cx={fx} cy={fy} r="1.6" fill={LAMP} />
+                <Glow x={fx} y={fy} r={2.4} color={FIREFLY} t={1.8 + i * 0.3} />
+                <circle cx={fx} cy={fy} r="1.6" fill={FIREFLY} />
               </g>
             </g>
           {/each}

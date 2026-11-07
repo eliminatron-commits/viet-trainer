@@ -36,6 +36,11 @@
   };
   onDestroy(() => timers.forEach(clearTimeout));
 
+  /** Gras-Büschel: Tag/Nacht wie die Szene, das Band in Flaggenrot. */
+  const GRASS_DAY = { blade: '#5E9E5A', light: '#8CC27A', tie: '#DA251D' };
+  const GRASS_NIGHT: typeof GRASS_DAY = { blade: '#3A6F50', light: '#4F8C59', tie: '#B8362C' };
+  const G = $derived(theme.dark ? GRASS_NIGHT : GRASS_DAY);
+
   const asleep = $derived(theme.dark && reaction === null);
   const mood: Mood = $derived(reaction ?? (asleep ? 'sleep' : 'idle'));
   let until = 0;
@@ -118,12 +123,12 @@
   {#if feedable}
     <button class="grass" class:flying onclick={giveGrass} aria-label="Trâu mit frischem Gras füttern">
       <svg viewBox="0 0 48 48" aria-hidden="true">
-        <path d="M10 40 C8 28 6 18 4 8 C10 16 14 26 18 38 Z" fill="#5E9E5A" />
-        <path d="M18 40 C18 26 20 14 24 4 C26 16 26 28 26 40 Z" fill="#8CC27A" />
-        <path d="M30 40 C30 28 34 18 42 8 C40 20 38 30 36 40 Z" fill="#5E9E5A" />
-        <path d="M14 40 C14 30 13 22 12 14 C16 22 19 30 22 40 Z" fill="#8CC27A" />
-        <rect x="9" y="30" width="30" height="6" rx="3" fill="#DA251D" />
-        <ellipse cx="24" cy="42" rx="17" ry="4" fill="#5E9E5A" />
+        <path d="M10 40 C8 28 6 18 4 8 C10 16 14 26 18 38 Z" fill={G.blade} />
+        <path d="M18 40 C18 26 20 14 24 4 C26 16 26 28 26 40 Z" fill={G.light} />
+        <path d="M30 40 C30 28 34 18 42 8 C40 20 38 30 36 40 Z" fill={G.blade} />
+        <path d="M14 40 C14 30 13 22 12 14 C16 22 19 30 22 40 Z" fill={G.light} />
+        <rect x="9" y="30" width="30" height="6" rx="3" fill={G.tie} />
+        <ellipse cx="24" cy="42" rx="17" ry="4" fill={G.blade} />
       </svg>
     </button>
   {/if}

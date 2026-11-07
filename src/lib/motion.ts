@@ -20,6 +20,13 @@ export type Motion = 'morph-open' | 'morph-close' | 'tab-next' | 'tab-prev' | 'p
 
 let seq = 0;
 
+/**
+ * Art des laufenden Wechsels – auch ohne View Transition (reduzierte Bewegung, ältere Browser), damit eine Ansicht
+ * beim Einhängen weiß, wie sie betreten wurde (z. B. Scrollstand nach morph-close wiederherstellen).
+ */
+let current: Motion | null = null;
+export const arrivingBy = (): Motion | null => current;
+
 /** Letzter Tippunkt – Mittelpunkt des Kreises bei „reveal“ und „theme“. */
 let tap = { x: 0, y: 0 };
 if (typeof window !== 'undefined')
@@ -30,12 +37,16 @@ if (typeof window !== 'undefined')
  * `origin`: Kreismittelpunkt bei reveal/theme (sonst der letzte Tippunkt).
  */
 export function transitionTo(update: () => void, motion: Motion, origin?: { x: number; y: number }): void {
+  const id = ++seq;
+  current = motion;
   if (!supportsViewTransitions() || reducedMotion()) {
     update();
+    void tick().then(() => {
+      if (id === seq) current = null;
+    });
     return;
   }
   const root = document.documentElement;
-  const id = ++seq;
   root.dataset.vt = motion;
   if (motion === 'reveal' || motion === 'theme') {
     const o = origin ?? { x: tap.x || innerWidth / 2, y: tap.y || innerHeight * 0.8 };
@@ -47,7 +58,9 @@ export function transitionTo(update: () => void, motion: Motion, origin?: { x: n
     await tick();
   });
   void vt.finished.finally(() => {
-    if (id === seq) delete root.dataset.vt;
+    if (id !== seq) return;
+    delete root.dataset.vt;
+    current = null;
   });
 }
 

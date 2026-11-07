@@ -110,6 +110,8 @@
   6. Training „Reisfeld“: eine Reispflanze je gelernter Einheit (P5-06).
   7. Training „Modus-Karussell“ (P5-07).
   8. Sprachführer „Orte statt Kacheln“ (P5-08).
+  9. Gesamtprüfung (P5-09).
+  10. Satzlupe und Wortkarte (P5-11, Alex’ Wunsch vom 2026-11-07, vor der Abnahme eingeschoben).
   - Reihenfolge: Session, Profil, Training, Sprachführer. Jeder Bereich wird bei 440×956 Tag und Nacht Bild für Bild geprüft und Alex gezeigt, bevor der nächste beginnt.
   - **Punkt 2 erledigt (2026-11-06):** `play/Journey.svelte` ersetzt den Fortschrittsbalken und ist selbst die `progressbar`.
     - Szene der Region als Band (84 px, auf kleinen iPhones 64 px) unter flachem Nebel. Der Nebel weicht mit Trâu zurück.
@@ -168,7 +170,38 @@
     - Kontrast: `--ink-muted` erreicht auf den Kartenfarben nicht überall AA (gemessen: Meer bei Tag 4,32, nachts Laterne 3,84, Meer 4,12, Gelb 3,75). Die neuen Texte auf Kartenflächen nutzen darum `--ink`. **Für P5-09:** dasselbe Muster steckt schon in Etappe und Weiter-Karte (Kicker).
     - Geprüft in Edge: jeder Ort im temporären Labor bei 400×260 zu festen Zeiten (Aufbau und Ruhe, Tag und Nacht, Labor danach gelöscht); in der App bei 440×956 (Tag und Nacht, mit Safe-Area 59 px) und 375×667; Öffnen und Zurück in Echtzeit per CDP-Screencast; reduzierte Bewegung (keine laufende Animation, Orte fertig, kein Übergang); Namen der Kacheln einzeilig ohne Überlauf (gemessen, mit Gegenprobe). Keine Konsolenfehler, kein seitliches Scrollen.
     - check grün, 237 Vitest grün (neu: `tests/places.test.ts`: Farben der Nachbarn, Paletten Tag/Nacht; 4 Mutationen machen ihn rot), Playwright 7/7 grün (Sprachführer- und Sicherungstest gehen jetzt über „Zurück“ aus der Situation).
-- **Nächste Schritte:** Alex den Sprachführer zeigen, danach Phase 5 Punkt 9 (Gesamtprüfung P5-09 mit `pruefer`, inkl. Kontrast `--ink-muted`) und P5-10 (Abnahme). Sonst offen: P1-06 (Prototyp im LAN, `pending-alex`).
+  - Live seit `a9287b1`.
+  - Alex (2026-11-07): „Das Taxi fährt rückwärts im Bild“. Die Karosserie zeigte mit der langen Motorhaube nach links, während Scheinwerfer, Fahrbahn und Räder nach rechts fuhren. Behoben: Karosserie gespiegelt, Lichter vorn bzw. hinten, Räder versetzt.
+  - **Punkt 9 erledigt (2026-11-07), Gesamtprüfung P5-09:**
+    - `pruefer` (Opus 5.5) über ganz Phase 5 und alle Ansichten. Dazu eine eigene Gesamtmessung in Edge über jede Ansicht: Lernpfad leer und mit Fortschritt, Etappe, jede Aufgabenart samt richtig und falsch, Ergebnis, Boss mit Truhe, Training mit jedem Modus, Sprachführer, Suche, Favoriten, Situation, Profil, Reisepass, Truhe, Einstellungen, Prüfmodus, Satzlupe, Wortkarte. Gemessen bei Tag und Nacht, bei 440 und 375 px.
+    - Messverfahren:
+      - Kontrast per Pixel: Text unsichtbar machen (nur die Glyphen), Hintergrund hinter jeder Zeile abtasten.
+      - Tap-Ziele, laufende Animationen bei reduzierter Bewegung und `scrollWidth`.
+    - Gefunden und behoben:
+      - **Kontrast:** `--ink-muted` lag auf Meer (Tag) und nachts auf Laterne, Meer und Gelb unter AA; nachts lag auch `--ink` auf den `-soft`-Tönen darunter (Wort-Chips der Etappe, gewählte Paar-Kachel, angezogenes Accessoire). Grün auf Grün (`--ok` auf `--ok-soft`) lag bei 3,48, `--ink-3` als Text bei 1,9 bis 3,8 (Reisepass, gesperrtes Accessoire).
+      - Lösung über die Tokens: `--ink-muted` kräftiger (Tag 0,82, Nacht 0,95), nachts sind die `-soft`-Töne dunkler als ihre Fläche, `--ok` bei Tag dunkler. Text in `--ink-3` wurde `--ink-2`; offene Stempel verblassen nur noch im Umriss. Der Sperrgrund im Karussell ist lesbar.
+      - **Tap-Ziele:** Die Punkte des Karussells waren 32 px breit, jetzt 44.
+      - **Reduzierte Bewegung:** Ohne View Transitions (reduzierte Bewegung, ältere Browser) stellten Lernpfad und Sprachführer nach „Zurück“ den Scrollstand nicht wieder her, weil `data-vt` dann nie gesetzt wird. Jetzt merkt sich `transitionTo` die Art des Wechsels auch ohne Übergang (`arrivingBy()`). Außerdem wartet das Ende der Paare bei reduzierter Bewegung nicht mehr 700 ms.
+      - **Seitliches Scrollen:** Der Sternenregen nahe am rechten Rand machte die Runde 453 px breit (bei 375). Jetzt schneidet `main.play` waagerecht ab (`overflow-x: clip`); gemessen 375, die Gegenprobe ohne Fix ergibt 453.
+      - **Klein:** feste Farben im Gras (jetzt Tag/Nacht-Palette) und im Lernpfad (`--yellow-deep`). Mondspiegelung und Glühwürmchen kommen als gemeinsame Himmelsfarben aus `Sky.svelte` (`MOON_SHINE`, `FIREFLY`).
+    - Ergebnis der Messung: Alle Texte erreichen AA bei Tag und Nacht. Darunter liegen nur deaktivierte Bedienelemente (nach WCAG ausgenommen: Prüfen vor dem Legen, Bosskampf vor dem Lernen, Einsetzen ohne Boost, Export ohne Urteil, Haptik in Edge, beantwortete Optionen, gesperrte Knoten). Dazu kamen drei Messartefakte: Text unter der festen Navigation, im Blatt hinausgescrollter Text, die gekürzte dritte Zeile der Sammelmeldung; nachgesehen.
+    - Alle Tap-Ziele messen mindestens 44 px; das Häkchen „Nur Verben“ liegt in einem 44 px hohen Label. Bei reduzierter Bewegung läuft keine Animation (nur die Breite des Paare-Timers springt sekündlich). Keine Ansicht scrollt seitlich, keine Konsolenfehler.
+  - **Punkt 10 erledigt (2026-11-07), Satzlupe und Wortkarte** (`lib/lookup/*`, `logic/gloss.ts`, `components/LivingWord.svelte` und `components/ToneMark.svelte` aus der Einführungskarte herausgelöst – bildgleich geprüft, Bilder ab 300 ms pixelgleich). Alex: „bei den ganzen Sätzen/Wörtern … drauf klicken können und jedes Wort einzeln auch erklärt bekommen. Sei kreativ“.
+    - Antippen von Vietnamesisch öffnet ein Blatt von unten: Sprachführer-Einträge (Hinweis im Zähler), „Wort für Wort“ bzw. „Zum Wort“ unter der Lösung in der Runde (erst nach der Antwort), gesehene Wort-Chips der Etappe.
+    - **Satzlupe:** Satz im Band der Regionsfarbe mit Gespräch (Kontext) und Anhören, darunter jedes Wort als Kachel mit Erklärung. Die Kacheln fallen nacheinander aus dem Satz. Anreden zeigen ihre Rolle im Gespräch („em“ = ich, „anh“ = du, roter Punkt); Silben ohne Wort im Wortschatz bleiben grau.
+    - **Wortkarte:** Das Wort baut sich lebendig auf (Tonzeichen fallen), dazu Aussprache und Bedeutung. Aus einem Satz heraus steht die Rolle dabei („„ich“ – du sprichst zu älterem Mann“). Jeder Ton erscheint mit seinem Vokal und rotem Zeichen (Name und Schreibung, keine Tonverläufe wegen der Dialekte). „Dein Stand“ zeigt eine Reispflanze wie im Reisfeld, dazu bis zu drei weitere Sätze mit dem Wort (öffnen ihre Satzlupe) und Merken.
+    - Antippen spielt immer das Audio. Das Blatt hat feste Höhe und einen eigenen Verlauf: Zurück, Schließen, Escape, der Fokus bleibt im Blatt und kehrt zurück.
+    - Inhalte nur aus dem Bestand: 94,8 % aller Silben der 270 Sätze gehören zu Wörtern im Wortschatz, und jede Vokabel eines Satzes wird gefunden (Test).
+    - Gefunden und behoben:
+      - Der rote Rollenpunkt überdeckte Buchstaben, ngang zeigte einen leeren Kreis.
+      - Das Blatt sprang beim Wechsel zwischen Satz und Wort in der Höhe und blinkte beim Wechsel kurz leer.
+      - Die Tonzeichen am Vokal saßen zu hoch bzw. der Punkt im a; jetzt stehen sie wie in der Schrift daneben.
+      - Die Lupe in der Rückmeldung quetschte die Lösung bei 375.
+    - Geprüft in Edge bei 440×956 (Tag und Nacht, Safe-Area 59) und 375×667:
+      - Öffnen und Wortwechsel Bild für Bild (feste Animationszeiten), der ganze Ablauf in Echtzeit per CDP-Screencast.
+      - Gesamtmessung ohne Befund (Kontrast, Tap-Ziele, kein Überlauf).
+  - check grün, 245 Vitest grün (neu: `tests/gloss.test.ts`, 5 Mutationen machen ihn rot), Playwright 9/9 grün. Neu: Satzlupe, Scrollstand ohne Übergänge (rot mit dem alten Code), Lupe in jedem Trainingsmodus.
+- **Nächste Schritte:** Alex Gesamtprüfung und Satzlupe zeigen; committen und live stellen erst auf sein Wort. Danach P5-10 (Abnahme jedes Bereichs auf dem iPhone). Sonst offen: P1-06 (Prototyp im LAN, `pending-alex`).
 
 ## Phase 2 – Ergebnis
 

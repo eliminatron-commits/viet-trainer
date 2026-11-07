@@ -12,6 +12,8 @@
   import { cubicOut } from 'svelte/easing';
   import { Tween } from 'svelte/motion';
   import Button from '../../lib/components/Button.svelte';
+  import { openLookup, type LookupView } from '../../lib/lookup/lookup.svelte';
+  import { ripple } from '../../lib/ripple';
   import Card from '../../lib/components/Card.svelte';
   import RegionScene from '../../lib/illustrations/RegionScene.svelte';
   import Trau from '../../lib/mascot/Trau.svelte';
@@ -82,6 +84,15 @@
   let outcome = $state<null | 'done' | 'won' | 'lost'>(null);
 
   const task = $derived(tasks[index]);
+  /** Nach der Antwort: was die Satzlupe bzw. Wortkarte zeigt (Paare haben mehrere Wörter, Einführung ist selbst eine). */
+  const lens = $derived.by((): LookupView | null => {
+    if (!task) return null;
+    if (task.kind === 'choice') return 'words' in task.item ? { kind: 'sentence', id: task.item.id } : { kind: 'word', id: task.item.id };
+    if (task.kind === 'build') return { kind: 'sentence', id: task.item.id };
+    if (task.kind === 'tone') return { kind: 'word', id: task.word.id };
+    if (task.kind === 'role') return { kind: 'word', id: task.answer.id };
+    return null;
+  });
   const answer = $derived(task ? answerOf(task) : null);
   const correct = $derived(resolved?.correct ?? false);
   const total = $derived(mode.kind === 'training' ? blockLen : tasks.length);
@@ -369,9 +380,16 @@
       <footer class="feedback" class:ok={correct} role="status">
         <div class="verdict-row">
           <Trau size={64} mood={correct ? 'happy' : 'sad'} />
-          <div>
+          <div class="verdict-text">
             <p class="verdict">{correct ? 'Richtig!' : 'Nicht ganz.'}</p>
             <p class="solution" lang={resolved.vi ? 'vi' : 'de'}>{resolved.text}</p>
+            {#if lens}
+              <button class="lens" onclick={() => openLookup(lens)} use:ripple>
+                <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"
+                  ><path d="M10.5 3a7.5 7.5 0 0 1 5.9 12.1l4.8 4.8-1.4 1.4-4.8-4.8A7.5 7.5 0 1 1 10.5 3Zm0 2a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11Z" fill="currentColor" /></svg
+                >{lens.kind === 'sentence' ? 'Wort für Wort' : 'Zum Wort'}
+              </button>
+            {/if}
           </div>
         </div>
         <Button variant={correct ? 'secondary' : 'primary'} onclick={next}>Weiter</Button>
@@ -398,6 +416,8 @@
     background: var(--paper);
     position: relative;
     isolation: isolate;
+    /* Sternenregen nahe am Rand darf nicht seitlich scrollbar machen */
+    overflow-x: clip;
   }
   /* Aus einer Modus-Karte gestartet: Schleier in der Kartenfarbe, der im wachsenden Fenster ausblendet */
   .play.grown::before {
@@ -503,9 +523,36 @@
     gap: 12px;
     margin: -6px 0 6px -6px;
   }
+  .verdict-text {
+    flex: 1;
+    min-width: 0;
+  }
   .verdict {
     font-weight: 800;
     font-size: 20px;
+  }
+  /* Satzlupe bzw. Wortkarte zur gerade gelösten Aufgabe */
+  .lens {
+    position: relative;
+    overflow: hidden;
+    margin-top: 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: var(--tap);
+    padding: 0 14px 0 12px;
+    border: 0;
+    border-radius: var(--radius-pill);
+    background: var(--glass);
+    color: var(--ink);
+    font: inherit;
+    font-size: var(--fs-small);
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform var(--dur-fast) var(--ease-out);
+  }
+  .lens:active {
+    transform: scale(0.95);
   }
   .solution {
     font-weight: 600;

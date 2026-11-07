@@ -65,6 +65,53 @@ test('Sprachführer: Situationen, Suche ohne Akzente und Favoriten über Neulade
   await expect(page.getByText('Noch keine Favoriten')).toBeVisible();
 });
 
+test('Satzlupe: Satz Wort für Wort, Wortkarte mit Rolle im Gespräch, Verlauf, Merken und Schließen', async ({ page }) => {
+  await page.goto('/viet-trainer/');
+  await openPhrasebook(page);
+  await page.getByRole('searchbox', { name: 'Suchen' }).fill('Anh là bạn của em');
+  await page.locator('li.item[data-id="s002"]').getByRole('button', { name: /Wort für Wort erklären/ }).click();
+
+  const sheet = page.getByRole('dialog');
+  await expect(sheet.getByRole('heading', { name: 'Anh là bạn của em.', exact: true })).toBeFocused();
+  // Jedes Wort mit Erklärung; die Anreden zeigen, was sie in diesem Gespräch heißen.
+  await expect(sheet.locator('.tile')).toHaveText([/^Anh\s*du$/, /^là\s*sein \/ ist$/, /^bạn\s*du \/ Freund$/, /^của/, /^em\s*ich$/]);
+
+  await sheet.locator('.tile').last().click();
+  await expect(sheet.getByRole('heading', { name: 'em', exact: true })).toBeVisible();
+  await expect(sheet.getByText('„ich“ – du sprichst zu älterem Mann')).toBeVisible();
+  await expect(sheet.getByText('ngang', { exact: true })).toBeVisible();
+
+  // Weitere Sätze mit dem Wort öffnen ihre Satzlupe; „Zurück“ führt zur Wortkarte.
+  await sheet.locator('.other').first().click();
+  await expect(sheet.locator('.tile').first()).toBeVisible();
+  await sheet.getByRole('button', { name: 'Zurück' }).click();
+  await expect(sheet.getByRole('heading', { name: 'em', exact: true })).toBeVisible();
+
+  // Merken setzt den Favoriten; Escape schließt das Blatt.
+  await sheet.getByRole('button', { name: 'Merken' }).click();
+  await expect(sheet.getByRole('button', { name: 'Gemerkt' })).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await page.getByRole('button', { name: 'Suche löschen' }).click();
+  await page.getByRole('button', { name: 'Favoriten', exact: true }).click();
+  await expect(page.locator('li.item[data-id="w005"]')).toBeVisible();
+});
+
+test('Zurück aus einer Situation: der Sprachführer steht wieder an derselben Stelle (auch ohne Übergänge)', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 700 });
+  await page.goto('/viet-trainer/');
+  await openPhrasebook(page);
+  const tile = page.locator('[data-situation="arbeit"]');
+  await tile.scrollIntoViewIfNeeded();
+  const before = await page.evaluate(() => scrollY);
+  expect(before).toBeGreaterThan(300);
+  await tile.click();
+  await expect(page.getByRole('heading', { name: 'Arbeit', level: 1 })).toBeVisible();
+  await page.getByRole('button', { name: 'Zurück' }).click();
+  await expect(page.locator('[data-situation="arbeit"]')).toBeInViewport();
+  expect(Math.abs((await page.evaluate(() => scrollY)) - before)).toBeLessThan(4);
+});
+
 test('Prüfmodus: beurteilen, Notiz speichern und als JSON exportieren', async ({ page }) => {
   await page.goto('/viet-trainer/');
   await page.getByRole('button', { name: 'Profil' }).click();

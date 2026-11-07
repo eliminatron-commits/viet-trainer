@@ -14,6 +14,7 @@
   import Button from '../../lib/components/Button.svelte';
   import { tick } from '../../lib/feedback';
   import { shuffle, type Task } from '../../lib/logic/session';
+  import { reducedMotion } from '../../lib/motion';
 
   /** Paare unter Zeitdruck: links vietnamesisch, rechts deutsch; je eine Kachel pro Seite tippen. */
   let { task, onresult }: { task: Extract<Task, { kind: 'pairs' }>; onresult: (r: PairsResult) => void } = $props();
@@ -56,7 +57,7 @@
     tick();
     if (selVn === selDe) {
       matched = [...matched, selVn];
-      if (matched.length === total) finish(true, 700);
+      if (matched.length === total) finish(true, reducedMotion() ? 0 : 700); // Ausblenden abwarten – ohne Bewegung sofort
     } else {
       errors = [...new Set([...errors, selVn, selDe])];
       wrong = { vn: selVn, de: selDe };

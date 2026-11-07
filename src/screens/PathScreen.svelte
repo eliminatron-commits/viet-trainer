@@ -16,7 +16,7 @@
   import { currentStage, regionDone, stageLearned, stageStatus, stageWords } from '../lib/logic/path';
   import { currentStreak, levelInfo } from '../lib/logic/rewards';
   import Trau from '../lib/mascot/Trau.svelte';
-  import { arrivingByTab } from '../lib/motion';
+  import { arrivingBy, arrivingByTab } from '../lib/motion';
 
   let { onopen }: { onopen: (stage: Stage) => void } = $props();
 
@@ -48,7 +48,7 @@
 
   // Zurück aus der Etappe: Scrollstand wiederherstellen, bevor der neue Schnappschuss entsteht,
   // damit die Etappe in ihren Knoten zurückschrumpft. Beim Tab-Wechsel gleiten die Teile gestaffelt herein.
-  const motionOnArrival = document.documentElement.dataset.vt ?? '';
+  const motionOnArrival = arrivingBy();
   onMount(() => {
     if (motionOnArrival === 'morph-close' && returnTo) scrollTo(0, returnTo.scroll);
   });
@@ -328,8 +328,8 @@
     background: var(--yellow);
     color: var(--on-yellow);
     box-shadow:
-      0 6px 0 #d9a900,
-      0 0 0 8px rgb(255 205 0 / 0.3);
+      0 6px 0 var(--yellow-deep),
+      0 0 0 8px color-mix(in srgb, var(--yellow) 30%, transparent);
     animation: pulse 2.4s var(--ease-out) infinite;
   }
   .node.locked {
@@ -344,8 +344,8 @@
   @keyframes pulse {
     50% {
       box-shadow:
-        0 6px 0 #d9a900,
-        0 0 0 14px rgb(255 205 0 / 0.12);
+        0 6px 0 var(--yellow-deep),
+        0 0 0 14px color-mix(in srgb, var(--yellow) 12%, transparent);
     }
   }
   @media (prefers-reduced-motion: reduce) {

@@ -5,6 +5,7 @@
   import NewsToast from './lib/components/NewsToast.svelte';
   import PillNav, { type Tab } from './lib/components/PillNav.svelte';
   import { game, initGame } from './lib/game.svelte';
+  import LookupSheet from './lib/lookup/LookupSheet.svelte';
   import { transitionTo, type Motion } from './lib/motion';
   import { applyUpdate, pwa } from './lib/pwa.svelte';
   import { setThemeMode } from './lib/theme.svelte';
@@ -105,6 +106,7 @@
 {/if}
 
 <NewsToast active={game.ready && screen.name !== 'play'} />
+<LookupSheet />
 
 {#if game.error}
   <div class="toast error" role="alert">{game.error}</div>

@@ -78,6 +78,13 @@ test('Training: jeder Modus ist wählbar und lässt sich lösen', async ({ page 
     for (let i = 0; i < 2; i++) {
       await expect(play).toHaveAttribute('data-task-kind', m.kind);
       await solveTask(page);
+      if (i === 0 && m.kind !== 'pairs') {
+        // Nach der Antwort: Satzlupe bzw. Wortkarte zur Aufgabe; Schließen führt zurück in die Runde.
+        await page.getByRole('button', { name: m.kind === 'build' ? 'Wort für Wort' : 'Zum Wort' }).click();
+        await expect(page.getByRole('dialog')).toBeVisible();
+        await page.getByRole('dialog').getByRole('button', { name: 'Schließen' }).click();
+        await expect(page.getByRole('dialog')).toHaveCount(0);
+      }
       await page.getByRole('button', { name: 'Weiter', exact: true }).click();
     }
     await page.getByRole('button', { name: 'Training beenden' }).click();

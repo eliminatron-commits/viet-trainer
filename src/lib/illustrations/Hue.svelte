@@ -2,7 +2,7 @@
   import { theme } from '../theme.svelte';
   import Glow from './Glow.svelte';
   import Scene from './Scene.svelte';
-  import Sky from './Sky.svelte';
+  import Sky, { MOON_SHINE } from './Sky.svelte';
 
   /**
    * Huế: die Thiên-Mụ-Pagode auf dem Hügel am Parfümfluss, ein Drachenboot, Lotus im Vordergrund.
@@ -130,7 +130,7 @@
     <rect x="0" y="184" width="400" height="76" fill={C.river} />
     {#if night}
       {#each [[330, 190, 14], [326, 197, 20], [334, 204, 16], [328, 212, 24], [332, 221, 18]] as [mx, my, mr], i (my)}
-        <g class="loop-shimmer" style="--t: {2.2 + i * 0.35}s; --d: {-i * 0.5}s; --dx: 5"><ellipse cx={mx} cy={my} rx={mr} ry="1.8" fill="#E9DEAF" /></g>
+        <g class="loop-shimmer" style="--t: {2.2 + i * 0.35}s; --d: {-i * 0.5}s; --dx: 5"><ellipse cx={mx} cy={my} rx={mr} ry="1.8" fill={MOON_SHINE} /></g>
       {/each}
     {/if}
     <g class="loop-shimmer" style="--t: 3.2s"><ellipse cx="200" cy="196" rx="30" ry="2" fill={C.riverLight} /></g>

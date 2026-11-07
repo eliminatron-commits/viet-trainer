@@ -14,7 +14,7 @@
   import PlaceScene from '../lib/illustrations/PlaceScene.svelte';
   import { buildEntries, filterEntries, groupBySituation } from '../lib/logic/phrasebook';
   import { PLACE_TONE } from '../lib/logic/places';
-  import { arrivingByTab } from '../lib/motion';
+  import { arrivingBy, arrivingByTab } from '../lib/motion';
   import { ripple } from '../lib/ripple';
 
   /**
@@ -55,7 +55,7 @@
 
   // Zurück aus der Situation: Scrollstand wiederherstellen, bevor der neue Schnappschuss entsteht,
   // damit die Situation in ihre Kachel zurückschrumpft.
-  const motionOnArrival = document.documentElement.dataset.vt ?? '';
+  const motionOnArrival = arrivingBy();
   onMount(() => {
     if (motionOnArrival === 'morph-close' && returnTo) scrollTo(0, returnTo.scroll);
   });
