@@ -207,6 +207,14 @@ export function toggleEquip(id: string): void {
   persist();
 }
 
+/** Wochenrückblick dieser Woche (Montag) wurde von selbst gezeigt – kommt nicht noch einmal. */
+export function markRecapSeen(monday: string): void {
+  const seen = game.save.recap.seen;
+  if (seen !== null && seen >= monday) return;
+  game.save.recap.seen = monday;
+  persist();
+}
+
 /** Trâus Hof: füttern (einmal am Tag nach erreichtem Tagesziel). */
 export function feedTrau(): boolean {
   const ok = feed(game.save, today());

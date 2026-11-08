@@ -59,12 +59,16 @@ export function challengeProgress(save: SaveState, id: string): number {
 }
 
 /**
- * Neue Woche ⇒ neue Challenges mit dem aktuellen Zählerstand als Basis. Muss vor dem Zählen einer Aktion laufen,
+ * Neue Woche ⇒ neue Challenges mit dem aktuellen Zählerstand als Basis; die alte Woche kommt ins Wochenarchiv. Muss vor dem Zählen einer Aktion laufen,
  * sonst steckt die erste Aufgabe der Woche schon in der Basis.
  */
 export function rollWeek(save: SaveState, today: DateKey): void {
   const week = weekOf(today);
   if (save.challenges.week === week) return;
+  // Die alte Woche ins Archiv (Wochenrückblick): Fortschritt mit dem Zählerstand von ihrem Ende.
+  const old = save.challenges.week;
+  if (old && old < week && save.challenges.list.length > 0)
+    save.weeks[old] = { challenges: save.challenges.list.map((s) => ({ id: s.id, progress: challengeProgress(save, s.id), done: s.done })) };
   save.challenges = {
     week,
     list: challengesFor(week, save).map((c) => ({ id: c.id, base: save.stats[c.metric], done: false })),

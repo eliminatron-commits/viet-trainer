@@ -1,13 +1,16 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, untrack } from 'svelte';
   import type { SituationTag, Stage } from './content/types';
   import { onAudioStatus, retry } from './lib/audio/player';
   import NewsToast from './lib/components/NewsToast.svelte';
   import PillNav, { type Tab } from './lib/components/PillNav.svelte';
-  import { game, initGame } from './lib/game.svelte';
+  import WeekRecap from './lib/components/WeekRecap.svelte';
+  import { game, initGame, markRecapSeen, today } from './lib/game.svelte';
+  import { recapDue } from './lib/logic/recap';
   import LookupSheet from './lib/lookup/LookupSheet.svelte';
   import { transitionTo, type Motion } from './lib/motion';
   import { applyUpdate, pwa } from './lib/pwa.svelte';
+  import { openRecap, recap } from './lib/recap.svelte';
   import { setThemeMode } from './lib/theme.svelte';
   import PathScreen from './screens/PathScreen.svelte';
   import PhrasebookScreen from './screens/PhrasebookScreen.svelte';
@@ -62,10 +65,32 @@
   /** iOS hat den Ton blockiert und der Player konnte ihn nicht selbst retten – ein Tippen auf den Hinweis repariert ihn. */
   let audioBlocked = $state(false);
 
+  // Wochenrückblick: bei der ersten Öffnung einer neuen Woche einmal von selbst (auch beim Zurückkehren aus dem
+  // Hintergrund, iOS lädt die App dann nicht neu) – nie mitten in einer Runde, dann danach.
+  let wake = $state(0);
+  const busy = $derived(screen.name === 'play' || screen.name === 'sprint');
+  $effect(() => {
+    void wake;
+    if (!game.ready || busy) return;
+    untrack(() => {
+      if (recap.week) return;
+      const due = recapDue(game.save, today());
+      if (!due) return;
+      markRecapSeen(due);
+      openRecap(due);
+    });
+  });
+
   onMount(() => {
     // Bis der Spielstand da ist, gilt die Uhrzeit; danach der gespeicherte Modus (ohne Übergang).
     void initGame().then(() => setThemeMode(game.save.settings.theme, false));
-    return onAudioStatus((s) => (audioBlocked = s.blocked));
+    const visible = () => document.visibilityState === 'visible' && wake++;
+    document.addEventListener('visibilitychange', visible);
+    const off = onAudioStatus((s) => (audioBlocked = s.blocked));
+    return () => {
+      document.removeEventListener('visibilitychange', visible);
+      off();
+    };
   });
 </script>
 
@@ -123,8 +148,9 @@
   <div class="statusbar" aria-hidden="true"></div>
 {/if}
 
-<NewsToast active={game.ready && screen.name !== 'play' && screen.name !== 'sprint'} />
+<NewsToast active={game.ready && !busy && !recap.week} />
 <LookupSheet />
+<WeekRecap />
 
 {#if game.error}
   <div class="toast error" role="alert">{game.error}</div>

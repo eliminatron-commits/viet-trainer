@@ -277,7 +277,21 @@
     - Bekannt: Bei 375×667 passen Laternen und Info-Feld nicht ganz zusammen auf den Schirm – nach dem Antippen einer unteren Reihe ein kurzer Scroll zum Feld (bei 440×956 passt alles; kein automatisches Scrollen).
     - Geprüft in Edge bei 440×956 (Safe-Area 59) und 375×667, Tag und Nacht: Anzünden Bild für Bild (0–1500 ms), Antippen (Streak-Schutz, Tagesziel mitten im Schwung, vor dem Tagebuch), Blättern (90/200 ms) und Oktober; Echtzeit per CDP-Screencast (Tab ins Profil, Scrollen, Anzünden, Antippen, Blättern), 99 fps. Pixelmessung über das ganze Profil: alle Kalendertexte AA, Tap-Ziele ≥ 44 px, kein seitliches Scrollen, keine Konsolenfehler.
     - check grün, 278 Vitest grün (neu: `tests/calendar.test.ts`; 9 von 9 Mutationen machen ihn rot), Playwright 15/15 grün (neu: `tests/e2e/calendar.spec.ts` mit fester Uhr, Pfeil und Wischen; 3 von 3 Mutationen der Ansicht machen ihn rot).
-- **Nächste Schritte:** Alex Punkt 4 zeigen; live erst auf sein Wort. Danach Punkt 5 (Wochenrückblick, P6-06). Sonst offen: P1-06 (Prototyp im LAN, `pending-alex`).
+    - Live seit `c953442` (2026-11-08).
+  - **Punkt 5 erledigt (2026-11-08), Wochenrückblick (P6-06):**
+    - Bei der ersten Öffnung einer neuen Woche erscheint einmal „Deine Woche“ für die Woche davor – nur, wenn in ihr gelernt wurde (eine Woche nur mit Streak-Schutz zählt nicht). Auch beim Zurückkehren aus dem Hintergrund, nie mitten in einer Runde; Neuigkeiten warten so lange. Gemerkt in `save.recap.seen`.
+    - Doppelseite in einem Blatt von unten: Seite 1 mit der Laternenkette der Woche (gehen nach dem Aufsteigen nacheinander an, nachts mit Lichthöfen), Lerntagen, Tageszielen, hochzählenden XP und Trâu (jubelt, wenn ein Tagesziel dabei war); Seite 2 mit neuen Wörtern, Aufgaben, Anteil richtig, Runden und den drei Challenges der Woche (geschafft bzw. Stand). Umblättern wie im Reisepass (Wischen oder Knopf), unten Zurück und Weiter/Fertig; Schließen per Knopf, Schleier oder Escape, Fokus bleibt im Blatt und kehrt zurück.
+    - Wieder aufrufbar über den Laternen-Kalender: „Woche ansehen“ im Info-Feld für jede Woche mit Lerntagen; die laufende Woche heißt dann „Diese Woche bisher“.
+    - Neu im Spielstand: Wochenarchiv `save.weeks` – der Wochenwechsel hält Fortschritt und „geschafft“ der Challenges fest (bisher gingen sie verloren). Ältere Stände bekommen ein leeres Archiv; für Wochen davor steht „Für diese Woche nicht festgehalten“. Wichtig: Die Woche vom 2. November landet nur im Archiv, wenn die neue Version vor dem ersten Öffnen am Montag installiert ist.
+    - Laterne als Komponente `Lantern.svelte` (mit `LanternHalo.svelte`) herausgelöst; der Kalender nutzt sie, gemessen unverändert (Zahl-Platz, Kontrast, Info-Höhe gleich wie vorher).
+    - Gefunden und behoben:
+      - Seite 2 war 58 px höher als Seite 1, das Blatt sprang beim Umblättern; jetzt liegen beide Seiten in einer Zelle (gemessen: gleich hoch, Blatt steht).
+      - Bei 375×667 war das Blatt 77 px zu hoch („Weiter“ unter der Kante); Pfeilzeile mit Punkten entfällt (Zurück und Weiter in einer Zeile), auf niedrigen Bildschirmen enger – passt jetzt ohne Scrollen.
+      - Datum brach bei 375 unnötig um (Platz für den Schließen-Knopf auch neben dem Titel); Schließen-Knopf saß halb auf der Seitenkante.
+      - Leerraum über Trâu auf Seite 1; Laternen wachsen jetzt mit der Seitenbreite (bis 46 px), Trâu größer.
+    - Geprüft in Edge bei 440×956 (Safe-Area 59) und 375×667, Tag und Nacht: Öffnen Bild für Bild (0–2100 ms), beide Seiten, Umblättern (120/280 ms), Zugang aus dem Kalender, Escape mit Fokus-Rückkehr; Echtzeit per CDP-Screencast (öffnet von selbst, Laternen, XP, vor und zurück, Schließen), 85–93 fps. Pixelmessung: alle Texte AA (knappster: Zahl auf roter Laterne 4,93), Tap-Ziele ≥ 44 px, kein seitliches Scrollen, keine Konsolenfehler.
+    - check grün, 287 Vitest grün (neu: `tests/recap.test.ts`; 11 von 11 Mutationen machen ihn rot), Playwright 17/17 grün (neu: `tests/e2e/recap.spec.ts` mit fester Uhr; 3 von 3 Mutationen in App, Blatt und Kalender machen ihn rot).
+- **Nächste Schritte:** Alex Punkt 5 zeigen; live erst auf sein Wort. Danach Punkt 6 (Trâus Tagesblick, P6-07). Sonst offen: P1-06 (Prototyp im LAN, `pending-alex`).
 
 ## Phase 2 – Ergebnis
 

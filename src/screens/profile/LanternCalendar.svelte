@@ -1,6 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { cubicOut } from 'svelte/easing';
+  import Lantern from '../../lib/components/Lantern.svelte';
+  import LanternHalo from '../../lib/components/LanternHalo.svelte';
   import { tick as haptic } from '../../lib/feedback';
   import { game, today } from '../../lib/game.svelte';
   import {
@@ -14,9 +16,12 @@
     shiftMonth,
     WEEKDAYS_SHORT,
     type CalendarDay,
-    type Lantern,
+    type Lantern as LanternState,
   } from '../../lib/logic/calendar';
+  import { weekOf } from '../../lib/logic/challenges';
+  import { weekActive, weekTitle } from '../../lib/logic/recap';
   import { reducedMotion } from '../../lib/motion';
+  import { openRecap } from '../../lib/recap.svelte';
   import { theme } from '../../lib/theme.svelte';
 
   /**
@@ -36,6 +41,9 @@
   const start = $derived(diaryStart(save));
   const sel = $derived(cal.days.find((d) => d.date === selected) ?? null);
   const info = $derived(sel ? dayInfo(sel, start) : null);
+  /** Woche des gewählten Tages: im Rückblick ansehen, wenn in ihr gelernt wurde. */
+  const week = $derived(sel ? weekOf(sel.date) : null);
+  const weekOpen = $derived(week !== null && weekActive(save, week));
   /** Leere Felder vor dem 1. und bis zum Ende der letzten Woche (die Kette läuft über die ganze Reihe). */
   const cells = $derived<(CalendarDay | null)[]>([
     ...Array<null>(cal.lead).fill(null),
@@ -43,8 +51,7 @@
     ...Array<null>((7 - ((cal.lead + cal.days.length) % 7)) % 7).fill(null),
   ]);
 
-  const LIT: Lantern[] = ['learned', 'goal', 'shield'];
-  const NAME: Record<Lantern, string> = {
+  const NAME: Record<LanternState, string> = {
     off: 'nicht gelernt',
     learned: 'gelernt',
     goal: 'Tagesziel erreicht',
@@ -52,7 +59,7 @@
     before: 'vor dem Tagebuch',
     future: 'noch nicht da',
   };
-  const LEGEND: [Lantern, string][] = [
+  const LEGEND: [LanternState, string][] = [
     ['off', 'nicht gelernt'],
     ['learned', 'gelernt'],
     ['goal', 'Tagesziel'],
@@ -136,31 +143,7 @@
   });
 </script>
 
-{#snippet lantern(state: Lantern)}
-  <svg class="lamp" viewBox="0 0 36 42" aria-hidden="true">
-    <rect x="17.25" y="0" width="1.5" height="6" class="cordline" />
-    <g class="unlit">
-      <rect x="12" y="5" width="12" height="4" rx="1.5" class="cap" />
-      <ellipse cx="18" cy="20.5" rx="15" ry="12" class="off-body" />
-      <path d="M18 8.9C9.9 8.9 3.4 14.1 3.4 20.5S9.9 32.1 18 32.1Q8.8 30 8.8 20.5T18 8.9Z" class="shade" />
-      <rect x="13" y="31.5" width="10" height="3.5" rx="1.5" class="cap" />
-      <path d="M16.5 35h3l1.2 6h-5.4z" class="cap" />
-    </g>
-    {#if LIT.includes(state)}
-      <g class="lit">
-        <rect x="12" y="5" width="12" height="4" rx="1.5" class="gold" />
-        <ellipse cx="18" cy="20.5" rx="15" ry="12" class="body" />
-        <path d="M18 8.9C9.9 8.9 3.4 14.1 3.4 20.5S9.9 32.1 18 32.1Q8.8 30 8.8 20.5T18 8.9Z" class="shade" />
-        <path d="M9.7 10.6Q1.9 20.5 9.7 30.4Q5 20.5 9.7 10.6Z" class="gold" />
-        <path d="M26.3 10.6Q34.1 20.5 26.3 30.4Q31 20.5 26.3 10.6Z" class="gold" />
-        <rect x="13" y="31.5" width="10" height="3.5" rx="1.5" class="gold" />
-        <path d="M16.5 35h3l1.2 6h-5.4z" class="gold" />
-      </g>
-    {/if}
-  </svg>
-{/snippet}
-
-<div class="calendar" class:paused={!visible} data-phase={phase} bind:this={root}>
+<div class="calendar" class:paused={!visible} bind:this={root}>
   <div class="head">
     <button class="turn" onclick={() => go(-1)} disabled={month <= range.first} aria-label="Voriger Monat">
       <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M15.4 4.6 8 12l7.4 7.4-1.4 1.4L5.2 12 14 3.2z" fill="currentColor" /></svg>
@@ -180,7 +163,7 @@
 
   <div class="pages" role="group" aria-label={cal.title} onpointerdown={down} onpointerup={up} onpointercancel={() => (startX = null)}>
     {#key month}
-      <ol class="grid" aria-label="Tage im {cal.title}" in:enter out:leave>
+      <ol class="grid lights" data-phase={phase} aria-label="Tage im {cal.title}" in:enter out:leave>
         {#each cells as d, i (d ? d.date : `leer${i}`)}
           <li class="cell" aria-hidden={d ? undefined : 'true'}>
             <svg class="cord" viewBox="0 0 100 10" preserveAspectRatio="none" aria-hidden="true"
@@ -201,11 +184,9 @@
                 data-lantern={d.lantern}
                 onclick={(e) => pick(d, e.currentTarget.querySelector('.swing'))}
               >
-                {#if theme.dark && (d.lantern === 'goal' || d.lantern === 'learned')}
-                  <span class="halo" aria-hidden="true"><span class="pulse"><span class="disc"></span><span class="disc"></span></span></span>
-                {/if}
+                {#if theme.dark && (d.lantern === 'goal' || d.lantern === 'learned')}<LanternHalo state={d.lantern} />{/if}
                 <span class="hang"
-                  ><span class="swing">{@render lantern(d.lantern)}<span class="num">{d.day}</span></span></span
+                  ><span class="swing"><Lantern state={d.lantern} num={d.day} /></span></span
                 >
               </button>
             {/if}
@@ -224,6 +205,10 @@
           <div><dt>{n.label}</dt><dd>{n.value}</dd></div>
         {/each}
       </dl>
+      <button class="week-btn" disabled={!weekOpen} onclick={() => week && openRecap(week)} aria-label={week ? `Woche ${weekTitle(week)} ansehen` : undefined}>
+        Woche ansehen
+        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M8.6 19.4 16 12 8.6 4.6 10 3.2 18.8 12 10 20.8z" fill="currentColor" /></svg>
+      </button>
     {:else}
       <p class="i-hint">Tipp eine Laterne an, um zu sehen, was an dem Tag war.</p>
     {/if}
@@ -231,7 +216,7 @@
 
   <ul class="legend" aria-label="Laternen">
     {#each LEGEND as [l, name] (l)}
-      <li class={l}><span class="mini">{@render lantern(l)}</span>{name}</li>
+      <li><span class="mini"><Lantern state={l} string={false} /></span>{name}</li>
     {/each}
   </ul>
 </div>
@@ -338,22 +323,9 @@
   .day:disabled {
     cursor: default;
   }
-  /* Farbe je Zustand (Tagesknopf und Legende); Zahl je Fläche AA bei Tag und Nacht */
-  .calendar {
-    --lamp: var(--lamp-off);
-    --num: var(--ink-2);
-  }
-  .learned {
-    --lamp: var(--lamp-learned);
-    --num: var(--lamp-ink);
-  }
-  .goal {
-    --lamp: var(--red);
-    --num: var(--on-red);
-  }
-  .shield {
-    --lamp: var(--lamp-shield);
-    --num: var(--lamp-ink);
+  /* Lichthof hinter allen Laternen, Mitte auf dem Laternenkörper */
+  .day {
+    --hy: 27px;
   }
   /* gewählter Tag: Fläche hinter der Laterne */
   .day.on::before {
@@ -391,87 +363,7 @@
     inset: 0;
     transform-origin: 50% 0;
   }
-  .lamp {
-    display: block;
-    width: 36px;
-    height: 42px;
-    overflow: visible;
-  }
-  .lamp .cordline,
-  .lamp .cap {
-    fill: var(--ink-3);
-  }
-  .lamp .off-body {
-    fill: var(--lamp-off);
-  }
-  .lamp .body {
-    fill: var(--lamp);
-  }
-  .lamp .shade {
-    fill: var(--lamp-shade);
-  }
-  .lamp .gold {
-    fill: var(--yellow);
-  }
-  .day.future .lamp {
-    opacity: 0.45;
-  }
-  .num {
-    position: absolute;
-    left: 0;
-    right: 0;
-    top: 20.5px;
-    transform: translateY(-50%);
-    text-align: center;
-    font-size: 12px;
-    font-weight: 800;
-    line-height: 1;
-    font-variant-numeric: tabular-nums;
-    color: var(--num);
-  }
 
-  /* Lichthof (nur nachts): flache Scheiben, sacht pulsierend – wie Glow.svelte */
-  .halo {
-    position: absolute;
-    z-index: 1;
-    left: 50%;
-    top: 27px;
-    width: 0;
-    height: 0;
-  }
-  .pulse {
-    position: absolute;
-  }
-  .disc {
-    position: absolute;
-    border-radius: 50%;
-    background: var(--lamp-glow);
-  }
-  .disc:first-child {
-    width: 50px;
-    height: 50px;
-    left: -25px;
-    top: -25px;
-    opacity: 0.13;
-  }
-  .disc:last-child {
-    width: 33px;
-    height: 33px;
-    left: -16.5px;
-    top: -16.5px;
-    opacity: 0.26;
-  }
-  /* Lerntag: ein kleinerer, leiserer Hof */
-  .learned .disc:first-child {
-    display: none;
-  }
-  .learned .disc:last-child {
-    width: 42px;
-    height: 42px;
-    left: -21px;
-    top: -21px;
-    opacity: 0.2;
-  }
 
   @media (prefers-reduced-motion: no-preference) {
     .hang {
@@ -480,30 +372,8 @@
     .future .hang {
       animation: none;
     }
-    .pulse {
-      animation: lamp-glow 2.6s ease-in-out var(--d) infinite alternate;
-    }
     .paused :global(*) {
       animation-play-state: paused !important;
-    }
-    /* Anzünden: vor dem Sichtbarwerden aus, dann Tag für Tag mit kurzem Flackern */
-    [data-phase='wait'] .grid .lit,
-    [data-phase='wait'] .grid .halo {
-      opacity: 0;
-    }
-    [data-phase='wait'] .grid .num {
-      color: var(--ink-2);
-    }
-    [data-phase='in'] .grid .lit {
-      animation: lamp-lit 460ms ease-out calc(var(--i) * 24ms + 120ms) both;
-    }
-    [data-phase='in'] .grid .halo {
-      animation: halo-in 600ms var(--ease-out) calc(var(--i) * 24ms + 220ms) both;
-    }
-    [data-phase='in'] .grid .learned .num,
-    [data-phase='in'] .grid .goal .num,
-    [data-phase='in'] .grid .shield .num {
-      animation: num-lit 460ms ease-out calc(var(--i) * 24ms + 120ms) both;
     }
   }
   @keyframes lamp-sway {
@@ -512,46 +382,6 @@
     }
     to {
       transform: rotate(2deg);
-    }
-  }
-  @keyframes lamp-glow {
-    from {
-      transform: scale(0.88);
-      opacity: 0.7;
-    }
-    to {
-      transform: scale(1.08);
-      opacity: 1;
-    }
-  }
-  @keyframes lamp-lit {
-    0% {
-      opacity: 0;
-    }
-    30% {
-      opacity: 0.85;
-    }
-    45% {
-      opacity: 0.4;
-    }
-    65%,
-    100% {
-      opacity: 1;
-    }
-  }
-  @keyframes halo-in {
-    from {
-      transform: scale(0.3);
-      opacity: 0;
-    }
-  }
-  @keyframes num-lit {
-    0%,
-    62% {
-      color: var(--ink-2);
-    }
-    66% {
-      color: var(--num);
     }
   }
 
@@ -590,6 +420,28 @@
   }
   .i-hint {
     align-self: center;
+  }
+  .week-btn {
+    justify-self: end;
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    min-height: var(--tap);
+    margin-top: 4px;
+    padding: 0 10px 0 16px;
+    border: 0;
+    border-radius: var(--radius-pill);
+    background: var(--yellow);
+    color: var(--on-yellow);
+    font: inherit;
+    font-size: var(--fs-small);
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .week-btn:disabled {
+    background: var(--disabled-bg);
+    color: var(--disabled-ink);
+    cursor: default;
   }
   .nums {
     display: grid;
@@ -634,15 +486,6 @@
     gap: 5px;
   }
   .mini {
-    display: block;
-    width: 17px;
-    height: 20px;
-  }
-  .mini :global(.lamp) {
-    width: 17px;
-    height: 20px;
-  }
-  .legend :global(.cordline) {
-    display: none;
+    --w: 17px;
   }
 </style>

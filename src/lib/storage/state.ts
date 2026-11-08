@@ -91,6 +91,18 @@ export interface DayLog {
 
 export const emptyDay = (): DayLog => ({ xp: 0, tasks: 0, right: 0, newWords: 0, rounds: 0, goal: false, shield: false });
 
+/** Eine Challenge am Ende ihrer Woche: Fortschritt (gedeckelt aufs Ziel) und ob geschafft. */
+export interface ChallengeResult {
+  id: string;
+  progress: number;
+  done: boolean;
+}
+
+/** Wochenarchiv: was beim Wochenwechsel sonst verloren ginge (die Challenges der Woche). */
+export interface WeekLog {
+  challenges: ChallengeResult[];
+}
+
 /** Roller-Sprint: Bestzeit gesamt, Bestzeit der Woche (week = deren Montag), Zahl der Fahrten; Zeiten in ms. */
 export interface SprintRecord {
   best: number | null;
@@ -137,6 +149,10 @@ export interface SaveState {
   /** Tagebuch je Kalendertag (nur Tage mit Aktivität oder Streak-Schutz). */
   days: Record<DateKey, DayLog>;
   sprint: SprintRecord;
+  /** Wochenarchiv je Montag (ab dem Update mit dem Wochenrückblick). */
+  weeks: Record<DateKey, WeekLog>;
+  /** Wochenrückblick: Montag der Woche, deren Rückblick zuletzt von selbst gezeigt wurde. */
+  recap: { seen: DateKey | null };
 }
 
 export const SAVE_VERSION = 1;
@@ -180,6 +196,8 @@ export function newSave(now: Date = new Date()): SaveState {
     yard: { fedOn: null, fed: 0 },
     days: {},
     sprint: { best: null, week: null, weekBest: null, runs: 0 },
+    weeks: {},
+    recap: { seen: null },
   };
 }
 
@@ -229,5 +247,21 @@ export function normalizeSave(raw: unknown): SaveState {
     weekBest: week ? time(sp.weekBest) : null,
     runs: typeof sp.runs === 'number' && sp.runs >= 0 ? Math.floor(sp.runs) : 0,
   };
+  // Wochenarchiv und Rückblick: nur gültige Daten und Einträge übernehmen.
+  const isDate = (v: unknown): v is DateKey => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v);
+  const num = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) && v >= 0 ? Math.floor(v) : 0);
+  save.weeks = Object.fromEntries(
+    Object.entries(save.weeks)
+      .filter(([k, w]) => isDate(k) && isObject(w) && Array.isArray(w.challenges))
+      .map(([k, w]) => [
+        k,
+        {
+          challenges: (w.challenges as unknown[])
+            .filter((c): c is Record<string, unknown> => isObject(c) && typeof c.id === 'string')
+            .map((c) => ({ id: c.id as string, progress: num(c.progress), done: c.done === true })),
+        },
+      ]),
+  );
+  save.recap = { seen: isDate(save.recap.seen) ? save.recap.seen : null };
   return save;
 }
