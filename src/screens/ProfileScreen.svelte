@@ -11,6 +11,7 @@
   import { learnedKeys } from '../lib/logic/session';
   import AccessoryIcon from '../lib/mascot/AccessoryIcon.svelte';
   import { arrivingByTab } from '../lib/motion';
+  import LanternCalendar from './profile/LanternCalendar.svelte';
   import Passport from './profile/Passport.svelte';
   import TrauYard from './profile/TrauYard.svelte';
 
@@ -108,6 +109,12 @@
     <Card tone="sea"><strong>{learnedKeys(save).length}</strong><span>gelernt</span></Card>
     <Card tone="yellow"><strong>{stagesDone}</strong><span>Etappen geschafft</span></Card>
   </div>
+
+  <!-- Je Tag eine Laterne aus dem Tagebuch: aus, gelernt, Tagesziel, Streak-Schutz -->
+  <section aria-labelledby="kalender">
+    <h2 id="kalender">Laternen-Kalender</h2>
+    <LanternCalendar />
+  </section>
 
   <section aria-labelledby="vorrat">
     <h2 id="vorrat">Vorrat</h2>

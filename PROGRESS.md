@@ -260,7 +260,24 @@
       - Rekorde im Ziel waren eingerückt (Standard-Einzug von `dd`).
     - Geprüft in Edge bei 440×956 (Safe-Area 59) und 375×667, Tag und Nacht: Motiv Bild für Bild (0–5800 ms, nichts ragt heraus), Ampel, Aufgabe, Gas, Bremse, Ziel; Echtzeit per CDP-Screencast (Karte wächst, Ampel, Gas, Bremse), 100 fps. Keine Konsolenfehler, kein seitliches Scrollen.
     - check grün, 268 Vitest grün (neu: `tests/sprint.test.ts`; 8 von 8 Mutationen machen ihn rot), Playwright 14/14 grün (neu: `tests/e2e/sprint.spec.ts` mit Rennen und Sperre; Gegenprobe ohne Strafzeit rot).
-- **Nächste Schritte:** Alex Punkt 3 zeigen; live erst auf sein Wort. Danach Punkt 4 (Laternen-Kalender, P6-05). Sonst offen: P1-06 (Prototyp im LAN, `pending-alex`).
+    - Live seit `c407dfb` (2026-11-07).
+  - **Punkt 4 erledigt (2026-11-08), Laternen-Kalender (P6-05):**
+    - Im Profil unter den vier Zahlen: je Woche eine Laternenkette, je Tag eine Laterne mit der Tageszahl – aus (blass), gelernt (orange), Tagesziel (rot mit gelben Rippen wie die Hero-Laterne), Streak-Schutz (meerblau, wie das Schild-Symbol). Nachts leuchten Lerntage mit flachen Lichthöfen. Heute: roter Punkt unter der Quaste; gewählter Tag: gelbe Fläche. Kurze Legende darunter.
+    - Beim Hineinscrollen und nach jedem Blättern gehen die Laternen Tag für Tag an (kurzes Flackern), danach pendeln sie sacht; außerhalb des Bildschirms ruhen sie. Angetippt schwingt die Laterne aus, das Feld darunter zeigt XP, Aufgaben, richtig, neue Wörter und den Status (Tagesziel erreicht, Streak-Schutz, gelernt, nicht gelernt; mit Runden). Feste Höhe, damit nichts springt.
+    - Blättern per Pfeil oder Wischen, vom ersten Tagebuch-Eintrag bis zum laufenden Monat; der Monat gleitet in Blätterrichtung, immer sechs Reihen Platz. Tage vor dem Tagebuch (7. November 2026 bzw. Beginn eines späteren Spielstands) zeigen „Vor dem Tagebuch“ statt Zahlen.
+    - Neue Tokens `--lamp-off`, `--lamp-learned`, `--lamp-shield`, `--lamp-ink`, `--lamp-shade`, `--lamp-glow` (Tag und Nacht).
+    - Gefunden und behoben:
+      - Zweistellige Zahlen stießen an die gelben Rippen (z. B. „23“ 1,6 px darin, Kontrast Weiß auf Rot dadurch 4,4). Laterne 2 px breiter, Rippen weiter außen: gemessen an der Tinte (Pixelvergleich mit/ohne Text) hat die breiteste Zahl jetzt ≥ 1,6 px Luft, Gegenprobe mit 15 px meldet den Überstand.
+      - Schattensichel lief mit der Viertelkurve gut 1 px über den Laternenkörper (nachgerechnet); jetzt kubisch, 0,4 px innen.
+      - Beim Anzünden stand die weiße Zahl kurz auf halb durchsichtigem Rot; die Zahl wechselt ihre Farbe jetzt erst nach dem Flackern.
+      - Info-Feld sprang bei zweizeiligem Status um 18 px; zwei Zeilen sind jetzt immer frei (gemessen: 143 px bei 440, 158 px bei 375, für jeden Tag gleich).
+      - Nachts wirkten gelbe Lichthöfe über Nachtblau oliv-grau; jetzt im Orange der Hero-Laterne. Der Blätter-Knopf hob sich nachts kaum ab; jetzt gelb wie die Zweitknöpfe.
+      - „heute“-Pille nachts dunkel auf gedämpftem Gelb (rund 2,8:1); jetzt Akzentgelb mit `--on-yellow`.
+      - Legende brach unruhig um; jetzt 2 × 2.
+    - Bekannt: Bei 375×667 passen Laternen und Info-Feld nicht ganz zusammen auf den Schirm – nach dem Antippen einer unteren Reihe ein kurzer Scroll zum Feld (bei 440×956 passt alles; kein automatisches Scrollen).
+    - Geprüft in Edge bei 440×956 (Safe-Area 59) und 375×667, Tag und Nacht: Anzünden Bild für Bild (0–1500 ms), Antippen (Streak-Schutz, Tagesziel mitten im Schwung, vor dem Tagebuch), Blättern (90/200 ms) und Oktober; Echtzeit per CDP-Screencast (Tab ins Profil, Scrollen, Anzünden, Antippen, Blättern), 99 fps. Pixelmessung über das ganze Profil: alle Kalendertexte AA, Tap-Ziele ≥ 44 px, kein seitliches Scrollen, keine Konsolenfehler.
+    - check grün, 278 Vitest grün (neu: `tests/calendar.test.ts`; 9 von 9 Mutationen machen ihn rot), Playwright 15/15 grün (neu: `tests/e2e/calendar.spec.ts` mit fester Uhr, Pfeil und Wischen; 3 von 3 Mutationen der Ansicht machen ihn rot).
+- **Nächste Schritte:** Alex Punkt 4 zeigen; live erst auf sein Wort. Danach Punkt 5 (Wochenrückblick, P6-06). Sonst offen: P1-06 (Prototyp im LAN, `pending-alex`).
 
 ## Phase 2 – Ergebnis
 

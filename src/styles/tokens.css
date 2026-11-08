@@ -43,6 +43,13 @@
   --bad-soft: #fbd3cf;
   --bad-ink: #a8170f;
   --go: #2fb56f; /* grünes Ampellicht (Roller-Sprint), nur als Fläche */
+  /* Laternen-Kalender: Laterne je Tag, die Zahl steht darauf (aus: --ink-2, gelernt/Schutz: --lamp-ink, Ziel: --on-red) */
+  --lamp-off: #ede3d5; /* unbeleuchtet */
+  --lamp-learned: #f7964a;
+  --lamp-shield: #2bb3a8;
+  --lamp-ink: #231a15; /* Zahl auf leuchtender Laterne, auch nachts dunkel */
+  --lamp-shade: rgb(35 26 21 / 0.13); /* Schattenseite links */
+  --lamp-glow: #ff7a45; /* Lichthof leuchtender Laternen (nur nachts sichtbar) */
   --disabled-bg: rgb(255 255 255 / 0.45);
   --disabled-ink: rgb(35 26 21 / 0.55);
   --scrim: rgb(35 26 21 / 0.45); /* abgedunkelter Grund hinter Blättern (Truhe) */
@@ -119,6 +126,11 @@
   --bad-soft: #4d2226;
   --bad-ink: #ff9a8e;
   --go: #4fd08e;
+  /* Laternen leuchten nachts hell wie in den Szenen (Hội An); unbeleuchtet heben sie sich vom Kartengrund ab */
+  --lamp-off: #39436a;
+  --lamp-learned: #f39a52;
+  --lamp-shield: #3cbcb1;
+  --lamp-shade: rgb(0 0 0 / 0.2);
   --disabled-bg: rgb(255 255 255 / 0.1);
   --disabled-ink: rgb(246 235 221 / 0.5);
   --scrim: rgb(5 8 18 / 0.6);
