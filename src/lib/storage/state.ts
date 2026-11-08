@@ -37,6 +37,8 @@ export interface Settings {
   haptics: boolean;
   /** Darstellung: 'auto' = Nacht von 20 bis 9 Uhr, sonst Tag; oder fest gewählt. */
   theme: ThemeMode;
+  /** Trâus Tagesblick bei der ersten Öffnung am Tag. */
+  brief: boolean;
 }
 
 /** Zähler für Achievements und Wochen-Challenges. */
@@ -153,6 +155,8 @@ export interface SaveState {
   weeks: Record<DateKey, WeekLog>;
   /** Wochenrückblick: Montag der Woche, deren Rückblick zuletzt von selbst gezeigt wurde. */
   recap: { seen: DateKey | null };
+  /** Trâus Tagesblick: Tag, an dem er zuletzt von selbst kam. */
+  brief: { seen: DateKey | null };
 }
 
 export const SAVE_VERSION = 1;
@@ -192,12 +196,13 @@ export function newSave(now: Date = new Date()): SaveState {
     challenges: { week: null, list: [] },
     favorites: [],
     review: {},
-    settings: { morning: '08:00', evening: '20:00', sound: true, haptics: true, theme: 'auto' },
+    settings: { morning: '08:00', evening: '20:00', sound: true, haptics: true, theme: 'auto', brief: true },
     yard: { fedOn: null, fed: 0 },
     days: {},
     sprint: { best: null, week: null, weekBest: null, runs: 0 },
     weeks: {},
     recap: { seen: null },
+    brief: { seen: null },
   };
 }
 
@@ -263,5 +268,7 @@ export function normalizeSave(raw: unknown): SaveState {
       ]),
   );
   save.recap = { seen: isDate(save.recap.seen) ? save.recap.seen : null };
+  save.brief = { seen: isDate(save.brief.seen) ? save.brief.seen : null };
+  if (typeof save.settings.brief !== 'boolean') save.settings.brief = true;
   return save;
 }

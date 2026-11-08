@@ -14,7 +14,7 @@ async function seedField(page: Page, thirsty: number, fine: number) {
         r.onsuccess = () => res(r.result);
       });
       const store = (m: IDBTransactionMode) => db.transaction('state', m).objectStore('state');
-      const save = await new Promise<Record<string, unknown> & { items: Record<string, unknown> }>((res) => {
+      const save = await new Promise<{ items: Record<string, unknown>; settings: { brief: boolean } }>((res) => {
         const t = store('readonly').get('save');
         t.onsuccess = () => res(t.result);
       });
@@ -26,6 +26,8 @@ async function seedField(page: Page, thirsty: number, fine: number) {
       for (let i = 1; i <= thirsty + fine; i++) {
         save.items[`w${String(i).padStart(3, '0')}`] = { box: 2, due: day(i <= thirsty ? -1 : 3), seen: 2, right: 1, wrong: 0 };
       }
+      // Tagesblick aus: er hat eigene Tests (brief.spec.ts) und läge sonst über der Seite.
+      save.settings.brief = false;
       await new Promise((res) => {
         const t = store('readwrite').put(save, 'save');
         t.onsuccess = res;

@@ -40,8 +40,10 @@ test('Etappe 1 ist von Start bis Boss spielbar und schaltet Etappe 2 frei', asyn
   await expect(page.getByRole('button', { name: /Etappe 1: Ich & du – geschafft/ })).toBeVisible();
   await expect(page.getByRole('button', { name: /Etappe 2: .* – offen/ })).toBeEnabled();
 
-  // Fortschritt, Truhe und Accessoire überstehen einen Neustart.
+  // Fortschritt, Truhe und Accessoire überstehen einen Neustart. Erste Öffnung mit Gelerntem: Trâus Tagesblick kommt – „Später“.
   await page.reload();
+  await page.getByRole('dialog').getByRole('button', { name: 'Später' }).click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
   await expect(page.getByRole('button', { name: /Etappe 2: .* – offen/ })).toBeEnabled();
   await page.getByRole('button', { name: 'Profil' }).click();
   await expect(page.locator('.garment[aria-pressed="true"]')).toHaveCount(1);

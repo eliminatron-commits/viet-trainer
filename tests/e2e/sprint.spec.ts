@@ -29,11 +29,13 @@ test('Roller-Sprint: Ampel, zwölf richtige bis ins Ziel, ein Fehler kostet 3 s,
       r.onsuccess = () => res(r.result);
     });
     const store = (m: IDBTransactionMode) => db.transaction('state', m).objectStore('state');
-    const save = await new Promise<{ items: Record<string, unknown> }>((res) => {
+    const save = await new Promise<{ items: Record<string, unknown>; settings: { brief: boolean } }>((res) => {
       const t = store('readonly').get('save');
       t.onsuccess = () => res(t.result);
     });
     for (const id of ids) save.items[id] = { box: 2, due: '2099-01-01', seen: 2, right: 1, wrong: 0 };
+    // Tagesblick aus: er hat eigene Tests (brief.spec.ts) und läge sonst über der Seite.
+    save.settings.brief = false;
     await new Promise((res) => {
       const t = store('readwrite').put(save, 'save');
       t.onsuccess = res;

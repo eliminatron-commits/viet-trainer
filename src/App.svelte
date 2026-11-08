@@ -1,16 +1,20 @@
 <script lang="ts">
   import { onMount, untrack } from 'svelte';
+  import { content } from './content';
   import type { SituationTag, Stage } from './content/types';
   import { onAudioStatus, retry } from './lib/audio/player';
+  import { brief, closeBrief, openBrief } from './lib/brief.svelte';
+  import DayBrief from './lib/components/DayBrief.svelte';
   import NewsToast from './lib/components/NewsToast.svelte';
   import PillNav, { type Tab } from './lib/components/PillNav.svelte';
   import WeekRecap from './lib/components/WeekRecap.svelte';
-  import { game, initGame, markRecapSeen, today } from './lib/game.svelte';
+  import { game, initGame, markBriefSeen, markRecapSeen, today } from './lib/game.svelte';
+  import { briefDue, briefItems, type BriefTarget } from './lib/logic/brief';
   import { recapDue } from './lib/logic/recap';
   import LookupSheet from './lib/lookup/LookupSheet.svelte';
   import { transitionTo, type Motion } from './lib/motion';
   import { applyUpdate, pwa } from './lib/pwa.svelte';
-  import { openRecap, recap } from './lib/recap.svelte';
+  import { closeRecap, openRecap, recap } from './lib/recap.svelte';
   import { setThemeMode } from './lib/theme.svelte';
   import PathScreen from './screens/PathScreen.svelte';
   import PhrasebookScreen from './screens/PhrasebookScreen.svelte';
@@ -46,6 +50,23 @@
       screen = next;
     }, motion);
   /** Startet eine Runde – als Kreis vom Tippunkt, oder aus einer Modus-Karte, die in ihrer Farbe zur Übung wächst (morph). */
+  /** Ein Punkt aus Trâus Tagesblick: Blatt zu und direkt in die Runde (öffnet sich als Kreis vom Tippunkt). */
+  function follow(target: BriefTarget) {
+    const stage = (id: string) => content.stages.find((x) => x.id === id)!;
+    const mode: PlayMode =
+      target.kind === 'water'
+        ? { kind: 'training', verbsOnly: false, focus: 'mixed', water: true }
+        : target.kind === 'training'
+          ? { kind: 'training', verbsOnly: false, focus: target.focus }
+          : { kind: target.kind, stage: stage(target.stage) };
+    playRun++;
+    transitionTo(() => {
+      closeBrief();
+      closeRecap();
+      scrollTo(0, 0);
+      screen = { name: 'play', mode };
+    }, 'reveal', undefined, true);
+  }
   const start = (mode: PlayMode, card?: CardTone) => {
     playRun++;
     go({ name: 'play', mode, card }, card ? 'morph-open' : 'reveal');
@@ -65,26 +86,35 @@
   /** iOS hat den Ton blockiert und der Player konnte ihn nicht selbst retten – ein Tippen auf den Hinweis repariert ihn. */
   let audioBlocked = $state(false);
 
-  // Wochenrückblick: bei der ersten Öffnung einer neuen Woche einmal von selbst (auch beim Zurückkehren aus dem
-  // Hintergrund, iOS lädt die App dann nicht neu) – nie mitten in einer Runde, dann danach.
-  let wake = $state(0);
+  // Wochenrückblick (erste Öffnung einer neuen Woche) und Trâus Tagesblick (erste Öffnung am Tag) kommen von selbst –
+  // auch beim Zurückkehren aus dem Hintergrund (iOS lädt die App dann nicht neu), nie mitten in einer Runde, dann danach.
+  // Auslöser ist nur eine Öffnung (`opened`: App-Start, Rückkehr), nie das Ende einer Runde – sonst käme der Tagesblick
+  // am ersten Lerntag direkt nach der ersten Runde (beim Öffnen war noch nichts gelernt, also nichts gemerkt).
+  let opened = $state(true);
   const busy = $derived(screen.name === 'play' || screen.name === 'sprint');
   $effect(() => {
-    void wake;
-    if (!game.ready || busy) return;
+    if (!opened || !game.ready || busy) return;
     untrack(() => {
-      if (recap.week) return;
-      const due = recapDue(game.save, today());
-      if (!due) return;
-      markRecapSeen(due);
-      openRecap(due);
+      opened = false;
+      if (recap.week || brief.open) return;
+      const t = today();
+      const week = recapDue(game.save, t);
+      // Trâus Tagesblick: einmal am Tag; am ersten Tag einer neuen Woche als letzte Seite des Rückblicks.
+      const items = briefDue(game.save, t) ? briefItems(game.save, t) : null;
+      if (items) markBriefSeen(t);
+      if (week) {
+        markRecapSeen(week);
+        openRecap(week, !!items?.length);
+      } else if (items?.length) openBrief();
     });
   });
 
   onMount(() => {
     // Bis der Spielstand da ist, gilt die Uhrzeit; danach der gespeicherte Modus (ohne Übergang).
     void initGame().then(() => setThemeMode(game.save.settings.theme, false));
-    const visible = () => document.visibilityState === 'visible' && wake++;
+    const visible = () => {
+      if (document.visibilityState === 'visible') opened = true;
+    };
     document.addEventListener('visibilitychange', visible);
     const off = onAudioStatus((s) => (audioBlocked = s.blocked));
     return () => {
@@ -148,9 +178,10 @@
   <div class="statusbar" aria-hidden="true"></div>
 {/if}
 
-<NewsToast active={game.ready && !busy && !recap.week} />
+<NewsToast active={game.ready && !busy && !recap.week && !brief.open} />
 <LookupSheet />
-<WeekRecap />
+<WeekRecap onfollow={follow} />
+<DayBrief onfollow={follow} />
 
 {#if game.error}
   <div class="toast error" role="alert">{game.error}</div>

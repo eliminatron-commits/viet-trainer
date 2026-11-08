@@ -13,6 +13,7 @@
   import { game, today } from '../lib/game.svelte';
   import RegionHero, { REGION_TONE } from '../lib/illustrations/RegionHero.svelte';
   import RegionScene from '../lib/illustrations/RegionScene.svelte';
+  import { greeting as hello } from '../lib/logic/brief';
   import { currentStage, regionDone, stageLearned, stageStatus, stageWords } from '../lib/logic/path';
   import { currentStreak, levelInfo } from '../lib/logic/rewards';
   import Trau from '../lib/mascot/Trau.svelte';
@@ -26,10 +27,7 @@
   const xpToday = $derived(save.today.date === day ? save.today.xp : 0);
   const streak = $derived(currentStreak(save, day));
   const level = $derived(levelInfo(save.xp).level);
-  const greeting = (() => {
-    const h = new Date().getHours();
-    return h < 11 ? 'Guten Morgen' : h < 18 ? 'Hallo' : 'Guten Abend';
-  })();
+  const greeting = hello(new Date().getHours());
   const offsets = [0, 70, 30, -50, -70, 10];
   const regionOf = $derived(content.regions.find((r) => r.id === current.region)!);
 

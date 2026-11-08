@@ -34,9 +34,10 @@ if (typeof window !== 'undefined')
 
 /**
  * Führt einen Ansichtswechsel aus – mit View Transition, wenn verfügbar und Bewegung erwünscht ist.
- * `origin`: Kreismittelpunkt bei reveal/theme (sonst der letzte Tippunkt).
+ * `origin`: Kreismittelpunkt bei reveal/theme (sonst der letzte Tippunkt). `over`: der Wechsel startet aus einem Blatt
+ * (Tagesblick, Rückblick) – Navigation und Statusleiste gehören dann zum Bild unter dem Blatt statt darüber (base.css).
  */
-export function transitionTo(update: () => void, motion: Motion, origin?: { x: number; y: number }): void {
+export function transitionTo(update: () => void, motion: Motion, origin?: { x: number; y: number }, over = false): void {
   const id = ++seq;
   current = motion;
   if (!supportsViewTransitions() || reducedMotion()) {
@@ -48,6 +49,8 @@ export function transitionTo(update: () => void, motion: Motion, origin?: { x: n
   }
   const root = document.documentElement;
   root.dataset.vt = motion;
+  if (over) root.dataset.vtOver = '';
+  else delete root.dataset.vtOver;
   if (motion === 'reveal' || motion === 'theme') {
     const o = origin ?? { x: tap.x || innerWidth / 2, y: tap.y || innerHeight * 0.8 };
     root.style.setProperty('--vt-x', `${o.x}px`);
@@ -60,6 +63,7 @@ export function transitionTo(update: () => void, motion: Motion, origin?: { x: n
   void vt.finished.finally(() => {
     if (id !== seq) return;
     delete root.dataset.vt;
+    delete root.dataset.vtOver;
     current = null;
   });
 }

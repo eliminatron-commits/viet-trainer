@@ -115,6 +115,12 @@ button {
   animation: 420ms var(--ease-out) both vt-return-left;
 }
 
+/* Aus einem Blatt heraus (Tagesblick, Rückblick): die Leisten liegen unter dem Blatt und dürfen im Übergang nicht
+   als eigene Ebene darüber springen */
+:root[data-vt-over] nav.pill,
+:root[data-vt-over] .statusbar {
+  view-transition-name: none !important;
+}
 /* Session: öffnet sich als Kreis vom Tippunkt (--vt-x/--vt-y aus motion.ts), die Welt dahinter tritt zurück */
 :root[data-vt='reveal']::view-transition-old(root) {
   animation: 600ms var(--ease-out) both vt-recede;

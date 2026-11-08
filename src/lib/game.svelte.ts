@@ -215,6 +215,13 @@ export function markRecapSeen(monday: string): void {
   persist();
 }
 
+/** Trâus Tagesblick kam heute schon (von selbst oder als letzte Seite des Wochenrückblicks). */
+export function markBriefSeen(day: string): void {
+  if (game.save.brief.seen === day) return;
+  game.save.brief.seen = day;
+  persist();
+}
+
 /** Trâus Hof: füttern (einmal am Tag nach erreichtem Tagesziel). */
 export function feedTrau(): boolean {
   const ok = feed(game.save, today());

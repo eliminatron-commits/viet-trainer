@@ -40,6 +40,9 @@ test('App-Kill mitten in der Session verliert höchstens die laufende Aufgabe', 
   const save = await storedSave(page);
   expect(save.stats.correct).toBe(3);
   expect(Object.keys(save.items).length).toBeGreaterThan(0);
+  // Erste Öffnung mit Gelerntem: Trâus Tagesblick kommt – „Später“.
+  await page.getByRole('dialog').getByRole('button', { name: 'Später' }).click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
   await page.getByRole('button', { name: /Etappe 1: Ich & du/ }).click();
   await expect(page.getByRole('button', { name: 'Weiterlernen' })).toBeVisible();
 });
@@ -55,6 +58,9 @@ test('Fortschritt sichern: Export als Datei, Import stellt genau diesen Stand wi
     await page.getByRole('button', { name: /^Weiter/ }).first().click();
   }
   await page.reload();
+  // Erste Öffnung mit Gelerntem: Trâus Tagesblick kommt – „Später“.
+  await page.getByRole('dialog').getByRole('button', { name: 'Später' }).click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
   await page.getByRole('button', { name: 'Sprachführer' }).click();
   await page.getByRole('button', { name: /^Restaurant/ }).click();
   const first = page.locator('li.item').first();

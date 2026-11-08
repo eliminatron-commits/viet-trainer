@@ -212,6 +212,17 @@
   </section>
 
   <section class="group">
+    <h2>Tagesblick</h2>
+    <button class="switch" role="switch" aria-checked={game.save.settings.brief} onclick={() => updateSettings({ brief: !game.save.settings.brief })}>
+      <span class="label">
+        <strong>Trâus Tagesblick</strong>
+        <span>Bei der ersten Öffnung am Tag zeigt Trâu, was ansteht – durstige Pflanzen, Tagesziel, Wochen-Challenge.</span>
+      </span>
+      <span class="track" aria-hidden="true"><span class="thumb"></span></span>
+    </button>
+  </section>
+
+  <section class="group">
     <h2>Darstellung</h2>
     <div class="segments" role="radiogroup" aria-label="Darstellung">
       {#each themeOptions as o (o.mode)}

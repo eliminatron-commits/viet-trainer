@@ -260,6 +260,8 @@
   class:grown={!!card}
   style:view-transition-name={card ? 'stage-card' : undefined}
   style:--from={card ? CARD_COLOR[card] : undefined}
+  data-mode={mode.kind}
+  data-focus={mode.kind === 'training' ? (mode.water ? 'water' : mode.focus) : undefined}
   data-task-kind={task?.kind} data-answer={answer} data-outcome={outcome}>
   {#if outcome}
     <section class="result">

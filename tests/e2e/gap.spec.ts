@@ -19,7 +19,7 @@ test('Lückensatz: aus dem Karussell starten, falsch und richtig lösen, das ric
       r.onsuccess = () => res(r.result);
     });
     const store = (m: IDBTransactionMode) => db.transaction('state', m).objectStore('state');
-    const save = await new Promise<{ items: Record<string, unknown> }>((res) => {
+    const save = await new Promise<{ items: Record<string, unknown>; settings: { brief: boolean } }>((res) => {
       const t = store('readonly').get('save');
       t.onsuccess = () => res(t.result);
     });
@@ -27,6 +27,8 @@ test('Lückensatz: aus dem Karussell starten, falsch und richtig lösen, das ric
     d.setDate(d.getDate() + 3);
     const later = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     for (const id of ids) save.items[id] = { box: 2, due: later, seen: 2, right: 1, wrong: 0 };
+    // Tagesblick aus: er hat eigene Tests (brief.spec.ts) und läge sonst über der Seite.
+    save.settings.brief = false;
     await new Promise((res) => {
       const t = store('readwrite').put(save, 'save');
       t.onsuccess = res;

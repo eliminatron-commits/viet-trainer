@@ -2,11 +2,13 @@
   import { tick } from 'svelte';
   import { tick as haptic } from '../feedback';
   import { game, today } from '../game.svelte';
+  import { briefItems, greeting, type BriefTarget } from '../logic/brief';
   import { weekRecap } from '../logic/recap';
   import Trau from '../mascot/Trau.svelte';
   import { reducedMotion } from '../motion';
   import { closeRecap, recap } from '../recap.svelte';
   import { theme } from '../theme.svelte';
+  import BriefList from './BriefList.svelte';
   import Button from './Button.svelte';
   import Lantern from './Lantern.svelte';
   import LanternHalo from './LanternHalo.svelte';
@@ -16,21 +18,26 @@
    * Laternenkette der Woche (gehen nacheinander an, nachts mit Lichthöfen), Lerntage, Tagesziele, hochzählende XP und
    * Trâu. Seite 2: neue Wörter, Aufgaben, Anteil richtig, Runden und die Challenges der Woche. Umblättern wie im
    * Reisepass (Pfeil oder Wischen, die Seite dreht sich um den Rücken). Schließen per Knopf, Schleier oder Escape;
-   * der Fokus bleibt im Blatt.
+   * der Fokus bleibt im Blatt. Am ersten Tag einer neuen Woche ist Trâus Tagesblick die letzte Seite („Heute“, jeder
+   * Punkt führt über `onfollow` direkt hin).
    */
+  let { onfollow }: { onfollow: (target: BriefTarget) => void } = $props();
+
   const r = $derived(recap.week ? weekRecap(game.save, recap.week, today()) : null);
+  const items = $derived(recap.week && recap.brief ? briefItems(game.save, today()) : []);
+  const hello = greeting(new Date().getHours());
   let page = $state(0);
-  /** Umblättern: die obere Seite (0) dreht sich weg bzw. zurück, die andere liegt darunter. */
-  let turning = $state<'away' | 'back' | null>(null);
+  /** Umblättern: die Seite `page` dreht sich weg (vorwärts) bzw. zurück (rückwärts), die nächste liegt darunter. */
+  let turn = $state<{ page: number; dir: 'away' | 'back' } | null>(null);
   let closing = $state(false);
   let sheet = $state<HTMLElement | null>(null);
-  const LAST = 1;
+  const LAST = $derived(recap.brief ? 2 : 1);
 
   // Neu geöffnet: erste Seite, Fokus auf den Titel, die Seite dahinter scrollt nicht mit.
   $effect.pre(() => {
     if (recap.week) {
       page = 0;
-      turning = null;
+      turn = null;
     }
   });
   $effect(() => {
@@ -58,12 +65,13 @@
   function go(to: number) {
     if (to < 0 || to > LAST || to === page) return;
     const forward = to > page;
+    const from = page;
     page = to;
     haptic();
     if (!reducedMotion()) {
-      turning = forward ? 'away' : 'back';
+      turn = forward ? { page: from, dir: 'away' } : { page: to, dir: 'back' };
       clearTimeout(turnTimer);
-      turnTimer = window.setTimeout(() => (turning = null), TURN);
+      turnTimer = window.setTimeout(() => (turn = null), TURN);
     }
     void tick().then(() => sheet?.querySelector<HTMLElement>(`#recap-title-${to}`)?.focus({ preventScroll: true }));
   }
@@ -101,7 +109,7 @@
   // Blättern wie im Buch (Rücken links): vorwärts dreht Seite 1 weg, rückwärts dreht sie zurück. Beide Seiten liegen
   // immer in derselben Zelle – die höhere bestimmt die Höhe, das Blatt springt nicht.
   const TURN = 560;
-  const visible = (i: number) => i === page || (turning !== null && i <= 1);
+  const visible = (i: number) => i === page || (turn !== null && (i === turn.page || i === turn.page + 1));
 
   function onkeydown(e: KeyboardEvent) {
     if (!recap.week) return;
@@ -148,10 +156,11 @@
         onpointercancel={() => (startX = null)}
       >
           <section
-            class="page first"
+            class="page"
             class:hidden={!visible(0)}
-            class:away={turning === 'away'}
-            class:back={turning === 'back'}
+            class:away={turn?.page === 0 && turn.dir === 'away'}
+            class:back={turn?.page === 0 && turn.dir === 'back'}
+            style:z-index={3}
             data-page="0"
             inert={page !== 0}
           >
@@ -182,7 +191,15 @@
               </p>
               <div class="trau"><Trau size={150} mood={r.goals > 0 ? 'cheer' : 'happy'} /></div>
           </section>
-          <section class="page" class:hidden={!visible(1)} data-page="1" inert={page !== 1}>
+          <section
+            class="page"
+            class:hidden={!visible(1)}
+            class:away={turn?.page === 1 && turn.dir === 'away'}
+            class:back={turn?.page === 1 && turn.dir === 'back'}
+            style:z-index={2}
+            data-page="1"
+            inert={page !== 1}
+          >
             <p class="kicker">{r.current ? 'Diese Woche bisher' : 'Deine Woche'}</p>
               <h2 id="recap-title-1" tabindex="-1">Gelernt</h2>
               <dl class="grid">
@@ -210,6 +227,14 @@
                 <p class="note">Für diese Woche nicht festgehalten.</p>
               {/if}
           </section>
+          {#if recap.brief}
+            <section class="page" class:hidden={!visible(2)} style:z-index={1} data-page="2" inert={page !== 2}>
+              <p class="kicker">Trâus Tagesblick</p>
+              <h2 id="recap-title-2" tabindex="-1">{hello}!</h2>
+              <p class="sub">Das steht heute an:</p>
+              <BriefList {items} {onfollow} />
+            </section>
+          {/if}
       </div>
 
       <div class="nav">
@@ -295,9 +320,6 @@
   }
   .page.hidden {
     visibility: hidden;
-  }
-  .page.first {
-    z-index: 2;
   }
   .page.away {
     animation: turn-away 560ms var(--ease-out) forwards;
@@ -431,6 +453,12 @@
     overflow: hidden;
     clip-path: inset(50%);
     white-space: nowrap;
+  }
+  .sub {
+    margin-top: -4px;
+    color: var(--ink-2);
+    font-size: var(--fs-small);
+    font-weight: 600;
   }
   .note {
     min-height: 20px;

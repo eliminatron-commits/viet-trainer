@@ -291,7 +291,21 @@
       - Leerraum über Trâu auf Seite 1; Laternen wachsen jetzt mit der Seitenbreite (bis 46 px), Trâu größer.
     - Geprüft in Edge bei 440×956 (Safe-Area 59) und 375×667, Tag und Nacht: Öffnen Bild für Bild (0–2100 ms), beide Seiten, Umblättern (120/280 ms), Zugang aus dem Kalender, Escape mit Fokus-Rückkehr; Echtzeit per CDP-Screencast (öffnet von selbst, Laternen, XP, vor und zurück, Schließen), 85–93 fps. Pixelmessung: alle Texte AA (knappster: Zahl auf roter Laterne 4,93), Tap-Ziele ≥ 44 px, kein seitliches Scrollen, keine Konsolenfehler.
     - check grün, 287 Vitest grün (neu: `tests/recap.test.ts`; 11 von 11 Mutationen machen ihn rot), Playwright 17/17 grün (neu: `tests/e2e/recap.spec.ts` mit fester Uhr; 3 von 3 Mutationen in App, Blatt und Kalender machen ihn rot).
-- **Nächste Schritte:** Alex Punkt 5 zeigen; live erst auf sein Wort. Danach Punkt 6 (Trâus Tagesblick, P6-07). Sonst offen: P1-06 (Prototyp im LAN, `pending-alex`).
+    - Live seit `efcc6e9` (2026-11-08).
+  - **Punkt 6 erledigt (2026-11-08), Trâus Tagesblick (P6-07):**
+    - Bei der ersten Öffnung am Tag ein Blatt von unten: Trâu hüpft und grüßt („Guten Morgen!“, „Hallo!“, „Guten Abend!“ – gleiche Regel wie im Lernpfad), darunter was ansteht: durstige Pflanzen → Gießrunde; Tagesziel (was fehlt) → die Etappe, an der es weitergeht, bzw. ihr Boss, nach der letzten Etappe das Training; die Wochen-Challenge, die dem Ziel am nächsten ist → passende Übung (Paare, Satzbau, Hör-Diktat, Ton-Ninja, Training), ist sie noch gesperrt oder gibt es keine (neue Wörter, Tagesziele), dann der Lernpfad. Antippen schließt das Blatt und öffnet die Runde als Kreis vom Tippunkt; „Später“, Schleier oder Escape schließen.
+    - Einmal am Tag (`save.brief.seen`), nur wenn schon einmal gelernt wurde, auch beim Zurückkehren aus dem Hintergrund, nie mitten in einer Runde. Abschaltbar: Einstellungen → Tagesblick (`settings.brief`, Standard an).
+    - Am ersten Tag einer neuen Woche ist der Tagesblick die dritte Seite des Wochenrückblicks („Heute“) statt eines eigenen Blatts; Umblättern dafür auf beliebig viele Seiten erweitert (alle Seiten gleich hoch, gemessen).
+    - `main.play` trägt jetzt `data-mode`/`data-focus` (für Tests: wohin ein Punkt geführt hat). Der Gruß im Lernpfad nutzt dieselbe Funktion.
+    - Gefunden und behoben:
+      - Beim Antippen eines Punkts sprangen Navigation und Statusleiste für rund 200 ms über das Blatt (eigene Übergangsebenen); jetzt liegen sie bei Übergängen aus einem Blatt darunter (`transitionTo(…, over)`, base.css).
+      - Die durstige Reispflanze war als Symbol winzig und fahl; jetzt größer (reifere, aber weiter durstige Pflanze).
+      - Erklärsatz bei den Pflanzen brach mit „gießen.“ allein um; kürzer.
+      - Der Auslöser lief auch am Ende jeder Runde: Am ersten Lerntag kam der Tagesblick dadurch direkt nach der ersten Runde (beim Öffnen war noch nichts gelernt, also nichts gemerkt). Jetzt lösen Tagesblick und Rückblick nur bei einer Öffnung aus (App-Start, Rückkehr aus dem Hintergrund); eine Öffnung mitten in einer Runde wirkt danach. Gefunden im Playwright-Gesamtlauf; die übrigen Tests mit eigenem Spielstand schalten den Tagesblick dort ab, nach einem Neustart schließen sie ihn mit „Später“.
+    - Bekannt: Bei 375 brechen „Guten Morgen!“ neben Trâu und „Noch 30 XP bis zum Tagesziel“ in zwei Zeilen um (nichts ragt heraus, gemessen).
+    - Geprüft in Edge bei 440×956 (Safe-Area 59) und 375×667, Tag und Nacht: Öffnen Bild für Bild (0–1100 ms), Punkt „Feld gießen“ → Gießrunde mit genau den durstigen Einheiten, nur einmal am Tag, Montag als dritte Rückblick-Seite (Umblättern), Schalter aus → kein Tagesblick; Echtzeit per CDP-Screencast (öffnet, Punkte steigen herein, Kreis in die Runde), 96–97 fps. Pixelmessung: alle Texte AA (knappster 6,94), Tap-Ziele ≥ 44 px, kein seitliches Scrollen, keine Konsolenfehler.
+    - check grün, 296 Vitest grün (neu: `tests/brief.test.ts`; 10 von 10 Mutationen machen ihn rot), Playwright 21 grün (neu: `tests/e2e/brief.spec.ts` mit fester Uhr, vier Tests; 6 von 6 Gegenproben machen ihn rot, darunter „nur eine Öffnung löst aus“).
+- **Nächste Schritte:** Alex Punkt 6 zeigen; live erst auf sein Wort. Danach Punkt 7 (Reise zur nächsten Region, P6-08). Sonst offen: P1-06 (Prototyp im LAN, `pending-alex`).
 
 ## Phase 2 – Ergebnis
 
