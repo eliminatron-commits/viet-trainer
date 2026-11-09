@@ -334,7 +334,45 @@
     - Bekannt: Bei 375×667 deckt die Rückmeldungsleiste nach der Antwort die Kacheln mit den Schreibungen weitgehend (wie bei allen Auswahl-Aufgaben; darunter scrollbar). Kandidat für die Gesamtprüfung.
     - Geprüft in Edge bei 440×956 (Safe-Area 59) und 375×667, Tag und Nacht: Motiv Bild für Bild (0–5200 ms), Aufgabe vor und nach der Antwort (falsch, richtig), längste Bedeutungen („um einen Gefallen bitten / dank“: Kacheln vor und nach der Antwort gleich hoch, ≥ 19,7 px Luft zur Schreibung), gesperrte Karte; Echtzeit per CDP-Screencast (Motiv, Karte wächst in die Übung, falsche Antwort), 100 fps bei 440 (bei 375 nur die gewollten Ruhepausen des Motivs). Pixelmessung: alle Texte AA (knappster 4,88), Tap-Ziele der neuen Teile ≥ 44 px, kein seitliches Scrollen, keine Konsolenfehler.
     - check grün, 318 Vitest grün (neu: `tests/twins.test.ts`, 11 Tests; 8 von 8 Mutationen machen ihn rot, darunter gleiche Schreibung und gleiche Bedeutung mit nachgebauten Einträgen), Playwright 25 grün (neu: `tests/e2e/twins.spec.ts`, zwei Tests; 5 von 5 Gegenproben machen ihn rot).
-- **Nächste Schritte:** Alex Punkt 8 zeigen; live erst auf sein Wort. Danach die Gesamtprüfung (P6-10) und die Abnahme auf dem iPhone (P6-11). Sonst offen: P1-06 (Prototyp im LAN, `pending-alex`).
+    - Live seit `feebe91` (2026-11-09).
+  - **Punkt 9 erledigt (2026-11-09), Gesamtprüfung P6-10:**
+    - `pruefer` (Opus 5.5) über ganz Phase 6 gegen tests.json und CLAUDE.md. Dazu eine eigene Gesamtmessung in Edge über jede Ansicht wie bei P5-09, erweitert um Phase 6: Reisfeld mit angetippter Pflanze, Gießrunde, jede Karte des Karussells mit Aufgabe, falsch und richtig (Paare, Lückensatz, Satzbau, Hör-Diktat, Ton-Ninja, Ton-Zwillinge), Roller-Sprint (Ampel, Aufgabe, Fehler, Ziel), Boss mit Ton-Zwillingen und Lückensatz. Dazu die Einzelmessungen von Kalender (Tage, Oktober), Wochenrückblick, Tagesblick, Reise und Ton-Zwillingen. Tag und Nacht, 440×956 (Safe-Area 59) und 375×667.
+    - Neu im Verfahren: `scrollWidth` je Frame während der Animationen (Tabwechsel, Reisfeld, Karussell, Kalender blättern, Rückblick, Reisepass, Runde). Außerdem reduzierte Bewegung in jedem neuen Bereich (laufende Animationen gezählt).
+    - Gefunden und behoben:
+      - **Rückkehr aus dem Hintergrund** (gemeldet vom pruefer):
+        - Die App lief dabei nicht durch den Tages- und Wochenwechsel; er kam erst mit der ersten Aktion.
+        - Öffnete sich der Wochenrückblick am Montag auf diesem Weg (auf dem iPhone der Normalfall), fehlte die alte Woche im Archiv. Statt der Challenges stand „Für diese Woche nicht festgehalten“.
+        - Dem Tagesblick fehlte die Wochen-Challenge, in der Laternenkette fehlten die vom Streak-Schutz überbrückten Tage.
+        - Jetzt läuft der Wechsel bei jeder Rückkehr wie beim Start (`resumeGame`).
+      - **Seitliches Scrollen** (gemeldet vom pruefer, gemessen): Beim Blättern im Laternen-Kalender ragte der gleitende Monat 26 px über den Rand, die Seite war kurz seitlich scrollbar. Das Profil schneidet jetzt waagerecht ab wie die Runde: gemessen 0 px. Alle anderen Animationen lagen schon bei 0.
+      - **Kontrast:** Der Kicker auf der gelben Sprint-Karte („Roller-Sprint“ an der Ampel, „Erste Fahrt“ bzw. „Neue Bestzeit!“ im Ziel) lag nachts bei 3,07:1, weil er `--ink-2` auf einer Kartenfläche nutzte. Jetzt `--ink-muted`: nachts 4,71, tags 7,3.
+      - **Reise:** „Überspringen“ schloss die Reise sofort; Ankunft, „Willkommen in …“ und das Souvenir fehlten. Jetzt springt es wie beschrieben ans Ende: Zug am Halt, Route vollständig, das Souvenir landet im Fach. Danach folgt „Weiter“ bzw. „Fertig“. Bild für Bild geprüft (0 bis 1500 ms nach dem Tippen, der Fokus bleibt auf dem Knopf).
+      - **Sprint:** Die Fahrt wurde erst 650 ms nach der zwölften Antwort eingetragen. Wer davor „Sprint beenden“ tippte, verlor Bestzeit und Runde. Jetzt wird sie sofort mit der zwölften Antwort eingetragen.
+      - Veraltete Kommentare in `logic/trip.ts` (Berg statt Tunnel).
+    - Ergebnis der Messung:
+      - **Kontrast:** Alle Texte erreichen AA bei Tag und Nacht.
+        - Darunter liegen nur die bekannten Ausnahmen, deaktivierte Bedienelemente nach WCAG: gesperrte Knoten, Bosskampf vor dem Lernen, Einsetzen ohne Boost, Export ohne Urteil, Haptik in Edge, Prüfen vor dem Legen, beantwortete Optionen.
+        - Dazu zwei Messartefakte: Der Pfeil des Kalenders lag halb unter der Navigation (frei gemessen 3,66:1). Die Aussprache in der Wortkarte lag nach dem Scrollen über der Blattkante.
+      - **Tap-Ziele:** alle ≥ 44 px. Das Häkchen „Nur Verben“ liegt in einem 44 px hohen Label.
+      - **Reduzierte Bewegung:** In keinem neuen Bereich läuft eine Animation. Nur die Breite des Paare-Timers springt sekündlich, wie bisher.
+      - Kein seitliches Scrollen, auch nicht während Animationen. Keine Konsolenfehler.
+    - **Zur Entscheidung (Alex):** Nach der Antwort deckt die Rückmeldungsleiste Antwortkacheln. Gemessen nach einer falschen Antwort:
+      - **375×667:** Von den Ton-Zwillingen bleibt die erste Kachel zu 52 % sichtbar, die zweite gar nicht. Die richtige Kachel ist bei Ton-Ninja, Ton-Zwillingen, Hör-Quiz und Wort-Quiz ganz verdeckt.
+      - **440×956:** Beim Hören mit vier Optionen ist die vierte Kachel zu 60 bis 100 % verdeckt.
+      - **Probe** (nur CSS im Messbrowser):
+        - Kompakte Leiste: Trâu kleiner, „Zum Wort“ und „Weiter“ nebeneinander. Die Leiste wird 60 px niedriger (375: 204 → 144 px, 440: 238 → 178 px).
+        - Auf niedrigen Bildschirmen eine kleinere Klangscheibe (170 → 120 px).
+        - Ergebnis bei 440: alle Kacheln in jeder Übung sichtbar. Bei 375: die richtige Kachel immer, die Ton-Zwillinge ganz, der Lückensatz 4 von 4.
+    - **Entschieden (Alex, 2026-11-09): kompakte Leiste eingebaut.**
+      - `Play.svelte`: Trâu (52 px) links über Urteil und Lösung, darunter Lupe und „Weiter“ nebeneinander (ohne Lupe „Weiter“ allein über die volle Breite). `ListenView.svelte`: bei `max-height: 760px` Klangscheibe 120 px.
+      - Gemessen nach falscher Antwort (`cover.mjs`, Tag und Nacht): Leiste 375: 144 px (Lückensatz mit langem Satz 168), 440: 178 px (202).
+        - **440×956:** alle Kacheln jeder Übung ganz sichtbar (Lückensatz, Ton-Ninja, Ton-Zwillinge, Hör- und Wort-Quiz).
+        - **375×667:** die ersten zwei Kacheln immer ganz, damit Ton-Zwillinge-Paare ganz. Bei vier Optionen liegt die dritte zu 30 % (Hören) bzw. 71 % (Wort-Quiz) frei, die vierte gar nicht; ist sie die richtige, steht die Lösung in der Leiste, und Scrollen von Hand zeigt sie (Platz unter dem Inhalt reicht). Lückensatz je nach Satzlänge 4 von 4 oder 2 von 4. Die Angabe der Probe („richtige Kachel immer“) war zu günstig – sie hing an der Lage der richtigen Kachel in jenem Lauf.
+      - Kontrast in der Leiste per Pixel: alle Texte AA bei Tag und Nacht (knappster Wert „Weiter“ Weiß auf Rot 4,93). Tap-Ziele: Lupe 44 px hoch, „Weiter“ 56 px. Kein seitliches Scrollen. Aufsteigen Bild für Bild (0 bis 900 ms) bei 440 und 375, Tag und Nacht: Leiste gleitet ruhig herein, nichts springt.
+      - check grün, 318 Vitest grün, Playwright 29 grün. Neu `feedback.spec.ts`: 440×956 Ton-Ninja – alle vier Kacheln über der Leiste; 375×667 Ton-Zwillinge – die ersten zwei Kacheln ganz, Lupe und „Weiter“ nebeneinander. 3 von 3 Gegenproben machen ihn rot (alte Leiste, große Klangscheibe, „Weiter“ in eigener Zeile).
+    - Abweichung festgehalten: Bei P6-01 öffnet das Blatt über die Lupe im Info-Feld. Der Kriterientext ist ergänzt.
+    - check grün, 318 Vitest grün, Playwright 27 grün. Neu: Rückkehr aus dem Hintergrund am Montag, Sprint sofort beendet, „Überspringen“ springt ans Ende. 4 von 4 Gegenproben machen die Tests rot.
+- **Nächste Schritte:** Commit und Release (P6-10-Korrekturen und kompakte Leiste) auf Alex' Wort. Danach die Abnahme auf dem iPhone (P6-11). Sonst offen: P1-06 (Prototyp im LAN, `pending-alex`).
 
 ## Phase 2 – Ergebnis
 

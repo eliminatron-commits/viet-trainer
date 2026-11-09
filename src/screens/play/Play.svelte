@@ -460,21 +460,19 @@
 
     {#if resolved}
       <footer class="feedback" class:ok={correct} role="status">
-        <div class="verdict-row">
-          <Trau size={64} mood={correct ? 'happy' : 'sad'} />
-          <div class="verdict-text">
-            <p class="verdict">{correct ? 'Richtig!' : 'Nicht ganz.'}</p>
-            <p class="solution" lang={resolved.vi ? 'vi' : 'de'}>{resolved.text}</p>
-            {#if lens}
-              <button class="lens" onclick={() => openLookup(lens)} use:ripple>
-                <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"
-                  ><path d="M10.5 3a7.5 7.5 0 0 1 5.9 12.1l4.8 4.8-1.4 1.4-4.8-4.8A7.5 7.5 0 1 1 10.5 3Zm0 2a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11Z" fill="currentColor" /></svg
-                >{lens.kind === 'sentence' ? 'Wort für Wort' : 'Zum Wort'}
-              </button>
-            {/if}
-          </div>
+        <span class="fb-trau"><Trau size={52} mood={correct ? 'happy' : 'sad'} /></span>
+        <p class="verdict">{correct ? 'Richtig!' : 'Nicht ganz.'}</p>
+        <p class="solution" lang={resolved.vi ? 'vi' : 'de'}>{resolved.text}</p>
+        {#if lens}
+          <button class="lens" onclick={() => openLookup(lens)} use:ripple>
+            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"
+              ><path d="M10.5 3a7.5 7.5 0 0 1 5.9 12.1l4.8 4.8-1.4 1.4-4.8-4.8A7.5 7.5 0 1 1 10.5 3Zm0 2a5.5 5.5 0 1 0 0 11 5.5 5.5 0 0 0 0-11Z" fill="currentColor" /></svg
+            >{lens.kind === 'sentence' ? 'Wort für Wort' : 'Zum Wort'}
+          </button>
+        {/if}
+        <div class="go" class:wide={!lens}>
+          <Button variant={correct ? 'secondary' : 'primary'} onclick={next}>Weiter</Button>
         </div>
-        <Button variant={correct ? 'secondary' : 'primary'} onclick={next}>Weiter</Button>
       </footer>
     {/if}
   {:else}
@@ -559,19 +557,46 @@
     font-weight: 800;
     color: var(--bad-ink);
   }
+  /* Rückmeldung nach der Antwort – kompakt, damit sie möglichst keine Antwortkachel deckt (P6-10, gemessen bei
+     375×667 und 440×956): Trâu links neben Urteil und Lösung, darunter Lupe und „Weiter“ nebeneinander. */
   .feedback {
     position: fixed;
     left: 0;
     right: 0;
     bottom: 0;
-    padding: 18px var(--gutter) calc(var(--safe-bottom) + 18px);
+    padding: 12px var(--gutter) calc(var(--safe-bottom) + 12px);
     background: var(--bad-soft);
     color: var(--ink);
     border-radius: var(--radius-lg) var(--radius-lg) 0 0;
     display: grid;
-    gap: 8px;
+    grid-template-columns: 52px auto minmax(0, 1fr);
+    column-gap: 10px;
+    row-gap: 6px;
+    align-items: center;
     animation: rise var(--dur) var(--ease-out);
     z-index: 5;
+  }
+  .fb-trau {
+    grid-row: 1 / 3;
+    grid-column: 1;
+    display: flex;
+  }
+  .verdict,
+  .solution {
+    grid-column: 2 / 4;
+    min-width: 0;
+  }
+  .lens {
+    grid-row: 3;
+    grid-column: 1 / 3;
+    justify-self: start;
+  }
+  .go {
+    grid-row: 3;
+    grid-column: 3;
+  }
+  .go.wide {
+    grid-column: 1 / -1;
   }
   .feedback.ok {
     background: var(--ok-soft);
@@ -599,16 +624,6 @@
       opacity: 0;
     }
   }
-  .verdict-row {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin: -6px 0 6px -6px;
-  }
-  .verdict-text {
-    flex: 1;
-    min-width: 0;
-  }
   .verdict {
     font-weight: 800;
     font-size: 20px;
@@ -617,7 +632,6 @@
   .lens {
     position: relative;
     overflow: hidden;
-    margin-top: 8px;
     display: inline-flex;
     align-items: center;
     gap: 6px;

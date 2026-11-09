@@ -193,6 +193,8 @@
     display: grid;
     grid-template-columns: minmax(0, 1fr);
     gap: 22px;
+    /* Der Kalendermonat gleitet beim Blättern 56 px weit – über den Rand hinaus darf er nicht seitlich scrollbar machen */
+    overflow-x: clip;
   }
   .hero {
     display: grid;

@@ -45,6 +45,16 @@ export async function initGame(): Promise<void> {
   persist();
 }
 
+/**
+ * Rückkehr aus dem Hintergrund (iOS lädt die App dann nicht neu): Tages- und Wochenwechsel wie beim Start, bevor
+ * Wochenrückblick und Tagesblick lesen – sonst fehlt am Montag die alte Woche im Archiv und die neue Challenge.
+ */
+export function resumeGame(): void {
+  if (!game.ready) return;
+  settle(begin());
+  persist();
+}
+
 /** Schreibvorgänge nacheinander, damit ein älterer Stand nie einen neueren überholt. */
 function persist(): void {
   if (!store) return;

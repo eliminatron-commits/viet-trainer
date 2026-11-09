@@ -103,6 +103,33 @@ test('Wochenrückblick: am Montag einmal von selbst, Doppelseite mit Lerntagen, 
   await expect(page.getByRole('dialog')).toHaveCount(0);
 });
 
+test('Wochenrückblick nach Rückkehr aus dem Hintergrund (ohne Neuladen): die alte Woche ist festgehalten', async ({ page }) => {
+  await seedWeek(page);
+  await page.reload(); // Sonntag: App offen, kein Rückblick
+  await expect(page.getByRole('button', { name: 'Profil', exact: true })).toBeVisible();
+  await page.waitForTimeout(800);
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  // Über Nacht im Hintergrund, Montag früh zurück – iOS lädt die App dabei nicht neu
+  await page.clock.setFixedTime(new Date('2026-11-09T08:30:00'));
+  await page.evaluate(() => {
+    const set = (v: DocumentVisibilityState) => {
+      Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => v });
+      Object.defineProperty(document, 'hidden', { configurable: true, get: () => v === 'hidden' });
+      document.dispatchEvent(new Event('visibilitychange'));
+    };
+    set('hidden');
+    set('visible');
+  });
+  await expect(page.getByRole('dialog', { name: '2.–8. November' })).toBeVisible();
+  const dialog = page.getByRole('dialog');
+  await dialog.getByRole('button', { name: 'Weiter', exact: true }).click();
+  const ch = dialog.locator('.challenges li');
+  await expect(ch).toHaveCount(3);
+  await expect(ch.nth(0)).toContainText('geschafft');
+  await expect(ch.nth(1)).toContainText('3 / 4');
+  await expect(dialog).not.toContainText('nicht festgehalten');
+});
+
 test('Wochenrückblick: nicht in derselben Woche und nicht nach einer Woche ohne Lernen', async ({ page }) => {
   await seedWeek(page);
   await page.reload(); // noch Sonntag

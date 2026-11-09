@@ -109,6 +109,16 @@
     border-radius: 50%;
     cursor: pointer;
   }
+  /* Niedrige Bildschirme: kleinere Sonne, damit die Antwortkacheln über der Rückmeldungsleiste bleiben */
+  @media (max-height: 760px) {
+    .prompt {
+      padding: 12px 22px 16px;
+    }
+    .disc :global(svg) {
+      width: 120px;
+      height: 120px;
+    }
+  }
   .status {
     font-size: var(--fs-small);
     font-weight: 600;

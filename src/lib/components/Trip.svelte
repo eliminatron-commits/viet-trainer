@@ -35,6 +35,8 @@
   let marker = $state<HTMLElement | null>(null);
   let fly = $state<{ x: number; y: number; dx: number; dy: number; s: number } | null>(null);
 
+  let timers: ReturnType<typeof setTimeout>[] = [];
+
   // Ablauf: Zeitplan aus logic/trip.ts; bei reduzierter Bewegung gleich angekommen.
   // (liest `phase` nie – sonst begänne der Ablauf bei jedem Phasenwechsel neu)
   $effect(() => {
@@ -47,7 +49,7 @@
     html.style.overflow = 'hidden';
     void tick().then(() => document.getElementById('trip-title')?.focus({ preventScroll: true }));
     if (still) return () => (html.style.overflow = prev);
-    const timers = [
+    timers = [
       setTimeout(() => (phase = 'arrive'), tripSwap()),
       setTimeout(() => (phase = 'stop'), tripStop()),
       setTimeout(launch, tripStop() + TRIP.souvenir),
@@ -88,6 +90,21 @@
   function finish() {
     if (!trip.from) return;
     onfinish();
+  }
+
+  /**
+   * „Überspringen“ springt ans Ende: angekommen, Zug am Halt, Route vollständig, das Souvenir landet in seinem Fach.
+   * Endliche Animationen (Fahrt, Route, Strichel) enden sofort; die Schleifen der Szenen laufen weiter, und was erst
+   * mit der Ankunft entsteht (neuer Ort, Landung im Regal), baut sich wie gewohnt auf.
+   */
+  function skip() {
+    timers.forEach(clearTimeout);
+    timers = [];
+    fly = null;
+    phase = 'done';
+    for (const a of root?.getAnimations({ subtree: true }) ?? []) {
+      if (a.effect?.getComputedTiming().endTime !== Infinity) a.finish();
+    }
   }
 
   function onkeydown(e: KeyboardEvent) {
@@ -156,7 +173,7 @@
       </div>
 
       <div class="actions">
-        <Button variant={phase === 'done' ? 'primary' : 'ghost'} onclick={finish}>
+        <Button variant={phase === 'done' ? 'primary' : 'ghost'} onclick={phase === 'done' ? finish : skip}>
           {phase === 'done' ? (trip.replay ? 'Fertig' : 'Weiter') : 'Überspringen'}
         </Button>
       </div>

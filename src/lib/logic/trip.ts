@@ -25,8 +25,9 @@ export const replayable = (save: SaveState, id: RegionId) => regionDone(save, id
 
 /**
  * Zeitplan der Fahrt in ms ab dem Öffnen. Der Zug steht im Bild, die Welt zieht vorbei (die Kamera fährt mit):
- * anfahren, gleiten, bremsen. Mitten im Gleiten schiebt sich ein Berg vor das Bild (Tunnel), dahinter wechselt
- * die Küste zum neuen Ort. Danach fliegt das Souvenir in den Reisepass.
+ * anfahren, gleiten, bremsen. Mitten im Gleiten fährt der Zug durch einen Tunnel (er liegt hinter dem Zug, Trâu
+ * bleibt sichtbar); während der Tunnel die Küste verdeckt, wechselt sie zum neuen Ort. Danach fliegt das Souvenir in den
+ * Reisepass.
  */
 export const TRIP = {
   /** Fahrt beginnt (das Blatt ist dann schon fast aufgegangen) */
@@ -36,7 +37,7 @@ export const TRIP = {
   /** Ende des Anfahrens bzw. Beginn des Bremsens (Anteil der Fahrt) */
   accel: 0.3,
   brake: 0.6,
-  /** Mitte der Berg-Deckung (Anteil der Fahrt): hier wechselt die Szene */
+  /** Mitte der Tunnel-Deckung (Anteil der Fahrt): hier wechselt die Szene */
   cover: 0.52,
   /** Strecke der Gleise in Szeneneinheiten (viewBox 400×260) */
   dist: 1800,

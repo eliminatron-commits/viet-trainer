@@ -128,8 +128,10 @@
       mood = 'sad';
     }
     clock = spent + mistakes * SPRINT_PENALTY;
-    if (right === SPRINT_GOAL) later(650, finish);
-    else later(ok ? NEXT_RIGHT : NEXT_WRONG, next);
+    if (right === SPRINT_GOAL) {
+      record();
+      later(650, finish);
+    } else later(ok ? NEXT_RIGHT : NEXT_WRONG, next);
   }
 
   function next() {
@@ -140,7 +142,12 @@
     startClock();
   }
 
-  function finish() {
+  /**
+   * Fahrt eintragen – sofort mit der zwölften richtigen Antwort, nicht erst im Ziel: wer im kurzen Jubel davor
+   * „Sprint beenden“ tippt, verliert sonst Bestzeit und Runde.
+   */
+  let recorded: { o: ReturnType<typeof recordSprint>; ms: number } | null = null;
+  function record() {
     const ms = raceTime(spent, mistakes);
     const levelBefore = levelInfo(game.save.xp).level;
     const goalBefore = goalReached(game.save, today());
@@ -148,18 +155,24 @@
     const levelAfter = levelInfo(game.save.xp).level;
     if (levelAfter > levelBefore) levelUp = levelAfter;
     if (!goalBefore && goalReached(game.save, today())) goal = true;
+    recorded = { o, ms };
+    void reportToWorker(game.save, today());
+  }
+
+  function finish() {
+    if (!recorded) return;
     news = takeNews();
-    outcome = { ...o, ms };
-    clock = ms;
+    outcome = { ...recorded.o, ms: recorded.ms };
+    clock = recorded.ms;
     phase = 'done';
     mood = 'cheer';
     if (levelUp) cue('levelup');
-    void reportToWorker(game.save, today());
   }
 
   function again() {
     timers.forEach(clearTimeout);
     timers = [];
+    recorded = null;
     tasks = sprintTasks(game.save, SPRINT_GOAL * 2);
     index = 0;
     right = 0;
@@ -246,7 +259,7 @@
 
     {#if phase === 'ready'}
       <Card tone="yellow">
-        <p class="kicker">Roller-Sprint</p>
+        <p class="kicker on-card">Roller-Sprint</p>
         <h1 class="ready-title">{light === 2 ? 'Los!' : 'Gleich geht’s los'}</h1>
         <p>{SPRINT_GOAL} richtige Antworten bis ins Ziel. Jeder Fehler kostet {SPRINT_PENALTY / 1000} Sekunden.</p>
         {#if best !== null}<p class="times">Bestzeit {formatTime(best)}{thisWeek !== null ? ` · diese Woche ${formatTime(thisWeek)}` : ''}</p>{/if}
@@ -282,7 +295,7 @@
         <div class="mascot"><TrauRide size={136} mood="cheer" /></div>
       </div>
       <Card tone="yellow">
-        <p class="kicker">
+        <p class="kicker on-card">
           {outcome.first ? 'Erste Fahrt' : outcome.best ? 'Neue Bestzeit!' : outcome.week ? 'Bestzeit der Woche!' : 'Im Ziel'}
         </p>
         <h1 class="time">{formatTime(outcome.ms)}</h1>
@@ -526,6 +539,10 @@
   .kicker {
     font-weight: 600;
     color: var(--ink-2);
+  }
+  /* auf der gelben Karte (Ampel, Ziel): Kartenfläche → --ink-muted (nachts sonst 3,1:1) */
+  .kicker.on-card {
+    color: var(--ink-muted);
   }
   .ready-title {
     font-size: var(--fs-h1);

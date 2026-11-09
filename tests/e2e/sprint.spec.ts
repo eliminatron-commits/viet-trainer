@@ -85,6 +85,53 @@ test('Roller-Sprint: Ampel, zwölf richtige bis ins Ziel, ein Fehler kostet 3 s,
   await expect(page.locator('[data-focus="sprint"]')).toContainText(`Bestzeit ${time}`);
 });
 
+test('Roller-Sprint: wer gleich nach der zwölften Antwort beendet, behält Fahrt und Bestzeit', async ({ page }) => {
+  const learned = words.filter((w) => w.kind === 'word').slice(0, 20).map((w) => w.id);
+  await page.goto('/viet-trainer/');
+  await expect(page.getByRole('button', { name: 'Training', exact: true })).toBeVisible();
+  await page.evaluate(async (ids) => {
+    const db = await new Promise<IDBDatabase>((res) => {
+      const r = indexedDB.open('viet-trainer');
+      r.onsuccess = () => res(r.result);
+    });
+    const store = (m: IDBTransactionMode) => db.transaction('state', m).objectStore('state');
+    const save = await new Promise<{ items: Record<string, unknown>; settings: { brief: boolean } }>((res) => {
+      const t = store('readonly').get('save');
+      t.onsuccess = () => res(t.result);
+    });
+    for (const id of ids) save.items[id] = { box: 2, due: '2099-01-01', seen: 2, right: 1, wrong: 0 };
+    save.settings.brief = false;
+    await new Promise((res) => {
+      const t = store('readwrite').put(save, 'save');
+      t.onsuccess = res;
+    });
+  }, learned);
+  await page.reload();
+  await page.getByRole('button', { name: 'Training', exact: true }).click();
+  await page.getByRole('button', { name: 'Zu Roller-Sprint' }).click();
+  await page.locator('[data-focus="sprint"]').click();
+  const sprint = page.locator('main.sprint');
+  await expect(sprint).toHaveAttribute('data-phase', 'race', { timeout: 5000 });
+  for (let i = 1; i < 12; i++) await answer(page, true);
+  // die zwölfte richtige Antwort und sofort schließen – noch vor dem Ziel-Bildschirm
+  await sprint.locator(`[data-id="${await sprint.getAttribute('data-answer')}"]`).click();
+  await page.getByRole('button', { name: 'Sprint beenden' }).click();
+  await expect(sprint).toHaveCount(0);
+  await expect(page.locator('[data-focus="sprint"]')).toContainText('Bestzeit');
+  const runs = () =>
+    page.evaluate(async () => {
+      const db = await new Promise<IDBDatabase>((res) => {
+        const r = indexedDB.open('viet-trainer');
+        r.onsuccess = () => res(r.result);
+      });
+      return new Promise<number>((res) => {
+        const t = db.transaction('state', 'readonly').objectStore('state').get('save');
+        t.onsuccess = () => res(t.result.sprint.runs);
+      });
+    });
+  await expect.poll(runs).toBe(1);
+});
+
 test('Roller-Sprint ist gesperrt, solange zu wenig Wörter gelernt sind', async ({ page }) => {
   await page.goto('/viet-trainer/');
   await page.getByRole('button', { name: 'Training', exact: true }).click();

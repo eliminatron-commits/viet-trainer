@@ -65,7 +65,7 @@ test('nach dem Boss, der Đà Nẵng abschließt: Reise nach Hội An, danach ge
   await expect(page.getByRole('button', { name: new RegExp(`^Etappe ${danang.length + 1}: .* – offen`) })).toBeVisible();
 });
 
-test('im Reisepass: das Souvenir spielt die Reise noch einmal, „Überspringen“ führt zurück in den Pass', async ({ page }) => {
+test('im Reisepass: das Souvenir spielt die Reise noch einmal, „Überspringen“ springt ans Ende, „Fertig“ führt zurück in den Pass', async ({ page }) => {
   await seed(page, true);
   await page.getByRole('button', { name: 'Profil', exact: true }).click();
   await page.getByRole('button', { name: /^Reisepass/ }).click();
@@ -74,14 +74,26 @@ test('im Reisepass: das Souvenir spielt die Reise noch einmal, „Überspringen�
   await expect(page.getByRole('button', { name: /^Reise von/ })).toHaveCount(1);
   await page.getByRole('button', { name: 'Reise von Đà Nẵng nach Hội An ansehen' }).click();
 
+  // „Überspringen“ mitten in der Fahrt: sofort angekommen, das Souvenir liegt im Fach, die Fahrt ist zu Ende
   const trip = page.getByRole('dialog', { name: 'Willkommen in Hội An' });
   await expect(trip).toBeVisible();
+  await expect(trip).toHaveAttribute('data-phase', 'ride');
   await trip.getByRole('button', { name: 'Überspringen' }).click();
+  await expect(trip).toHaveAttribute('data-phase', 'done');
+  await expect(trip).toContainText('Souvenir aus Đà Nẵng: Korbboot mit Ruder');
+  const ended = await trip.evaluate((el) =>
+    el.getAnimations({ subtree: true }).filter((a) => {
+      const end = Number(a.effect?.getComputedTiming().endTime ?? 0);
+      return a.playState === 'running' && end !== Infinity && end > 3000;
+    }).length,
+  );
+  expect(ended).toBe(0); // keine Fahrt läuft mehr (nur Schleifen und kurze Aufbau-Animationen)
+  await trip.getByRole('button', { name: 'Fertig', exact: true }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
   // zurück im Reisepass auf derselben Seite, der Fokus liegt wieder auf dem Souvenir
   await expect(page.getByRole('button', { name: 'Reise von Đà Nẵng nach Hội An ansehen' })).toBeFocused();
 
-  // bis zum Ende: „Fertig“ statt „Weiter“
+  // ohne Überspringen bis zum Ende: „Fertig“ statt „Weiter“
   await page.getByRole('button', { name: 'Reise von Đà Nẵng nach Hội An ansehen' }).click();
   await expect(trip).toHaveAttribute('data-phase', 'done', { timeout: 15_000 });
   await trip.getByRole('button', { name: 'Fertig', exact: true }).click();

@@ -9,7 +9,7 @@
   import PillNav, { type Tab } from './lib/components/PillNav.svelte';
   import Trip from './lib/components/Trip.svelte';
   import WeekRecap from './lib/components/WeekRecap.svelte';
-  import { game, initGame, markBriefSeen, markRecapSeen, today } from './lib/game.svelte';
+  import { game, initGame, markBriefSeen, markRecapSeen, resumeGame, today } from './lib/game.svelte';
   import { briefDue, briefItems, type BriefTarget } from './lib/logic/brief';
   import { recapDue } from './lib/logic/recap';
   import LookupSheet from './lib/lookup/LookupSheet.svelte';
@@ -135,7 +135,9 @@
     // Bis der Spielstand da ist, gilt die Uhrzeit; danach der gespeicherte Modus (ohne Übergang).
     void initGame().then(() => setThemeMode(game.save.settings.theme, false));
     const visible = () => {
-      if (document.visibilityState === 'visible') opened = true;
+      if (document.visibilityState !== 'visible') return;
+      resumeGame();
+      opened = true;
     };
     document.addEventListener('visibilitychange', visible);
     const off = onAudioStatus((s) => (audioBlocked = s.blocked));
