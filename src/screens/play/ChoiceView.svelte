@@ -4,6 +4,8 @@
     text: string;
     /** Vietnamesischer Text (lang="vi"). */
     vi: boolean;
+    /** Schreibung, die nach der Antwort rechts in der Kachel erscheint (Ton-Zwillinge); ihr Platz ist von Anfang an frei. */
+    spell?: string;
   }
 </script>
 

@@ -46,6 +46,7 @@ const FOCUS_ACTION: Record<TrainingFocus, string> = {
   build: 'Satzbau',
   dictation: 'Hör-Diktat',
   tone: 'Ton-Ninja',
+  twins: 'Ton-Zwillinge',
 };
 
 export function briefItems(save: SaveState, today: DateKey): BriefItem[] {

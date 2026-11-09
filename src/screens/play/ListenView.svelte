@@ -37,10 +37,13 @@
     }
   }
 
+  /** Ton-Zwillinge: nach der Antwort ist die Schreibung jedes Zwillings der Lerninhalt – keiner tritt zurück. */
+  const keepAll = $derived(options.some((o) => o.spell));
+
   function answerState(id: string) {
     if (!picked) return 'idle';
     if (id === answerId) return 'right';
-    return id === picked ? 'wrong' : 'dim';
+    return id === picked ? 'wrong' : keepAll ? 'idle' : 'dim';
   }
 
   // Hör-Aufgaben starten automatisch.
@@ -72,7 +75,14 @@
       disabled={picked !== null}
       onclick={() => onpick(o.id)}
     >
-      <span lang={o.vi ? 'vi' : 'de'}>{o.text}</span>
+      {#if o.spell}
+        <span class="twin">
+          <span lang={o.vi ? 'vi' : 'de'}>{o.text}</span>
+          <span class="spell" class:shown={picked !== null} lang="vi">{o.spell}</span>
+        </span>
+      {:else}
+        <span lang={o.vi ? 'vi' : 'de'}>{o.text}</span>
+      {/if}
     </Button>
   {/each}
 </div>
@@ -113,5 +123,22 @@
   .answers {
     display: grid;
     gap: 12px;
+  }
+  /* Ton-Zwillinge: Bedeutung links, nach der Antwort die Schreibung rechts – ihr Platz ist von Anfang an
+     reserviert (unsichtbar), damit beim Aufdecken nichts umbricht oder springt */
+  .twin {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 14px;
+  }
+  .spell {
+    flex: none;
+    font-size: 22px;
+    font-weight: 800;
+    visibility: hidden;
+  }
+  .spell.shown {
+    visibility: visible;
   }
 </style>

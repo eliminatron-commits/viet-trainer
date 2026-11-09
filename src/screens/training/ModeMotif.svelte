@@ -13,10 +13,12 @@
    * - Satzbau: die Kacheln eines gelernten Satzes liegen verstreut und springen der Reihe nach in die Satzleiste.
    * - Hör-Diktat: die Klangscheibe pulsiert wie beim Sprechen, die Kacheln erscheinen Wort für Wort.
    * - Ton-Ninja: Tonzeichen fliegen kreiselnd heran und landen auf dem a; das vorige fliegt davon, sobald das nächste kommt.
+   * - Ton-Zwillinge: die Klangscheibe spricht, einer der beiden Zwillinge (gleiche Silbe, anderer Ton) leuchtet auf, der
+   *   andere tritt zurück; dann spricht sie wieder, und der andere ist dran.
    * Steht es still (nicht in der Mitte, nicht sichtbar, reduzierte Bewegung), zeigt es eine erklärende Pose.
    * Ohne passenden gelernten Inhalt bleiben die Kacheln leer – das Motiv zeigt nie etwas Ungelerntes.
    */
-  type Focus = 'pairs' | 'gap' | 'build' | 'dictation' | 'tone' | 'sprint';
+  type Focus = 'pairs' | 'gap' | 'build' | 'dictation' | 'tone' | 'twins' | 'sprint';
   let {
     focus,
     playing,
@@ -24,6 +26,7 @@
     pairs = [],
     tiles = null,
     gap = null,
+    twins = null,
   }: {
     focus: Focus;
     playing: boolean;
@@ -31,14 +34,16 @@
     pairs?: { vn: string; de: string }[];
     tiles?: string[] | null;
     gap?: MotifGap | null;
+    /** zwei gelernte Ton-Zwillinge (Schreibung, kurze Bedeutung) */
+    twins?: { vn: string; de: string }[] | null;
   } = $props();
 
   const D = 6000;
   const SPRING = 'cubic-bezier(0.34, 1.56, 0.64, 1)';
   const OUT = 'cubic-bezier(0.22, 1, 0.36, 1)';
-  const POSE: Record<Focus, number> = { pairs: 2750, gap: 3000, build: 4300, dictation: 4300, tone: 900, sprint: 3000 };
+  const POSE: Record<Focus, number> = { pairs: 2750, gap: 3000, build: 4300, dictation: 4300, tone: 900, twins: 1900, sprint: 3000 };
   /** gesperrte Karte (`idle`): ruhige Grundstellung statt Spielszene – bei Paaren alle Kacheln weiß */
-  const pose = $derived(idle && (focus === 'pairs' || focus === 'gap' || focus === 'sprint') ? 0 : POSE[focus]);
+  const pose = $derived(idle && (focus === 'pairs' || focus === 'gap' || focus === 'twins' || focus === 'sprint') ? 0 : POSE[focus]);
   const run = (frames: Keyframe[]) => ({ frames, duration: D, pose, playing });
 
   // --- Paare ---------------------------------------------------------------------------------------------------
@@ -289,6 +294,54 @@
     ]),
     { offset: 1, transform: 'scale(1)' },
   ];
+
+  // --- Ton-Zwillinge ----------------------------------------------------------------------------------------------
+  const twinCards = $derived(twins ?? [{ vn: '', de: '' }, { vn: '', de: '' }]);
+  /** die Scheibe spricht, kurz danach leuchtet der gehörte Zwilling auf (erst der linke, dann der rechte) */
+  const SPEAK = [250, 3250] as const;
+  const LIGHT = [1150, 4150] as const;
+  const LIT = 1500;
+  const TWIN_HALO: Keyframe[] = [
+    { offset: 0, transform: 'scale(1)' },
+    ...SPEAK.flatMap((ms) => [
+      { offset: at(ms, D), transform: 'scale(1)' },
+      { offset: at(ms + 120, D), transform: 'scale(1.16)' },
+      { offset: at(ms + 260, D), transform: 'scale(1.04)' },
+      { offset: at(ms + 380, D), transform: 'scale(1.13)' },
+      { offset: at(ms + 520, D), transform: 'scale(1.02)' },
+      { offset: at(ms + 700, D), transform: 'scale(1)' },
+    ]),
+    { offset: 1, transform: 'scale(1)' },
+  ];
+  /** Zwilling k: hüpft kurz, wenn er gemeint ist, und tritt zurück, solange der andere leuchtet */
+  function twinFrames(k: 0 | 1): Keyframe[] {
+    const on = LIGHT[k];
+    const off = LIGHT[1 - k]!;
+    const pop: Keyframe[] = [
+      { offset: at(on, D), transform: 'scale(1)', opacity: 1 },
+      { offset: at(on + 120, D), transform: 'scale(1.07)', opacity: 1 },
+      { offset: at(on + 300, D), transform: 'scale(1)', opacity: 1 },
+    ];
+    const dim: Keyframe[] = [
+      { offset: at(off, D), transform: 'scale(1)', opacity: 1 },
+      { offset: at(off + 200, D), transform: 'scale(1)', opacity: 0.4 },
+      { offset: at(off + LIT, D), transform: 'scale(1)', opacity: 0.4 },
+      { offset: at(off + LIT + 250, D), transform: 'scale(1)', opacity: 1 },
+    ];
+    return [
+      { offset: 0, transform: 'scale(1)', opacity: 1 },
+      ...(k === 0 ? [...pop, ...dim] : [...dim, ...pop]),
+      { offset: 1, transform: 'scale(1)', opacity: 1 },
+    ];
+  }
+  const twinGlow = (k: 0 | 1): Keyframe[] => [
+    { offset: 0, opacity: 0 },
+    { offset: at(LIGHT[k], D), opacity: 0 },
+    { offset: at(LIGHT[k] + 150, D), opacity: 1 },
+    { offset: at(LIGHT[k] + LIT, D), opacity: 1 },
+    { offset: at(LIGHT[k] + LIT + 250, D), opacity: 0 },
+    { offset: 1, opacity: 0 },
+  ];
 </script>
 
 <div class="motif {focus}" class:still={!playing} bind:this={box} aria-hidden="true">
@@ -363,6 +416,18 @@
         <span class="tile word" class:blank={!w} style:width={w ? undefined : `${BLANK[i]}cqw`} use:loop={run(hearFrames(i))} lang="vi">{w}</span>
       {/each}
     </div>
+  {:else if focus === 'twins'}
+    <span class="disc">
+      <span class="halo" use:loop={run(TWIN_HALO)}></span>
+      <span class="sun"></span>
+      <span class="core"></span>
+    </span>
+    {#each twinCards as t, k (k)}
+      <span class="twincard" style:--col={k} use:loop={run(twinFrames(k as 0 | 1))}>
+        <span class="face"><b lang="vi">{t.vn}</b><i>{t.de}</i></span>
+        <span class="face glow" use:loop={run(twinGlow(k as 0 | 1))}><b lang="vi">{t.vn}</b><i>{t.de}</i></span>
+      </span>
+    {/each}
   {:else}
     <span class="letter" use:loop={run(LETTER)}>a</span>
     {#each MARKS as m, k (m)}
@@ -634,6 +699,44 @@
     flex-wrap: wrap;
     align-content: center;
     gap: 1.6cqw;
+  }
+
+  /* Ton-Zwillinge: Klangscheibe links (wie im Hör-Diktat), die beiden Zwillinge als Karten rechts – oben die Schreibung,
+     darunter die Bedeutung; der gemeinte leuchtet gelb */
+  .twins .disc {
+    left: 4cqw;
+  }
+  .twincard {
+    position: absolute;
+    top: 6cqw;
+    left: calc(41cqw + var(--col) * 29cqw);
+    width: 26cqw;
+    height: 38cqw;
+    display: grid;
+    border-radius: 4cqw;
+    background: var(--surface);
+    color: var(--ink);
+    transform-origin: center;
+  }
+  .twincard .face {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2cqw;
+    padding: 0 1.5cqw;
+  }
+  /* gemessen: die breiteste Schreibung bis 5 Zeichen (gương) hat bei 7 cqw noch Luft zum Kartenrand */
+  .twincard b {
+    font-size: 7cqw;
+    font-weight: 800;
+    line-height: 1.15;
+  }
+  .twincard i {
+    font-style: normal;
+    font-size: 4cqw;
+    font-weight: 700;
+    white-space: nowrap;
   }
 
   /* Ton-Ninja: das a, auf dem die Tonzeichen landen */

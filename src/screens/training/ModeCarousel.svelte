@@ -8,7 +8,7 @@
 <script lang="ts">
   import { onMount, tick } from 'svelte';
   import { game } from '../../lib/game.svelte';
-  import { centeredIndex, motifGap, motifPairs, motifSentences } from '../../lib/logic/carousel';
+  import { centeredIndex, motifGap, motifPairs, motifSentences, motifTwins } from '../../lib/logic/carousel';
   import { focusInfo, PAIR_COUNT, PAIRS_SECONDS, type TrainingFocus } from '../../lib/logic/session';
   import { formatTime, SPRINT_GOAL, SPRINT_MIN_WORDS, sprintReady } from '../../lib/logic/sprint';
   import { reducedMotion } from '../../lib/motion';
@@ -70,6 +70,13 @@
       tone: 'lotus',
     },
     {
+      focus: 'twins',
+      title: 'Ton-Zwillinge',
+      text: 'Hör ein Wort und wähle seine Bedeutung. Die Wörter klingen bis auf den Ton gleich.',
+      need: 'Dafür brauchst du zwei gelernte Wörter, die sich nur im Ton unterscheiden.',
+      tone: 'sea',
+    },
+    {
       focus: 'sprint',
       title: 'Roller-Sprint',
       text: `Zeitrennen durch Hà Nội: ${SPRINT_GOAL} richtige Antworten bis ins Ziel, Fehler kosten Zeit.`,
@@ -87,6 +94,7 @@
   const pairs = $derived(motifPairs(game.save));
   const sentences = $derived(motifSentences(game.save));
   const gap = $derived(motifGap(game.save));
+  const twins = $derived(motifTwins(game.save));
 
   let track: HTMLDivElement;
   const cards: HTMLButtonElement[] = [];
@@ -159,6 +167,7 @@
           idle={!available[m.focus]}
           {pairs}
           {gap}
+          {twins}
           tiles={m.focus === 'build' ? sentences.build : m.focus === 'dictation' ? sentences.dictation : null}
         />
         <span class="body">

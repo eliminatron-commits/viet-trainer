@@ -2,7 +2,7 @@ import type { ProgressKey, StatKey, Stats } from '../storage/state';
 
 /** Ergebnis einer Aufgabe und was es an den Zählern für Achievements und Challenges ändert. */
 
-export type TaskMode = 'vn2de' | 'de2vn' | 'listen' | 'role' | 'pairs' | 'build' | 'dictation' | 'tone' | 'gap';
+export type TaskMode = 'vn2de' | 'de2vn' | 'listen' | 'role' | 'pairs' | 'build' | 'dictation' | 'tone' | 'twins' | 'gap';
 
 export interface TaskResult {
   mode: TaskMode;

@@ -1,7 +1,8 @@
 import { content } from '../../content';
 import type { ProgressKey, SaveState } from '../storage/state';
 import { isSentenceFree } from './path';
-import { gapTask, isBuildable, isGappable, learnedKeys, sentenceTiles } from './session';
+import type { Word } from '../../content/types';
+import { gapTask, isBuildable, isGappable, learnedKeys, sentenceTiles, twinsOf } from './session';
 
 /**
  * Motive im Modus-Karussell (Training): Sie zeigen echte, schon gelernte Inhalte – nie etwas Neues.
@@ -63,6 +64,29 @@ export function motifGap(save: SaveState): MotifGap | null {
     const options = [...others.slice(0, 2), answer];
     if (options.some((o) => o.length > MOTIF_GAP_TILE)) continue;
     return { before: t.before, after: t.after, options, answer: 2 };
+  }
+  return null;
+}
+
+/** Ton-Zwillinge fürs Motiv: Schreibung bis 5 Zeichen, Bedeutung bis 9 (gemessen in den Zwillingskarten des Motivs). */
+const MOTIF_TWIN_VN = 5;
+/** Kurze Bedeutung: der erste Teil der Übersetzung mit mindestens 3 Zeichen („du / Freund“ → „Freund“), sonst der erste. */
+function shortSense(w: Word): string {
+  const parts = w.de.split('/').map((p) => p.trim()).filter(Boolean);
+  return parts.find((p) => p.length >= 3 && p.length <= MOTIF_DE) ?? parts[0] ?? '';
+}
+const twinFits = (w: Word) => w.vn.trim().length <= MOTIF_TWIN_VN && shortSense(w).length <= MOTIF_DE;
+
+/**
+ * Zwei gelernte Ton-Zwillinge fürs Motiv (Schreibung und kurze Bedeutung), das erste passende Paar im Inhalt.
+ * `null`, wenn kein Paar gelernt ist – das Motiv zeigt dann leere Karten.
+ */
+export function motifTwins(save: SaveState): { vn: string; de: string }[] | null {
+  const learned = new Set<ProgressKey>(learnedKeys(save));
+  for (const w of content.words) {
+    if (!learned.has(w.id) || !twinFits(w)) continue;
+    const twin = twinsOf(w).find((t) => learned.has(t.id) && twinFits(t));
+    if (twin) return [w, twin].map((x) => ({ vn: x.vn.trim(), de: shortSense(x) }));
   }
   return null;
 }

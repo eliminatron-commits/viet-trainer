@@ -10,9 +10,9 @@ import { baseForm, toneVariants, tonesAllowed, tonesOf } from './tones';
 export type Rng = () => number;
 export type ChoiceMode = 'vn2de' | 'de2vn' | 'listen';
 /** Alle Quiz-Arten, die quizTask erzeugen kann. */
-export type QuizMode = ChoiceMode | 'tone' | 'build' | 'dictation' | 'gap';
+export type QuizMode = ChoiceMode | 'tone' | 'twins' | 'build' | 'dictation' | 'gap';
 /** Training: gemischt oder nur ein Spielmodus. */
-export type TrainingFocus = 'mixed' | 'pairs' | 'gap' | 'build' | 'dictation' | 'tone';
+export type TrainingFocus = 'mixed' | 'pairs' | 'gap' | 'build' | 'dictation' | 'tone' | 'twins';
 export type Item = Word | Sentence;
 
 /** Kachel im Satzbau; `id` ist je Aufgabe eindeutig (Zielkacheln t0…, Ablenker x0…). */
@@ -44,6 +44,8 @@ export type Task =
       closing: string;
     }
   | { kind: 'tone'; key: WordId; word: Word; options: ToneOption[] }
+  /** Ton-Zwillinge: das Wort hören, seine Bedeutung unter den Wörtern wählen, die bis auf den Ton gleich klingen. */
+  | { kind: 'twins'; key: WordId; word: Word; options: Word[] }
   | {
       kind: 'gap';
       key: Sentence['id'];
@@ -68,15 +70,19 @@ export const TRAINING_BATCH = 12;
 export const PAIR_COUNT = 5;
 export const PAIRS_SECONDS = 40;
 /** Aufgaben je Trainingsblock, wenn nur ein Modus gespielt wird. */
-export const FOCUS_BATCH: Record<Exclude<TrainingFocus, 'mixed'>, number> = { pairs: 4, gap: 10, build: 8, dictation: 8, tone: 12 };
+export const FOCUS_BATCH: Record<Exclude<TrainingFocus, 'mixed'>, number> = { pairs: 4, gap: 10, build: 8, dictation: 8, tone: 12, twins: 8 };
 const DISTRACTOR_TILES = 2;
 const MAX_TONE_DISTRACTORS = 3;
 const BUILD_TILES = { min: 2, max: 10 };
 const MAX_PAIR_DE = 28;
 const GAP_DISTRACTORS = 3;
+const TWIN_DISTRACTORS = 3;
 
-/** Gewichte der zufälligen Modi (Wörter ca. 3:3:2:2, Sätze ca. 2:2:2:3:2, bei gelernten Sätzen dazu 2 Lückensatz). */
-const WORD_MODES: [QuizMode, number][] = [['vn2de', 3], ['de2vn', 3], ['listen', 2], ['tone', 2]];
+/**
+ * Gewichte der zufälligen Modi (Wörter ca. 3:3:2:2, bei gelerntem Ton-Zwilling dazu 2 Ton-Zwillinge; Sätze ca. 2:2:2:3:2,
+ * bei gelernten Sätzen dazu 2 Lückensatz).
+ */
+const WORD_MODES: [QuizMode, number][] = [['vn2de', 3], ['de2vn', 3], ['listen', 2], ['tone', 2], ['twins', 2]];
 const SENTENCE_MODES: [QuizMode, number][] = [['vn2de', 2], ['de2vn', 2], ['listen', 2], ['build', 3], ['dictation', 2], ['gap', 2]];
 const wordById = new Map(content.words.map((w) => [w.id, w]));
 const sentenceById = new Map(content.sentences.map((s) => [s.id, s]));
@@ -95,13 +101,13 @@ export function shuffle<T>(list: readonly T[], rng: Rng): T[] {
 const pick = <T>(list: readonly T[], rng: Rng): T => list[Math.floor(rng() * list.length)]!;
 
 /**
- * Lösung einer Aufgabe (null bei Vorstellkarten): Options-ID bei Auswahl, Rolle, Ton-Ninja und Lückensatz;
+ * Lösung einer Aufgabe (null bei Vorstellkarten): Options-ID bei Auswahl, Rolle, Ton-Ninja, Ton-Zwillingen und Lückensatz;
  * Satzbau/Diktat = Kachel-IDs der Zielfolge, Paare = Wort-IDs, jeweils durch Leerzeichen getrennt.
  */
 export function answerOf(task: Task): string | null {
   if (task.kind === 'choice') return task.item.id;
   if (task.kind === 'role') return task.answer.id;
-  if (task.kind === 'tone') return task.word.id;
+  if (task.kind === 'tone' || task.kind === 'twins') return task.word.id;
   if (task.kind === 'gap') return task.answer.id;
   if (task.kind === 'build') return task.target.join(' ');
   if (task.kind === 'pairs') return task.words.map((w) => w.id).join(' ');
@@ -497,6 +503,50 @@ export function isGappable(sentence: Sentence): boolean {
   return ok;
 }
 
+// --- Ton-Zwillinge -------------------------------------------------------------------------------------------
+
+const twinCache = new Map<WordId, Word[]>();
+/**
+ * Echte Ton-Zwillinge eines Worts: andere echte Wörter (keine Partikel) mit gleicher Grundform und anderer Tonfolge,
+ * je Tonfolge eines, deren Bedeutung weder mit dem Wort noch mit einem anderen Zwilling kollidiert – sonst wäre die
+ * Bedeutung nicht eindeutig zu wählen. Reihenfolge wie im Inhalt.
+ */
+export function twinsOf(word: Word): Word[] {
+  let twins = twinCache.get(word.id);
+  if (twins) return twins;
+  twins = [];
+  if (word.kind === 'word') {
+    const tones = new Set([tonesOf(word.vn).join()]);
+    const said = [...senses(word)];
+    for (const w of wordsByBase.get(baseForm(word.vn)) ?? []) {
+      const t = tonesOf(w.vn).join();
+      if (w.kind !== 'word' || tones.has(t) || !tonesAllowed(w.vn)) continue;
+      const own = senses(w);
+      if (own.length === 0 || own.some((m) => said.some((x) => clash(m, x)))) continue;
+      tones.add(t);
+      said.push(...own);
+      twins.push(w);
+    }
+  }
+  twinCache.set(word.id, twins);
+  return twins;
+}
+
+const isLearnedKey = (save: SaveState, key: ProgressKey) => (save.items[key]?.right ?? 0) > 0;
+
+/** Hat das Wort einen gelernten Ton-Zwilling? Erst dann ist das Hören die Hürde, nicht nur die Bedeutung. */
+export const hasLearnedTwin = (save: SaveState, word: Word) => twinsOf(word).some((w) => isLearnedKey(save, w.id));
+
+/**
+ * Ton-Zwillinge: das Wort hören und seine Bedeutung unter seinen Ton-Zwillingen wählen (bạn „Freund“, bán „verkaufen“,
+ * bàn „Tisch“) – höchstens drei Zwillinge. Null, wenn das Wort keinen hat.
+ */
+export function twinsTask(word: Word, rng: Rng): Task | null {
+  const twins = twinsOf(word);
+  if (twins.length === 0) return null;
+  return { kind: 'twins', key: word.id, word, options: shuffle([word, ...shuffle(twins, rng).slice(0, TWIN_DISTRACTORS)], rng) };
+}
+
 // --- Paare unter Zeitdruck -------------------------------------------------------------------------------------
 
 /** Kachel-tauglich: kein Partikel (dessen „de“ ist eine Erklärung) und eine kurze Übersetzung. */
@@ -537,8 +587,9 @@ const wordsOfKeys = (keys: readonly string[]): Word[] => keys.flatMap((k) => wor
 // --- Quiz ------------------------------------------------------------------------------------------------------
 
 /**
- * Quiz-Aufgabe zu einer Einheit; ohne Modus wird er zufällig gewählt (Wörter vn2de/de2vn/listen/tone,
- * Sätze vn2de/de2vn/listen/build/dictation/gap – Satzbau und Diktat nur bei baubaren, Lückensatz nur bei gelernten Sätzen). Mit `save`
+ * Quiz-Aufgabe zu einer Einheit; ohne Modus wird er zufällig gewählt (Wörter vn2de/de2vn/listen/tone/twins – Ton-Zwillinge
+ * nur bei gelernten Wörtern mit gelerntem Zwilling; Sätze vn2de/de2vn/listen/build/dictation/gap – Satzbau und Diktat nur bei
+ * baubaren, Lückensatz nur bei gelernten Sätzen). Mit `save`
  * stammen Satzbau-Ablenker bevorzugt aus gesehenen Wörtern.
  */
 export function quizTask(key: ProgressKey, rng: Rng, mode?: QuizMode, save?: SaveState): Task {
@@ -553,12 +604,17 @@ export function quizTask(key: ProgressKey, rng: Rng, mode?: QuizMode, save?: Sav
   // Lückensatz nur bei schon gelernten Sätzen (ohne Spielstand nie).
   const gappable =
     !isWord && !!save && (save.items[item.id]?.right ?? 0) > 0 && isSentenceFree(save, item as Sentence) && isGappable(item as Sentence);
+  // Ton-Zwillinge nur bei gelernten Wörtern mit gelerntem Zwilling (ohne Spielstand nie).
+  const twinable = isWord && !!save && isLearnedKey(save, item.id) && hasLearnedTwin(save, item as Word);
   const entries = (isWord ? WORD_MODES : SENTENCE_MODES).filter(
-    ([m]) => (buildable || (m !== 'build' && m !== 'dictation')) && (gappable || m !== 'gap'),
+    ([m]) => (buildable || (m !== 'build' && m !== 'dictation')) && (gappable || m !== 'gap') && (twinable || m !== 'twins'),
   );
   const m = mode ?? pickWeighted(entries, rng);
   if (m === 'tone' && isWord) {
     const t = toneTask(item as Word, rng);
+    if (t) return t;
+  } else if (m === 'twins' && isWord) {
+    const t = twinsTask(item as Word, rng);
     if (t) return t;
   } else if ((m === 'build' || m === 'dictation') && !isWord) {
     const t = buildTask(item as Sentence, m, rng, save);
@@ -698,6 +754,18 @@ const gapLearned = (save: SaveState): Sentence[] =>
 const toneLearned = (save: SaveState): Word[] =>
   wordsOfKeys(learnedKeys(save)).filter((w) => toneTask(w, () => 0) !== null);
 
+/** Gelernte Wörter mit gelerntem Ton-Zwilling. */
+const twinsLearned = (save: SaveState): Word[] => wordsOfKeys(learnedKeys(save)).filter((w) => hasLearnedTwin(save, w));
+
+/** Einheiten eines Einzelmodus (außer Paaren): gelernt und für den Modus geeignet. */
+const FOCUS_POOL: Record<Exclude<TrainingFocus, 'mixed' | 'pairs'>, (save: SaveState) => Item[]> = {
+  tone: toneLearned,
+  twins: twinsLearned,
+  gap: gapLearned,
+  build: buildableLearned,
+  dictation: buildableLearned,
+};
+
 /** Wie viel für einen Trainingsmodus gelernt ist: `available` = der Modus lässt sich spielen, `count` = Einheiten dafür. */
 export function focusInfo(save: SaveState, focus: TrainingFocus): { available: boolean; count: number } {
   const learned = learnedKeys(save);
@@ -707,7 +775,7 @@ export function focusInfo(save: SaveState, focus: TrainingFocus): { available: b
     const ok = pairsTask(words) !== null;
     return { available: ok, count: words.length };
   }
-  const count = focus === 'tone' ? toneLearned(save).length : focus === 'gap' ? gapLearned(save).length : buildableLearned(save).length;
+  const count = FOCUS_POOL[focus](save).length;
   return { available: count > 0, count };
 }
 
@@ -736,18 +804,23 @@ function buildFocusBatch(
     return tasks;
   }
 
-  const pool: { id: string }[] =
-    focus === 'tone' ? order(toneLearned(save)) : focus === 'gap' ? order(gapLearned(save)) : order(buildableLearned(save));
+  // In Durchgängen: jede Einheit einmal, dann neu geordnet (fällige und schwächste zuerst). So kommt bei kleinem Vorrat
+  // keine Einheit öfter dran als die anderen, und zwei gleiche direkt hintereinander gibt es nur an der Grenze zweier
+  // Durchgänge – die löst spread() auf.
+  const pool = FOCUS_POOL[focus](save);
+  let cycle: Item[] = [];
   let guard = 0;
   while (pool.length > 0 && tasks.length < size && guard++ < size * 3) {
-    const next = tasks.length === 0 || tasks.length % pool.length === 0 ? order(pool) : pool;
-    const item = next[tasks.length % next.length]!;
+    if (cycle.length === 0) cycle = order(pool);
+    const item = cycle.shift()!;
     const t =
       focus === 'tone'
         ? toneTask(item as Word, rng)
-        : focus === 'gap'
-          ? gapTask(item as Sentence, rng, save)
-          : buildTask(item as Sentence, focus, rng, save);
+        : focus === 'twins'
+          ? twinsTask(item as Word, rng)
+          : focus === 'gap'
+            ? gapTask(item as Sentence, rng, save)
+            : buildTask(item as Sentence, focus, rng, save);
     if (t) tasks.push(t);
   }
   return spread(tasks);
