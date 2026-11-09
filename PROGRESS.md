@@ -372,7 +372,14 @@
       - check grün, 318 Vitest grün, Playwright 29 grün. Neu `feedback.spec.ts`: 440×956 Ton-Ninja – alle vier Kacheln über der Leiste; 375×667 Ton-Zwillinge – die ersten zwei Kacheln ganz, Lupe und „Weiter“ nebeneinander. 3 von 3 Gegenproben machen ihn rot (alte Leiste, große Klangscheibe, „Weiter“ in eigener Zeile).
     - Abweichung festgehalten: Bei P6-01 öffnet das Blatt über die Lupe im Info-Feld. Der Kriterientext ist ergänzt.
     - check grün, 318 Vitest grün, Playwright 27 grün. Neu: Rückkehr aus dem Hintergrund am Montag, Sprint sofort beendet, „Überspringen“ springt ans Ende. 4 von 4 Gegenproben machen die Tests rot.
-- **Nächste Schritte:** Commit und Release (P6-10-Korrekturen und kompakte Leiste) auf Alex' Wort. Danach die Abnahme auf dem iPhone (P6-11). Sonst offen: P1-06 (Prototyp im LAN, `pending-alex`).
+    - Live seit `aee29bd` (2026-11-09).
+  - **Nachtrag zu Punkt 6 (Alex, 2026-11-09): Tagesblick jederzeit wieder öffnen.**
+    - Alex fragte, wie er die Tagesübersicht wieder aufruft – bisher ging das nicht. Jetzt öffnet Trâu im Tagesziel-Ring oben im Lernpfad den Tagesblick (`PathScreen.svelte`, runder Knopf 84 px mit Tipp-Welle, Trâu hüpft). Name für Screenreader: „Trâus Tagesblick – Tagesziel X von Y XP“.
+    - `openBrief(from)` nimmt das angetippte Element (Safari fokussiert Knöpfe beim Antippen nicht); nach „Später“ steht der Fokus wieder auf Trâu.
+    - Ist nichts mehr offen, steht im Blatt „Für heute ist alles geschafft.“ statt einer leeren Liste. Hinweis in den Einstellungen ergänzt.
+    - Geprüft in Edge bei 440 und 375, Tag und Nacht: Blatt steigt auf wie beim Öffnen von selbst, alle Texte AA, Tap-Ziele ≥ 44 px, kein seitliches Scrollen, bei reduzierter Bewegung keine laufende Animation.
+    - check grün, Vitest 318 grün, Playwright 30 grün. Neuer Test in `brief.spec.ts`; 3 von 3 Gegenproben machen ihn rot (Trâu ohne Wirkung, Fokus nicht zurück, leere Liste ohne Satz).
+- **Nächste Schritte:** Tagesblick über Trâu live stellen auf Alex' Wort. Danach die Abnahme auf dem iPhone (P6-11). Sonst offen: P1-06 (Prototyp im LAN, `pending-alex`).
 
 ## Phase 2 – Ergebnis
 

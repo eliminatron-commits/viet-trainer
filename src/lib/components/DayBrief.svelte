@@ -73,7 +73,7 @@
         <div class="hello">
           <p class="kicker">Trâus Tagesblick</p>
           <h2 id="brief-title" tabindex="-1">{hello}!</h2>
-          <p class="sub">Das steht heute an:</p>
+          <p class="sub">{items.length ? 'Das steht heute an:' : 'Für heute ist alles geschafft.'}</p>
         </div>
       </div>
       <BriefList {items} {onfollow} />

@@ -99,6 +99,38 @@ test('Tagesblick abschaltbar; „Später“ schließt', async ({ page }) => {
   await expect(page.getByRole('dialog')).toHaveCount(0);
 });
 
+test('Tagesblick jederzeit wieder: Trâu im Lernpfad antippen; ist alles geschafft, sagt er es', async ({ page }) => {
+  // heute schon gesehen – von selbst kommt er nicht mehr
+  await seed(page, '2026-11-10T07:40:00', { brief: { seen: '2026-11-10' } });
+  await page.reload();
+  await expect(page.getByRole('button', { name: 'Profil', exact: true })).toBeVisible();
+  await page.waitForTimeout(800);
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+
+  const trau = page.getByRole('button', { name: /^Trâus Tagesblick – Tagesziel 0 von \d+ XP$/ });
+  await trau.click();
+  const dialog = page.getByRole('dialog', { name: 'Guten Morgen!' });
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByText('Das steht heute an:')).toBeVisible();
+  await expect(dialog.locator('.item')).toHaveCount(3);
+  await page.getByRole('button', { name: 'Später' }).click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(trau).toBeFocused();
+
+  // nichts mehr fällig, Tagesziel erreicht, Challenge geschafft: kein Punkt, sondern ein Satz
+  await seed(page, '2026-11-10T10:00:00', {
+    brief: { seen: '2026-11-10' },
+    items: Object.fromEntries(learned.map((id) => [id, { box: 2, due: '2026-11-30', seen: 2, right: 1, wrong: 0 }])),
+    today: { date: '2026-11-10', xp: 500 },
+    challenges: { week: '2026-11-09', list: [{ id: 'runden', base: 0, done: true }] },
+  });
+  await page.reload();
+  await page.getByRole('button', { name: /^Trâus Tagesblick/ }).click();
+  await expect(page.getByRole('dialog', { name: 'Guten Morgen!' })).toBeVisible();
+  await expect(page.getByRole('dialog').locator('.item')).toHaveCount(0);
+  await expect(page.getByRole('dialog').getByText('Für heute ist alles geschafft.')).toBeVisible();
+});
+
 test('am ersten Tag einer neuen Woche: Tagesblick als letzte Seite des Wochenrückblicks', async ({ page }) => {
   await seed(page, '2026-11-15T20:00:00', {
     days: { '2026-11-10': L({ xp: 60, tasks: 14, right: 12, goal: true }), '2026-11-12': L({ xp: 25, tasks: 6, right: 5, rounds: 1 }) },

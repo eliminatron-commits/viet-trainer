@@ -13,11 +13,13 @@
   import { game, today } from '../lib/game.svelte';
   import RegionHero, { REGION_TONE } from '../lib/illustrations/RegionHero.svelte';
   import RegionScene from '../lib/illustrations/RegionScene.svelte';
+  import { openBrief } from '../lib/brief.svelte';
   import { greeting as hello } from '../lib/logic/brief';
   import { currentStage, regionDone, stageLearned, stageStatus, stageWords } from '../lib/logic/path';
   import { currentStreak, levelInfo } from '../lib/logic/rewards';
   import Trau from '../lib/mascot/Trau.svelte';
   import { arrivingBy, arrivingByTab } from '../lib/motion';
+  import { ripple } from '../lib/ripple';
 
   let { onopen }: { onopen: (stage: Stage) => void } = $props();
 
@@ -58,9 +60,18 @@
       <p class="kicker">{greeting}, Alex</p>
       <h1>Weiter geht's<br />in {regionOf.name}.</h1>
     </div>
-    <ProgressRing value={xpToday / save.dailyGoal} size={84} stroke={9} label="Tagesziel {xpToday} von {save.dailyGoal} XP">
-      <Trau size={58} mood={xpToday >= save.dailyGoal ? 'happy' : 'idle'} />
-    </ProgressRing>
+    <!-- Trâu im Tagesziel-Ring öffnet seinen Tagesblick jederzeit wieder (von selbst kommt er nur einmal am Tag). -->
+    <button
+      class="brief-btn"
+      aria-label="Trâus Tagesblick – Tagesziel {xpToday} von {save.dailyGoal} XP"
+      onclick={(e) => openBrief(e.currentTarget)}
+      use:ripple
+    >
+      <span class="fx" aria-hidden="true"></span>
+      <ProgressRing value={xpToday / save.dailyGoal} size={84} stroke={9} label="Tagesziel {xpToday} von {save.dailyGoal} XP">
+        <Trau size={58} mood={xpToday >= save.dailyGoal ? 'happy' : 'idle'} tappable />
+      </ProgressRing>
+    </button>
   </header>
 
   <div class="stats">
@@ -161,6 +172,31 @@
     justify-content: space-between;
     align-items: center;
     gap: 12px;
+  }
+  /* Tagesziel-Ring mit Trâu als runder Knopf: Tipp-Welle hinter dem Ring (in .fx beschnitten), Trâu hüpft frei. */
+  .brief-btn {
+    flex: none;
+    position: relative;
+    isolation: isolate;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform var(--dur-fast) var(--ease-out);
+  }
+  .brief-btn:active {
+    transform: scale(0.95);
+  }
+  .brief-btn .fx {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    overflow: hidden;
+    pointer-events: none;
+    z-index: -1;
   }
   .kicker {
     font-size: var(--fs-small);
