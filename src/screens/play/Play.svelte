@@ -31,8 +31,11 @@
     today,
     type News,
   } from '../../lib/game.svelte';
-  import { bossReady, currentStage } from '../../lib/logic/path';
+  import { bossReady, currentStage, isDone } from '../../lib/logic/path';
   import { goalReached, levelInfo } from '../../lib/logic/rewards';
+import { nextRegion, tripAfterWin } from '../../lib/logic/trip';
+import { content } from '../../content';
+import type { RegionId } from '../../content/types';
   import type { ProgressKey } from '../../lib/storage/state';
   import type { TaskMode } from '../../lib/logic/stats';
   import { reducedMotion } from '../../lib/motion';
@@ -62,7 +65,14 @@
    * `card`: aus dieser Modus-Karte gestartet – die Ansicht ist das Gegenstück der wachsenden Karte (stage-card) und
    * geht in deren Farbe auf: ein Schleier in der Kartenfarbe blendet aus und gibt die Übung frei.
    */
-  let { mode, card, onexit, onboss }: { mode: PlayMode; card?: CardTone; onexit: () => void; onboss: (stage: Stage) => void } = $props();
+  /** `ontrip`: nach dem Boss, der eine Region abschließt, fährt Trâu zur nächsten (Reise, components/Trip.svelte). */
+  let {
+    mode,
+    card,
+    onexit,
+    onboss,
+    ontrip,
+  }: { mode: PlayMode; card?: CardTone; onexit: () => void; onboss: (stage: Stage) => void; ontrip: (from: RegionId) => void } = $props();
   const CARD_COLOR: Record<CardTone, string> = { lantern: 'var(--lantern)', yellow: 'var(--tone-yellow)', sea: 'var(--sea)', lotus: 'var(--lotus)' };
 
   /** Gießrunde läuft (nach dem Gießen geht es auf Wunsch als gewöhnliches Training weiter). */
@@ -88,7 +98,18 @@
   /** Aufgelöst: Ergebnis und Lösungstext für die Rückmeldungsleiste. */
   let resolved = $state<null | { correct: boolean; text: string; vi: boolean }>(null);
   let lives = $state(BOSS_LIVES);
-  const freshRound = () => ({ right: 0, wrong: 0, xp: 0, levelUp: null as number | null, goal: false, chest: false, news: [] as News[] });
+  /** trip: dieser Boss-Sieg hat diese Region abgeschlossen – die Reise zur nächsten steht an. */
+  const freshRound = () => ({
+    right: 0,
+    wrong: 0,
+    xp: 0,
+    levelUp: null as number | null,
+    goal: false,
+    chest: false,
+    trip: null as RegionId | null,
+    news: [] as News[],
+  });
+  const regionName = (id: RegionId | null) => content.regions.find((r) => r.id === id)?.name ?? '';
   let round = $state(freshRound());
   let outcome = $state<null | 'done' | 'won' | 'lost'>(null);
 
@@ -193,8 +214,11 @@
     // Challenges am Rundenende können XP bringen – Level und Tagesziel davor und danach vergleichen.
     const levelBefore = levelInfo(game.save.xp).level;
     const goalBefore = goalReached(game.save, today());
-    if (result === 'won' && mode.kind === 'boss') round.chest = recordBossWin(mode.stage.id, lives, BOSS_LIVES);
-    else if (result === 'lost') recordBossLoss();
+    if (result === 'won' && mode.kind === 'boss') {
+      const firstWin = !isDone(game.save, mode.stage.id);
+      round.chest = recordBossWin(mode.stage.id, lives, BOSS_LIVES);
+      round.trip = tripAfterWin(game.save, mode.stage, firstWin);
+    } else if (result === 'lost') recordBossLoss();
     else recordRoundEnd();
     const levelAfter = levelInfo(game.save.xp).level;
     if (levelAfter > levelBefore) round.levelUp = levelAfter;
@@ -269,7 +293,13 @@
         <div class="scene-clip"><RegionScene region={resultRegion} /></div>
         <div class="mascot"><Trau size={130} mood={outcome === 'lost' ? 'sad' : 'cheer'} /></div>
       </div>
-      {#if outcome === 'won'}
+      {#if outcome === 'won' && round.trip}
+        <Card tone="yellow">
+          <p class="kicker">Boss besiegt</p>
+          <h1><span lang="vi">{regionName(round.trip)}</span> geschafft!</h1>
+          <p>{lives} von {BOSS_LIVES} Leben übrig. Trâu reist weiter nach <span lang="vi">{regionName(nextRegion(round.trip))}</span>.</p>
+        </Card>
+      {:else if outcome === 'won'}
         <Card tone="yellow">
           <p class="kicker">Boss besiegt</p>
           <h1>Etappe geschafft!</h1>
@@ -310,7 +340,12 @@
         {:else if watering}
           <Button onclick={keepTraining}>Weiter trainieren</Button>
         {/if}
-        <Button variant="ghost" onclick={onexit}>Fertig</Button>
+        {#if round.trip}
+          {@const from = round.trip}
+          <Button onclick={() => ontrip(from)}>Mit dem Zug nach <span lang="vi">{regionName(nextRegion(from))}</span></Button>
+        {:else}
+          <Button variant="ghost" onclick={onexit}>Fertig</Button>
+        {/if}
       </div>
     </section>
   {:else if task}

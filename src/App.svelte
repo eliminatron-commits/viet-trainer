@@ -7,6 +7,7 @@
   import DayBrief from './lib/components/DayBrief.svelte';
   import NewsToast from './lib/components/NewsToast.svelte';
   import PillNav, { type Tab } from './lib/components/PillNav.svelte';
+  import Trip from './lib/components/Trip.svelte';
   import WeekRecap from './lib/components/WeekRecap.svelte';
   import { game, initGame, markBriefSeen, markRecapSeen, today } from './lib/game.svelte';
   import { briefDue, briefItems, type BriefTarget } from './lib/logic/brief';
@@ -16,6 +17,8 @@
   import { applyUpdate, pwa } from './lib/pwa.svelte';
   import { closeRecap, openRecap, recap } from './lib/recap.svelte';
   import { setThemeMode } from './lib/theme.svelte';
+  import { closeTrip, openTrip, trip } from './lib/trip.svelte';
+  import type { RegionId } from './content/types';
   import PathScreen from './screens/PathScreen.svelte';
   import PhrasebookScreen from './screens/PhrasebookScreen.svelte';
   import SituationScreen from './screens/SituationScreen.svelte';
@@ -49,7 +52,6 @@
       scrollTo(0, 0);
       screen = next;
     }, motion);
-  /** Startet eine Runde – als Kreis vom Tippunkt, oder aus einer Modus-Karte, die in ihrer Farbe zur Übung wächst (morph). */
   /** Ein Punkt aus Trâus Tagesblick: Blatt zu und direkt in die Runde (öffnet sich als Kreis vom Tippunkt). */
   function follow(target: BriefTarget) {
     const stage = (id: string) => content.stages.find((x) => x.id === id)!;
@@ -67,10 +69,30 @@
       screen = { name: 'play', mode };
     }, 'reveal', undefined, true);
   }
+  /** Startet eine Runde – als Kreis vom Tippunkt, oder aus einer Modus-Karte, die in ihrer Farbe zur Übung wächst (morph). */
   const start = (mode: PlayMode, card?: CardTone) => {
     playRun++;
     go({ name: 'play', mode, card }, card ? 'morph-open' : 'reveal');
   };
+
+  /** Reise zur nächsten Region: öffnet sich als Kreis vom Tippunkt über allem (Ergebnis des Bosses oder Reisepass). */
+  const startTrip = (from: RegionId, replay = false) => transitionTo(() => openTrip(from, replay), 'reveal', undefined, true);
+  /** Ende der Reise: nach dem Boss weiter auf den Lernpfad (dort geht es in der neuen Region weiter), sonst zurück in den Reisepass. */
+  function endTrip() {
+    const toPath = !trip.replay;
+    transitionTo(
+      () => {
+        closeTrip();
+        if (!toPath) return;
+        scrollTo(0, 0);
+        tab = 'path';
+        screen = { name: 'tabs' };
+      },
+      'sheet-down',
+      undefined,
+      true,
+    );
+  }
 
   // Tabs gleiten in Richtung des gewählten Tabs (Reihenfolge wie in der Pill-Navigation).
   const TAB_ORDER: Tab[] = ['path', 'training', 'phrasebook', 'profile'];
@@ -93,7 +115,7 @@
   let opened = $state(true);
   const busy = $derived(screen.name === 'play' || screen.name === 'sprint');
   $effect(() => {
-    if (!opened || !game.ready || busy) return;
+    if (!opened || !game.ready || busy || trip.from) return;
     untrack(() => {
       opened = false;
       if (recap.week || brief.open) return;
@@ -158,6 +180,7 @@
       card={screen.card}
       onexit={() => go({ name: 'tabs' }, 'sheet-down')}
       onboss={(stage) => start({ kind: 'boss', stage })}
+      ontrip={(from) => startTrip(from)}
     />
   {/key}
 {:else if screen.name === 'sprint'}
@@ -178,10 +201,11 @@
   <div class="statusbar" aria-hidden="true"></div>
 {/if}
 
-<NewsToast active={game.ready && !busy && !recap.week && !brief.open} />
+<NewsToast active={game.ready && !busy && !recap.week && !brief.open && !trip.from} />
 <LookupSheet />
 <WeekRecap onfollow={follow} />
 <DayBrief onfollow={follow} />
+<Trip onfinish={endTrip} />
 
 {#if game.error}
   <div class="toast error" role="alert">{game.error}</div>

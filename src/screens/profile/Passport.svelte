@@ -8,7 +8,10 @@
   import { passportPages, stampDate, stampStyle } from '../../lib/logic/passport';
   import { isDone, regionDone } from '../../lib/logic/path';
   import { levelInfo } from '../../lib/logic/rewards';
-  import { reducedMotion } from '../../lib/motion';
+  import { nextRegion, replayable } from '../../lib/logic/trip';
+  import { reducedMotion, transitionTo } from '../../lib/motion';
+  import { openTrip } from '../../lib/trip.svelte';
+  import type { RegionId } from '../../content/types';
 
   /**
    * Reisepass im Profil. Zugeklappt der rote Einband mit gelbem Stern. Aufgeschlagen kommen zuerst die Souvenirs
@@ -30,6 +33,10 @@
   /** Längstes Wort des Titels: bestimmt die Schriftgröße im Stempel (passt immer hinein). */
   const longest = (t: string) => Math.max(...t.split(/\s+/).map((w) => w.length));
   const stagesDone = $derived(content.stages.filter((s) => isDone(save, s.id)).length);
+  const regionName = (id: RegionId | null) => content.regions.find((r) => r.id === id)?.name ?? '';
+  const anyTrip = $derived(content.regions.some((r) => replayable(save, r.id)));
+  /** Ein Souvenir angetippt: Trâu fährt die Reise von dort noch einmal (öffnet sich als Kreis vom Tippunkt). */
+  const replay = (id: RegionId, el: HTMLElement) => transitionTo(() => openTrip(id, true, el), 'reveal', undefined, true);
 
   function go(to: number) {
     if (to < -1 || to > LAST || to === page) return;
@@ -65,7 +72,12 @@
 
   const detail = $derived.by(() => {
     const a = ACHIEVEMENTS.find((x) => x.id === selected);
-    if (!a) return page === 0 ? 'Jede geschaffte Region bringt ihr Souvenir mit.' : 'Tipp einen Stempel an, um zu sehen, wofür es ihn gibt.';
+    if (!a)
+      return page === 0
+        ? anyTrip
+          ? 'Tipp ein Souvenir an – Trâu fährt die Reise noch einmal.'
+          : 'Jede geschaffte Region bringt ihr Souvenir mit.'
+        : 'Tipp einen Stempel an, um zu sehen, wofür es ihn gibt.';
     const got = save.achievements[a.id];
     return got
       ? `${a.title}: ${a.desc} Gestempelt am ${stampDate(got)}.`
@@ -106,7 +118,16 @@
           <h3 class="later">Souvenirs</h3>
           <div class="shelf">
             {#each content.regions as r, n (r.id)}
-              <div class="obj" class:got={regionDone(save, r.id)} style:--n={n}><RegionHero region={r.id} /></div>
+              {#if replayable(save, r.id)}
+                <button
+                  class="obj got replay"
+                  style:--n={n}
+                  aria-label="Reise von {r.name} nach {regionName(nextRegion(r.id))} ansehen"
+                  onclick={(e) => replay(r.id, e.currentTarget)}><RegionHero region={r.id} /></button
+                >
+              {:else}
+                <div class="obj" class:got={regionDone(save, r.id)} style:--n={n}><RegionHero region={r.id} /></div>
+              {/if}
             {/each}
           </div>
           <div class="plank" aria-hidden="true"></div>
@@ -293,6 +314,16 @@
   .obj {
     width: 100%;
     aspect-ratio: 1;
+  }
+  /* Souvenir mit Reise: ganz tippbar (Fläche ≥ 44 px), ohne eigene Knopf-Optik. */
+  button.obj {
+    display: block;
+    padding: 0;
+    border: 0;
+    border-radius: 14px;
+    background: none;
+    color: inherit;
+    cursor: pointer;
   }
   /* Noch nicht geschafft: nur der Umriss als flacher Schatten. */
   .obj:not(.got) {

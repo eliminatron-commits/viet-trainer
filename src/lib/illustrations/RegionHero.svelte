@@ -10,6 +10,15 @@
     hanoi: 'yellow',
     saigon: 'paper',
   };
+
+  /** Was das Hero-Objekt zeigt – zugleich das Souvenir der Region (Reisepass, Reise). */
+  export const HERO_LABEL: Record<RegionId, string> = {
+    danang: 'Korbboot mit Ruder',
+    hoian: 'Seidenlaterne',
+    hue: 'Nón lá, der Kegelhut',
+    hanoi: 'Roller mit Blumenkorb',
+    saigon: 'Eiskaffee mit Phin',
+  };
 </script>
 
 <script lang="ts">
@@ -27,14 +36,6 @@
    * Blumenkorb, `front` alles andere – dazwischen sitzt Trâu (Roller-Sprint).
    */
   let { region, size, layer }: { region: RegionId; size?: number; layer?: 'back' | 'front' } = $props();
-
-  const labels: Record<RegionId, string> = {
-    danang: 'Korbboot mit Ruder',
-    hoian: 'Seidenlaterne',
-    hue: 'Nón lá, der Kegelhut',
-    hanoi: 'Roller mit Blumenkorb',
-    saigon: 'Eiskaffee mit Phin',
-  };
 
   const C = {
     boat: '#9A5B2E',
@@ -69,7 +70,7 @@
   width={size ?? '100%'}
   height={size ?? '100%'}
   role={layer ? undefined : 'img'}
-  aria-label={layer ? undefined : labels[region]}
+  aria-label={layer ? undefined : HERO_LABEL[region]}
   aria-hidden={layer ? 'true' : undefined}
 >
   {#if region === 'danang'}

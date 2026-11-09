@@ -305,7 +305,24 @@
     - Bekannt: Bei 375 brechen „Guten Morgen!“ neben Trâu und „Noch 30 XP bis zum Tagesziel“ in zwei Zeilen um (nichts ragt heraus, gemessen).
     - Geprüft in Edge bei 440×956 (Safe-Area 59) und 375×667, Tag und Nacht: Öffnen Bild für Bild (0–1100 ms), Punkt „Feld gießen“ → Gießrunde mit genau den durstigen Einheiten, nur einmal am Tag, Montag als dritte Rückblick-Seite (Umblättern), Schalter aus → kein Tagesblick; Echtzeit per CDP-Screencast (öffnet, Punkte steigen herein, Kreis in die Runde), 96–97 fps. Pixelmessung: alle Texte AA (knappster 6,94), Tap-Ziele ≥ 44 px, kein seitliches Scrollen, keine Konsolenfehler.
     - check grün, 296 Vitest grün (neu: `tests/brief.test.ts`; 10 von 10 Mutationen machen ihn rot), Playwright 21 grün (neu: `tests/e2e/brief.spec.ts` mit fester Uhr, vier Tests; 6 von 6 Gegenproben machen ihn rot, darunter „nur eine Öffnung löst aus“).
-- **Nächste Schritte:** Alex Punkt 6 zeigen; live erst auf sein Wort. Danach Punkt 7 (Reise zur nächsten Region, P6-08). Sonst offen: P1-06 (Prototyp im LAN, `pending-alex`).
+    - Live seit `2e21c23` (2026-11-08).
+  - **Punkt 7 erledigt (2026-11-09), Reise zur nächsten Region (P6-08):**
+    - Nur beim ersten Sieg über den Boss, der eine Region abschließt (vier Fahrten; nach Sài Gòn keine). Das Ergebnis sagt „Đà Nẵng geschafft! … Trâu reist weiter nach Hội An.“, der Knopf „Mit dem Zug nach Hội An“ ersetzt „Fertig“. Kein neues Spielstandfeld.
+    - Die Reise öffnet sich als Kreis vom Tippunkt als Vollbild-Blatt: Trâu sitzt am Zugfenster, die Küste mit Meer, Palmen und fernen Hügeln zieht vorbei (anfahren, gleiten, bremsen – ohne Ruck). Mitten in der Fahrt ein Tunnel mit Lampen; darin wechselt die Küste zum neuen Ort, der sich beim Herausfahren aufbaut. Der Titel wechselt von „Nächster Halt: Hội An“ zu „Willkommen in Hội An“. Unten die Pass-Seite: Regal mit den fünf Souvenirs, darunter die Route, auf der ein Marker mitfährt. Nach dem Halt fliegt das Souvenir der alten Region (z. B. Korbboot mit Ruder) aus der Szene in sein Fach. „Überspringen“ springt ans Ende; „Weiter“ lässt das Blatt sinken, dahinter der Lernpfad „Weiter geht’s in Hội An.“
+    - Im Reisepass sind geschaffte Souvenirs mit nächster Region Knöpfe: antippen spielt die Fahrt noch einmal („Fertig“ führt zurück, Fokus aufs Souvenir). Hinweis darunter: „Tipp ein Souvenir an – Trâu fährt die Reise noch einmal.“ Reduzierte Bewegung zeigt gleich den Endzustand.
+    - Gefunden und behoben:
+      - Hügel verdeckten das Meer; Horizont höher.
+      - Bei 440×956 blieb unter der Szene viel leerer Raum; Bühne höher, Zug tiefer, die Pass-Seite sitzt unten beim Knopf.
+      - Trâus Hufe hingen unter dem Wagen heraus; Trâu ist jetzt aufs Fenster beschnitten.
+      - Palmwedel sahen aus wie Antennen; neue Wedelform.
+      - Der Ortswechsel hinter einem Berg vor dem Zug ließ Flecken offen und verdeckte Trâu; jetzt ein Tunnel hinter dem Zug (ein Test sichert die volle Deckung beim Wechsel, ±120 ms).
+      - Die beiden Titel standen beim Wechsel kurz übereinander; jetzt nacheinander.
+      - Der Haltepunkt der Route verdeckte den Marker; der Marker liegt jetzt darüber.
+      - „Hội An“ brach bei 375 mitten im Namen um; Ortsnamen jetzt ohne Umbruch.
+      - Safari fokussiert Knöpfe beim Antippen nicht, darum kehrte der Fokus nach einer Wiederholung nicht zum Souvenir zurück; das angetippte Element wird jetzt mitgegeben.
+    - Geprüft in Edge bei 440×956 (Safe-Area 59) und 375×667, Tag und Nacht: Fahrt Bild für Bild (0–7600 ms), Ergebnis-Karte (der Knopf passt bei 375 in eine Zeile), Endzustand mit reduzierter Bewegung. Echtzeit per CDP-Screencast (Boss → Kreis in die Reise → Fahrt, Tunnel, Ankunft, Souvenir → Blatt sinkt → Lernpfad in Hội An), 94–97 fps. Jede Aufnahme zeigt in der zweiten Fahrthälfte eine einzelne Lücke von 250–340 ms; das ist die Aufnahme, nicht die App: rAF und Long-Animation-Frames ohne Pause über 40 ms, der Trace zeichnet in jedem 250-ms-Fenster gleich viele Bilder, und eine absichtlich eingebaute 300-ms-Pause wird erkannt. Pixelmessung: alle Texte AA (knappster 5,68), Tap-Ziele ≥ 44 px, kein seitliches Scrollen, das Blatt scrollt nicht, Ortsnamen auf der Route bei 375 mit ≥ 18,3 px Luft (Gegenprobe mit einem unbrechbaren Namen meldet die Überlappung); keine Konsolenfehler.
+    - check grün, 307 Vitest grün (neu: `tests/trip.test.ts`, 11 Tests; 6 von 6 Mutationen machen ihn rot), Playwright 23 grün (neu: `tests/e2e/trip.spec.ts`, Boss → Reise → Lernpfad und Wiederholung aus dem Reisepass; 6 von 6 Gegenproben machen ihn rot, darunter „Fokus geht verloren“).
+- **Nächste Schritte:** Alex Punkt 7 zeigen; live erst auf sein Wort. Danach Punkt 8 (Ton-Zwillinge, P6-09) nur, wenn Alex die Bedeutungs-Variante will, sonst die Gesamtprüfung (P6-10). Sonst offen: P1-06 (Prototyp im LAN, `pending-alex`).
 
 ## Phase 2 – Ergebnis
 
