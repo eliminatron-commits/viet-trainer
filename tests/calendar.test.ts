@@ -119,7 +119,9 @@ describe('Texte', () => {
   });
 
   it('angetippter Tag zeigt seine Zahlen – immer vier, vor dem Tagebuch ohne Wert', () => {
-    const save = newSave();
+    // Spielstand vor dem Tagebuch begonnen: sonst gilt der Tag der Testausführung als Beginn (diaryStart),
+    // und je nach Datum zählt der 9. November als „vor dem Tagebuch“ statt „nicht gelernt“.
+    const save = newSave(new Date('2026-11-01T10:00:00Z'));
     save.days = {
       '2026-11-07': log({ xp: 62, tasks: 14, right: 12, newWords: 5, rounds: 2, goal: true }),
       '2026-11-08': log({ xp: 5, tasks: 1, right: 1, newWords: 1, rounds: 1 }),
