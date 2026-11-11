@@ -13,8 +13,10 @@ permissions:
   pages: write
   id-token: write
 
+# Eigener Name seit 2026-11-11: in der alten Gruppe „pages“ hängt seit einer GitHub-Störung (2026-11-09) ein Lauf
+# im Zustand „waiting“, der sich weder abbrechen noch löschen lässt und alle folgenden Läufe blockierte.
 concurrency:
-  group: pages
+  group: pages-deploy
   cancel-in-progress: false
 
 jobs:
